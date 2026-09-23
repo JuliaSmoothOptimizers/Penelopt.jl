@@ -28,6 +28,10 @@ include("instances/instance-generator.jl")
   include("test-scaling.jl")
 end
 
+@testset "barrier" begin
+  include("test-barrier.jl")
+end
+
 @testset "quasi-Newton" begin
   include("test-quasi-newton.jl")
 end

@@ -31,11 +31,8 @@ end
   )
   finalize(nlp)
 
-  # Problem with bounds 
+  # Problem with bounds and an initial point that is not strictly interior
   nlp = CUTEstModel("LIN")
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." L2Penalty(
-    nlp,
-  )
   solver = L2PenaltySolver(nlp)
   stats = PeneloptExecutionStats(nlp)
   @test_throws "L2Penalty: This algorithm only works for equality contrained problems." solve!(

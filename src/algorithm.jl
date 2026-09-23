@@ -70,6 +70,7 @@ function L2PenaltySolver(
   set_solver_specific!(substats, :rho, T(0))
   set_solver_specific!(substats, :smooth_obj, T(0))
   set_solver_specific!(substats, :nonsmooth_obj, T(0))
+  set_solver_specific!(substats, :compl_error, T(0))
 
   return L2PenaltySolver(
     x,
@@ -132,22 +133,17 @@ function L2Penalty(
   qn_mem::Int = 6,
   qn_scaling::Bool = true,
   qn_max_skip::Int = 2,
+  μ::T = T(0.1),
   kwargs...,
 ) where {T<:Real,V}
 
   # Check problem formulation
-  has_bounds = any(eachindex(nlp.meta.lvar)) do i
-    l = nlp.meta.lvar[i]
-    u = nlp.meta.uvar[i]
-    l != -Inf && u != Inf && l != u
-  end
-
-  if !equality_constrained(nlp) || has_bounds
+  if !equality_constrained(nlp)
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
 
   # Preprocessing
-  preprocessed_nlp = nlp |> remove_fixed_variables |> remove_constraint_shift |> scale_model
+  preprocessed_nlp = nlp |> remove_fixed_variables |> remove_constraint_shift |> scale_model |> add_log_barrier
 
   if qn_hessian_approximation == "bfgs"
     preprocessed_nlp = CompactBFGSModel(
@@ -204,12 +200,15 @@ function SolverCore.solve!(
   dual_inf_rtol::T = zero(T),
   primal_inf_atol::T = zero(T),
   primal_inf_rtol::T = zero(T),
+  compl_inf_atol::T = zero(T),
+  compl_inf_rtol::T = zero(T),
   max_eval::Int = -1,
   max_time::Float64 = 30.0,
   max_iter::Int = 100,
   r2n_max_iter::Int = 1000,
   ms_max_iter::Int = 10,
   μ::T = T(1e-2),
+  κε::T = T(10),
   infeasible_tol::T = T(1e-3),
   infeasible_iter::Int = 2,
 
@@ -269,6 +268,13 @@ function SolverCore.solve!(
   x = solver.x .= x
   y = solver.y
 
+  barrier = get_barrier(find_model(LogBarrierModel, nlp))
+
+  # TODO: users should be able to pass z_l_0 and z_u_0 as keyword arguments
+  # Initialize z_l, z_u
+  initialize_multipliers!(barrier)
+  push_to_interior!(barrier, x)
+
   shift!(ψ, x)
   fx = obj(nlp, x)
   hx = norm(ψ.b)
@@ -289,12 +295,21 @@ function SolverCore.solve!(
   dual_feas = least_square_dual_feas!(solver)
   solver.subsolver.y .= solver.y
 
+  compl_feas = compute_compl_error!(
+      solver.subsolver.compl_res_l,
+      solver.subsolver.compl_res_u,
+      barrier,
+      x,
+    )
+
   primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
+  compl_tol = max(compl_inf_atol, atol) + max(compl_inf_rtol, rtol) * compl_feas
 
   primal_ktol = one(primal_tol)
   dual_ktol = min(one(dual_tol), max(μ * dual_feas, dual_tol))
   dual_krtol = T(0)
+  compl_ktol = compute_compl_ktol(barrier, κε)
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
@@ -361,6 +376,7 @@ function SolverCore.solve!(
       ## Termination arguments
       atol = dual_ktol,
       rtol = dual_krtol,
+      compl_atol = compl_ktol,
       max_iter = r2n_max_iter,
       ms_max_iter = ms_max_iter,
       max_time = max_time - stats.elapsed_time,
@@ -422,7 +438,14 @@ function SolverCore.solve!(
     primal_feas = kkt_primal_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
 
-    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
+    compl_feas = compute_compl_error!(
+      solver.subsolver.compl_res_l,
+      solver.subsolver.compl_res_u,
+      barrier,
+      x,
+    )
+
+    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && (primal_feas > primal_tol || compl_feas > compl_tol))
       # Update penalty parameter
       τ₊ = max(τ + τmin, norm(y, 1))
       if extrapolate!(x, solver, τ₊, τ)
@@ -469,12 +492,21 @@ function SolverCore.solve!(
       first_increase = false
     end
 
+    if compl_feas > compl_tol
+      # Update barrier parameter
+      update_barrier!(barrier, x, compl_tol)
+      set_fraction_to_boundary!(barrier)
+      compl_ktol = compute_compl_ktol(barrier, κε)
+    end
+
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev < hx
       τmin *= 10
     end
 
-    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
+    set_solver_specific!(solver.substats, :compl_error, compl_feas)
+
+    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && compl_feas ≤ compl_tol
 
     # Infeasiblity detection
     if stats.iter % infeasible_iter == 0
