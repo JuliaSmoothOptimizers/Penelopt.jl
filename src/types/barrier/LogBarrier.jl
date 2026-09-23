@@ -157,6 +157,10 @@ function set_barrier!(ϕ::LogBarrier, μ) where {T,S}
   set_fraction_to_boundary!(ϕ)
 end
 
+function get_barrier(ϕ::LogBarrier)
+  return ϕ.μ
+end
+
 function compute_compl_ktol(ϕ::LogBarrier, κε)
   return κε * ϕ.μ
 end
@@ -227,9 +231,9 @@ function (ϕ::LogBarrier)(x)
   return ϕ.μ * val
 end
 
-function add_grad!(g, ϕ::LogBarrier, x)
+function add_grad!(g, ϕ::LogBarrier, x; α = one(ϕ.μ))
   for i in eachindex(g)
-    g[i] += ϕ.μ * invd(ϕ.u[i], ϕ.u[i] - x[i]) - ϕ.μ * invd(ϕ.l[i], x[i] - ϕ.l[i])
+    g[i] += α * ϕ.μ * invd(ϕ.u[i], ϕ.u[i] - x[i]) - α * ϕ.μ * invd(ϕ.l[i], x[i] - ϕ.l[i])
   end
   return g
 end

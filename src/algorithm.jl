@@ -374,9 +374,9 @@ function SolverCore.solve!(
       x = x,
 
       ## Termination arguments
-      atol = dual_ktol,
+      atol = max(dual_ktol, compl_ktol),
       rtol = dual_krtol,
-      compl_atol = compl_ktol,
+      # compl_atol = compl_ktol,
       max_iter = r2n_max_iter,
       ms_max_iter = ms_max_iter,
       max_time = max_time - stats.elapsed_time,
@@ -492,11 +492,19 @@ function SolverCore.solve!(
       first_increase = false
     end
 
-    if compl_feas > compl_tol
+    if compl_feas > compl_tol && !isnothing(barrier)
       # Update barrier parameter
+      old_μ = get_barrier(barrier)
       update_barrier!(barrier, x, compl_tol)
       set_fraction_to_boundary!(barrier)
       compl_ktol = compute_compl_ktol(barrier, κε)
+
+      # Update objective, gradient and hessian 
+      solver.substats.solver_specific[:smooth_obj] += barrier(x) * (get_barrier(barrier) - old_μ)
+      add_grad!(solver.∇fk, barrier, x, α = (get_barrier(barrier) - old_μ) / get_barrier(barrier) - old_μ)
+      barrier_model = find_model(LogBarrierModel, nlp)
+      # Updatte Hessian
+      # TODO
     end
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
