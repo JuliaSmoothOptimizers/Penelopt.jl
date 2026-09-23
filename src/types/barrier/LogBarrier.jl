@@ -192,7 +192,7 @@ end
 function compute_compl_ktol(ϕ::LogBarrier, κε)
   return κε * ϕ.μ
 end
-compute_compl_ktol(ϕ::Nothing, κε) = one(κε)
+compute_compl_ktol(ϕ::Nothing, κε) = zero(κε)
 
 @doc raw"""
     truncate_to_boundary!(s, s_z_l, s_z_u, xk, ϕ::LogBarrier)
