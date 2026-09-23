@@ -493,20 +493,13 @@ function SolverCore.solve!(
     end
 
     if compl_feas > compl_tol && !isnothing(barrier)
-      # Update barrier parameter
-      old_μ = get_barrier(barrier)
-      update_barrier!(barrier, x, compl_tol)
-      set_fraction_to_boundary!(barrier)
+
+      Δf = update_barrier!(φ.data.c, barrier, x, compl_tol)
       compl_ktol = compute_compl_ktol(barrier, κε)
-
-      # Update objective, gradient and hessian 
-      solver.substats.solver_specific[:smooth_obj] += barrier(x) * (get_barrier(barrier) - old_μ)
-      add_grad!(solver.∇fk, barrier, x, α = (get_barrier(barrier) - old_μ) / get_barrier(barrier) - old_μ)
-      barrier_model = find_model(LogBarrierModel, nlp)
-      # Updatte Hessian
-      # TODO
+      fx = solver.substats.solver_specific[:smooth_obj] + Δf
+      set_solver_specific!(solver.substats, :smooth_obj, fx)
+      solver.∇fk .= φ.data.c
     end
-
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev < hx
       τmin *= 10

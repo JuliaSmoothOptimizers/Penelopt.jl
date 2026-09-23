@@ -106,6 +106,34 @@ end
 update_barrier!(::Nothing, x, tol; kwargs...) = nothing
 
 @doc raw"""
+    Δf = update_barrier!(g, ϕ::LogBarrier, x, tol; kwargs...)
+
+Decrease the barrier parameter from `μ` to `μ₊` (see `update_barrier!(ϕ, x, tol)`) and
+correct in place the gradient `g` of a model whose objective contains `ϕ`, without
+evaluating the rest of the objective. With `ϕ(x) = μ B(x)`:
+
+    g ← g + (μ₊ - μ) ∇B(x),
+
+and the objective correction `Δf = (μ₊ - μ) B(x)` is returned.
+
+The Hessian block of `ϕ` is primal-dual (see `hess_diag!`) and does not depend on `μ`,
+so it needs no correction.
+"""
+function update_barrier!(g, ϕ::LogBarrier{T}, x, tol; kwargs...) where {T}
+  μ = ϕ.μ
+  Δμ = update_barrier!(ϕ, x, tol; kwargs...) - μ
+  B = zero(T)
+  for i in eachindex(x)
+    l, u = ϕ.l[i], ϕ.u[i]
+    B += logterm(u, u - x[i]) + logterm(l, x[i] - l)
+    g[i] += Δμ * (invd(u, u - x[i]) - invd(l, x[i] - l))
+  end
+  return Δμ * B
+end
+
+update_barrier!(g, ::Nothing, x, tol; kwargs...) = zero(eltype(x))
+
+@doc raw"""
     compute_mu_compl_error!(compl_res_l, compl_res_u, ϕ::LogBarrier, xk)
 
 Perturbed complementarity error `max(‖Z_l (x - l) - μe‖∞, ‖Z_u (u - x) - μe‖∞)`,
