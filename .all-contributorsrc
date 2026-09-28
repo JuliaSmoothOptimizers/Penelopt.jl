@@ -1,6 +1,6 @@
 {
   "projectName": "Penelopt",
-  "projectOwner": "MaxenceGollier",
+  "projectOwner": "JuliaSmoothOptimizers",
   "files": ["README.md", "docs/src/index.md"],
   "commitType": "docs",
   "commitConvention": "angular",

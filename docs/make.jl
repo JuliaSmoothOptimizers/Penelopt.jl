@@ -6,10 +6,10 @@ DocMeta.setdocmeta!(Penelopt, :DocTestSetup, :(using Penelopt); recursive = true
 makedocs(;
   modules = [Penelopt],
   authors = "Maxence Gollier maxence-2.gollier@polymtl.ca",
-  repo = "https://github.com/MaxenceGollier/Penelopt.jl/blob/{commit}{path}#{line}",
+  repo = "https://github.com/JuliaSmoothOptimizers/Penelopt.jl/blob/{commit}{path}#{line}",
   sitename = "Penelopt.jl",
   format = Documenter.HTML(;
-    canonical = "https://MaxenceGollier.github.io/Penelopt.jl",
+    canonical = "https://jso.dev/Penelopt.jl",
     assets = ["assets/link-icons.css"],
     collapselevel = 1,
   ),
@@ -33,4 +33,4 @@ makedocs(;
   ],
 )
 
-deploydocs(; repo = "github.com/MaxenceGollier/Penelopt.jl", push_preview = true)
+deploydocs(; repo = "github.com/JuliaSmoothOptimizers/Penelopt.jl", push_preview = true)

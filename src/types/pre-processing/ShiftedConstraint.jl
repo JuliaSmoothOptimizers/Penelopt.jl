@@ -4,7 +4,7 @@
 Standalone preprocessing step that reformulates equality constraints
 written as `c_i(x) = v_i` (i.e. `lcon[i] == ucon[i] == v_i != 0`) into the
 standard form `c_i(x) - v_i = 0` expected by solvers such as
-ExactPenalty.jl (see https://github.com/MaxenceGollier/Penelopt.jl/issues/186).
+ExactPenalty.jl (see https://github.com/JuliaSmoothOptimizers/Penelopt.jl/issues/186).
 
 Inequality constraints, and equality constraints whose target is already
 `0`, are left untouched.
@@ -62,7 +62,7 @@ If no constraint needs shifting (including if `nlp` is unconstrained),
 `nlp` itself is returned unchanged.
 
 See [`constraint_shift`](@ref) to recover the original constraint values,
-and https://github.com/MaxenceGollier/Penelopt.jl/issues/186 for context.
+and https://github.com/JuliaSmoothOptimizers/Penelopt.jl/issues/186 for context.
 """
 function remove_constraint_shift(nlp::AbstractNLPModel{T,S}) where {T,S}
   ncon = get_ncon(nlp)

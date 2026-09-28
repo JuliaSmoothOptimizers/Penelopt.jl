@@ -9,6 +9,6 @@ authors:
     family-names: Gollier
     email: maxence-2.gollier@polymtl.ca
     affiliation: Polytechnique Montréal
-repository-code: 'https://github.com/MaxenceGollier/Penelopt.jl'
-url: 'https://maxencegollier.github.io/Penelopt.jl'
+repository-code: 'https://github.com/JuliaSmoothOptimizers/Penelopt.jl'
+url: 'https://jso.dev/Penelopt.jl'
 license: MPL-2.0
