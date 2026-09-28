@@ -8,6 +8,7 @@ makedocs(;
   authors = "Maxence Gollier maxence-2.gollier@polymtl.ca",
   repo = "https://github.com/JuliaSmoothOptimizers/Penelopt.jl/blob/{commit}{path}#{line}",
   sitename = "Penelopt.jl",
+  checkdocs = :exports,
   format = Documenter.HTML(;
     canonical = "https://jso.dev/Penelopt.jl",
     assets = ["assets/link-icons.css"],

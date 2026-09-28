@@ -1,5 +1,3 @@
-export ShiftedL2PenalizedProblem
-
 abstract type AbstractShiftedPenalizedProblem{T,S} <: AbstractPenalizedProblem{T,S} end
 
 """

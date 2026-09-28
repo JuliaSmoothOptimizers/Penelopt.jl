@@ -11,7 +11,7 @@ using ADNLPModels,
 
 using LinearAlgebra, Random, SparseArrays, Test
 
-import Penelopt: solve!, ShiftedCompositeNormL2
+import Penelopt: solve!, ShiftedCompositeNormL2, ShiftedL2PenalizedProblem, MoreSorensenSolver
 
 Random.seed!(0)
 

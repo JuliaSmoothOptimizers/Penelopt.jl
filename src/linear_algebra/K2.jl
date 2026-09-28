@@ -1,5 +1,3 @@
-export CompactBFGSK2
-
 mutable struct CompactBFGSK2{
   T<:Real,
   V,
