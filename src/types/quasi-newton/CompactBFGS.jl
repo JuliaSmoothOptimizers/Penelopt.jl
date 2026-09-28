@@ -1,4 +1,4 @@
-export CompactBFGS, CompactBFGSModel
+export CompactBFGSModel
 
 mutable struct CompactBFGS{T,V<:AbstractVector{T},MT<:AbstractMatrix{T}} <:
                AbstractMatrix{T}
@@ -89,6 +89,24 @@ function NLPModels.reset!(op::CompactBFGS)
   op._nskip = 0
 
 end
+"""
+    CompactBFGSModel(nlp; mem = 6, scaling = true, max_skip = 2)
+
+Wrap `nlp` so that its Hessian of the Lagrangian is replaced by a limited-memory BFGS
+approximation stored in compact form. The approximation is updated by the solver
+during the iterations. All other evaluations are forwarded to `nlp`.
+
+This is what `L2Penalty` uses with `qn_hessian_approximation = "bfgs"`.
+Construct it yourself only when using a preallocated [`L2PenaltySolver`](@ref),
+see [Preallocation](@ref).
+
+# Keyword arguments
+- `mem::Int = 6`: number of pairs ``(s, y)`` stored.
+- `scaling::Bool = true`: whether the initial approximation is ``B_0 = \\gamma I`` with ``\\gamma = y^T y / s^T y``.
+- `max_skip::Int = 2`: an update is skipped when `dot(s, y) ≤ eps(T)`; the approximation is reset once more than `max_skip` consecutive updates have been skipped.
+
+These correspond to the `qn_mem`, `qn_scaling` and `qn_max_skip` options, see [Options Reference](@ref).
+"""
 mutable struct CompactBFGSModel{
   T,
   S,

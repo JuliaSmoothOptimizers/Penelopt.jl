@@ -1,4 +1,3 @@
-export MoreSorensenSolver
 import Base.show
 
 mutable struct MoreSorensenSolver{

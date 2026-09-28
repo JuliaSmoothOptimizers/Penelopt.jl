@@ -14,5 +14,6 @@ Pages = ["95-reference.md"]
 
 ```@autodocs
 Modules = [Penelopt]
+Private = false
 Order = [:type, :function, :macro, :constant]
 ```

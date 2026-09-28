@@ -1,5 +1,3 @@
-export PenaltyR2N, PenaltyR2NSolver, solve!
-
 import SolverCore.solve!
 
 mutable struct PenaltyR2NSolver{

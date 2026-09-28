@@ -23,6 +23,23 @@ mutable struct L2PenaltySolver{
   substats::GenericExecutionStats{T,V,V,T}
 end
 
+"""
+    solver = L2PenaltySolver(nlp; r2n_m_monotone = 12, linear_solver = "mumps")
+
+Preallocate all the memory needed to solve `nlp` with the exact ℓ₂-penalty method.
+The solver can then be passed to [`solve!`](@ref) any number of times without further
+allocation, as long as the problem dimensions do not change. See [Preallocation](@ref).
+
+Unlike [`L2Penalty`](@ref), no preprocessing is applied: if `nlp` has fixed variables or
+shifted constraints, see [`remove_fixed_variables`](@ref) and [`remove_constraint_shift`](@ref).
+
+# Keyword arguments
+These options determine the size of the workspace and can only be passed here, not to `solve!`:
+- `r2n_m_monotone::Int = 12`: non-monotone memory of the inner (R2N) solver;
+- `linear_solver::String = "mumps"`: linear solver used for step computations.
+
+See [Options Reference](@ref) for details.
+"""
 function L2PenaltySolver(
   nlp::AbstractNLPModel{T,V};
   r2n_m_monotone::Int = 12,
@@ -78,82 +95,34 @@ end
 include("logging.jl")
 
 """
-    L2Penalty(nlp; kwargs…)
+    stats = L2Penalty(nlp; kwargs...)
 
-An exact ℓ₂-penalty method for the problem
+Solve the equality-constrained problem
 
-    min f(x) 	s.t c(x) = 0
+    min f(x)  s.t.  c(x) = 0
 
-where f: ℝⁿ → ℝ and c: ℝⁿ → ℝᵐ respectively have a Lipschitz-continuous gradient and Jacobian.
+described by the `AbstractNLPModel` `nlp` (see
+[NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl)) with an exact
+ℓ₂-penalty method. At each outer iteration, the nonsmooth subproblem
 
-At each iteration k, an iterate is computed as 
+    min f(x) + τₖ‖c(x)‖₂
 
-    xₖ ∈ argmin f(x) + τₖ‖c(x)‖₂
+is solved approximately by a regularized Newton method (R2N), and the penalty parameter τₖ is
+updated. Variables may not have bounds, except fixed variables (`lvar[i] == uvar[i]`).
 
-where τₖ is some penalty parameter.
-This nonsmooth problem is solved using `R2` (see `R2` for more information) with the first order model ψ(s;x) = τₖ‖c(x) + J(x)s‖₂
+Fixed variables and constraint right-hand sides are handled internally, and the problem is
+scaled according to the scaling options; the returned solution is expressed in terms of the original `nlp`.
 
-For advanced usage, first define a solver "L2PenaltySolver" to preallocate the memory used in the algorithm, and then call `solve!`:
+# Example
 
-    solver = L2PenaltySolver(nlp)
-    solve!(solver, nlp)
+    using ADNLPModels, Penelopt
+    nlp = ADNLPModel(x -> (x[1] - 1)^2 + x[2]^2, [2.0, 2.0], x -> [x[1] + x[2] - 1], [0.0], [0.0])
+    stats = L2Penalty(nlp; print_level = 1)
 
-    stats = PeneloptExecutionStats(nlp)
-    solver = L2PenaltySolver(nlp)
-    solve!(solver, nlp, stats)
-
-# Arguments
-* `nlp::AbstractNLPModel{T, V}`: the problem to solve, see `RegularizedProblems.jl`, `NLPModels.jl`.
-
-# Keyword arguments 
-- `x::V = nlp.meta.x0`: the initial guess;
-- `atol::T = √eps(T)`: absolute tolerance;
-- `rtol::T = √eps(T)`: relative tolerance;
-- `sub_atol::T = zero(T)`: absolute tolerance given to the subsolver;
-- `sub_rtol::T = T(1e-2)`: relative tolerance given to the subsolver;
-- `infeasible_tol = T(1e-3)`: tolerance used to decide whether the problem is infeasible or not √θₖ/‖c(xₖ)‖₂ < infeasible_tol, the problem is declared infeasible.
-- `max_eval::Int = -1`: maximum number of evaluation of the objective function (negative number means unlimited);
-- `sub_max_eval::Int = -1`: maximum number of evaluation for the subsolver (negative number means unlimited);
-- `max_time::Float64 = 30.0`: maximum time limit in seconds;
-- `max_iter::Int = 10000`: maximum number of iterations;
-- `sub_max_iter::Int = 10000`: maximum number of iterations for the subsolver;
-- `max_decreas_iter::Int = 10`: maximum number of iteration where ‖c(xₖ)‖₂ does not decrease before calling the problem locally infeasible;
-- `verbose::Int = 0`: if > 0, display iteration details every `verbose` iteration;
-- `sub_verbose::Int = 0`: if > 0, display subsolver iteration details every `verbose` iteration;
-- `τ::T = T(100)`: initial penalty parameter;
-- `β1::T = T(1)`: minimal penalty parameter increase,
-- `β3::T = 1/τ`: initial regularization parameter σ₀ = β3/τₖ at each iteration;
-- `β4::T = eps(T)`: minimal regularization parameter σ for `R2`;
-- `primal_feasibility_mode::Symbol = :kkt`: describes how the primal feasibility is computed during the outer iterations. 
-                                            With `:kkt`, the primal feasibility is the infinity norm of the residual ‖c(xₖ)‖∞.
-                                            With `:decrease`, the primal feasibility is computed as a model decrease of the feasibility problem.
-- `dual_feasibility_mode::Symbol = :kkt`: describes how the dual feasibility is computed during the outer and inner iterations. 
-                                          With `:kkt`, the dual feasibility is the infinity norm of the residual ‖∇fₖ + Jₖᵀyₖ‖∞, where yₖ 
-                                          is resulting from the computation of the Cauchy point of the subproblem.  
-                                          With `:decrease`, the dual feasibility is computed as a model decrease with respect to the Cauchy point. 
-
-other 'kwargs' are passed to `R2` (see `R2` for more information).
-
-The algorithm stops either when `√θₖ < atol + rtol*√θ₀ ` or `θₖ < 0` and `√(-θₖ) < neg_tol` where θₖ := ‖c(xₖ)‖₂ - ‖c(xₖ) + J(xₖ)sₖ‖₂, and √θₖ is a stationarity measure.
-
-# Output
-The value returned is a `GenericExecutionStats`, see `SolverCore.jl`.
-
-# Callback
-The callback is called at each iteration.
-The expected signature of the callback is `callback(nlp, solver, stats)`, and its output is ignored.
-Changing any of the input arguments will affect the subsequent iterations.
-In particular, setting `stats.status = :user` will stop the algorithm.
-All relevant information should be available in `nlp` and `solver`.
-Notably, you can access, and modify, the following:
-- `solver.x`: current iterate;
-- `solver.subsolver`: a `PenaltyR2Solver` structure holding relevant information on the subsolver state, see `R2` for more information;
-- `stats`: structure holding the output of the algorithm (`GenericExecutionStats`), which contains, among other things:
-  - `stats.iter`: current iteration counter;
-  - `stats.objective`: current objective function value;
-  - `stats.status`: current status of the algorithm. Should be `:unknown` unless the algorithm has attained a stopping criterion. Changing this to anything will stop the algorithm, but you should use `:user` to properly indicate the intention.
-  - `stats.elapsed_time`: elapsed time in seconds.
-You can also use the `sub_callback` keyword argument which has exactly the same structure and in sent to `R2`.
+# Keyword arguments
+See [Options Reference](@ref) for the full list of options, [Callbacks](@ref) for the
+`callback` keyword, and [Outputs](@ref) for a description of `stats`.
+To reuse memory across several solves, see [`L2PenaltySolver`](@ref) and [`solve!`](@ref).
 """
 function L2Penalty(
   nlp::AbstractNLPModel{T,V};
@@ -208,6 +177,19 @@ function L2Penalty(
   return stats
 end
 
+"""
+    solve!(solver::L2PenaltySolver, nlp, stats; kwargs...)
+
+Solve `nlp` with the preallocated `solver`, writing the results in `stats`
+(see [`PeneloptExecutionStats`](@ref)). `solver` must have been built from a problem with
+the same dimensions as `nlp`.
+
+All keyword arguments of [`L2Penalty`](@ref) are accepted, except `r2n_m_monotone`,
+`linear_solver` and the `qn_*` options, which must be set when constructing
+the solver or the model. See [Options Reference](@ref).
+
+Call `SolverCore.reset!(solver)` between two solves to discard the state kept from the previous one.
+"""
 function SolverCore.solve!(
   solver::L2PenaltySolver{T,V},
   nlp::AbstractNLPModel{T,V},

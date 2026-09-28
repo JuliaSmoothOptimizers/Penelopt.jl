@@ -1,5 +1,15 @@
 export NullHessianModel
 
+"""
+    NullHessianModel(nlp)
+
+Wrap `nlp` so that its Hessian of the Lagrangian is replaced by the zero matrix.
+All other evaluations (objective, constraints, gradients, Jacobians) are forwarded to `nlp`.
+
+This is what `L2Penalty` uses with `qn_hessian_approximation = "null"`.
+Construct it yourself only when using a preallocated [`L2PenaltySolver`](@ref),
+see [Preallocation](@ref).
+"""
 mutable struct NullHessianModel{
   T,
   S,
