@@ -10,6 +10,7 @@ on:
       - main
     paths:
       - "src/**"
+      - "ext/**"
       - "test/**"
       - "*.toml"
     types: [opened, synchronize, reopened]
