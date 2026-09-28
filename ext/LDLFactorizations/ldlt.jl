@@ -4,6 +4,8 @@ mutable struct PenaltyLDLTWorkspace{
   V<:AbstractVector,
   VI<:Union{Nothing,AbstractVector},
   T<:Real,
+  WPC<:Union{Nothing,LDLFactorization},
+  KC<:Union{Nothing,Symmetric},
 } <: AbstractLDLTWorkspace
   M::WP
   H::K2
@@ -19,6 +21,8 @@ mutable struct PenaltyLDLTWorkspace{
   _n_fact::Int
   _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
+  _Hcheck::WPC # Preallocated, reused LDL factorization for up_lb_is_pos_def_exact!
+  _Hcheck_mat::KC # Preallocated H + σI block for _Hcheck, values refreshed on each call
 end
 
 function get_H(
@@ -31,6 +35,32 @@ function get_H(solver_workspace::PenaltyLDLTWorkspace{WP,K2}) where {WP,K2<:Comp
   return solver_workspace.H.H.data
 end
 
+"""
+    build_up_lb_check(H::SparseMatrixCSC{T}, n) -> (S, Hp)
+
+Preallocate an LDL factorization `S`, sized n×n, dedicated to the exact check
+performed by `up_lb_is_pos_def_exact!`: factorizing H + σI (the leading
+n×n block of the K2 matrix stored in `H`) on its own. Since `H` stores the
+upper triangle of the K2 matrix in CSC format, the leading n×n block consists
+exactly of the first `H.colptr[n+1] - 1` stored entries of `H`. `Hp` is the
+preallocated `Symmetric` n×n matrix `S` is associated with -- refresh its values
+in place (e.g. `Hp.data.nzval .= H.nzval[1:nnz(Hp.data)]`) before each
+`ldl_factorize!(Hp, S)` call.
+"""
+function build_up_lb_check(H::SparseMatrixCSC{T,Ti}, n) where {T,Ti}
+  nnz_primal = H.colptr[n+1] - 1
+  Hp = SparseMatrixCSC{T,Ti}(
+    n,
+    n,
+    H.colptr[1:(n+1)],
+    H.rowval[1:nnz_primal],
+    H.nzval[1:nnz_primal],
+  )
+  Hp = Symmetric(Hp, :U)
+  S = ldl_analyze(Hp)
+  return S, Hp
+end
+
 function construct_ldlt_workspace(
   H::M,
   u1::V,
@@ -38,6 +68,7 @@ function construct_ldlt_workspace(
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCSC{T,Int}}}
   S = ldl_analyze(H)
+  Scheck, Hp = build_up_lb_check(H.data, n)
   return PenaltyLDLTWorkspace(
     S,
     H,
@@ -53,6 +84,8 @@ function construct_ldlt_workspace(
     0,
     zeros(T, n),
     zeros(T, n),
+    Scheck,
+    Hp,
   )
 end
 
@@ -78,6 +111,8 @@ function construct_ldlt_workspace(
     0,
     zeros(T, 0),
     zeros(T, 0),
+    nothing,
+    nothing,
   )
 end
 
@@ -433,4 +468,43 @@ function get_inertia(workspace::PenaltyLDLTWorkspace)
   end
 
   return npos, nzero, nneg
+end
+
+function up_lb_is_pos_def(workspace::PenaltyLDLTWorkspace, ::Symmetric)
+  n, m = workspace.n, workspace.m
+
+  # Step 1: check inertia
+  npos, nzero, nneg = get_inertia(workspace)
+  status = get_status(workspace)
+  (status == :failed || npos != n || nneg != m) && return false
+
+  # Step 2 & 3: cheap sufficient/necessary conditions:
+  # 1. Check if the diagonal has a negative entry,
+  # 2. Check if the matrix is diagonally dominant.
+  d, s = primal_diagonal_and_row_sums(workspace)
+  is_diagonally_dominant = true
+  for i = 1:n
+    d[i] <= 0 && return false
+    is_diagonally_dominant &= d[i] >= s[i]
+  end
+  is_diagonally_dominant && return true
+
+  # Step 4: fallback to Cholesky factorization.
+  return up_lb_is_pos_def_exact!(workspace)
+end
+
+# Perform LDLᵀ facto of H + σI to check positive definiteness.
+# LDLFactorizations.jl does not pivot (and no dynamic regularization is set on
+# _Hcheck), so H + σI is positive definite iff the factorization succeeds with
+# all pivots positive.
+function up_lb_is_pos_def_exact!(workspace::PenaltyLDLTWorkspace)
+  H = get_H(workspace)
+  Hp = workspace._Hcheck_mat
+  copyto!(Hp.data.nzval, 1, H.nzval, 1, length(Hp.data.nzval))
+
+  S = workspace._Hcheck
+  ldl_factorize!(Hp, S)
+
+  factorized(S) || return false
+  return all(>(0), S.d)
 end

@@ -14,6 +14,7 @@ import Penelopt: construct_ldlt_workspace, solve_system!, update_workspace!
 import Penelopt: get_H, get_inertia, get_solution!, get_status
 import Penelopt: getrf!, getrs!
 import Penelopt: set_dual_inertia!, set_primal_inertia!
+import Penelopt: primal_diagonal_and_row_sums, up_lb_is_pos_def
 
 include("LDLFactorizations/ldlt.jl")
 
