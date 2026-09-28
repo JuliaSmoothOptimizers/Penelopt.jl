@@ -52,3 +52,13 @@ end
   @test !isnothing(Base.get_extension(Penelopt, :PeneloptLDLFactorizationsExt))
   include("test-cutest.jl")
 end
+
+# HSL.jl is always installed for the tests, but MA57 is only functional when a
+# licensed HSL_jll.jl is available (see .github/workflows/TestHSL.yml). On the
+# GitHub-hosted runners, only the fallback path is exercised.
+using HSL
+
+@testset "HSL" begin
+  @test !isnothing(Base.get_extension(Penelopt, :PeneloptHSLExt))
+  include("test-hsl.jl")
+end
