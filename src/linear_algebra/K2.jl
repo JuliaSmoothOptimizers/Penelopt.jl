@@ -1,4 +1,4 @@
-export OpK2, CompactBFGSK2
+export CompactBFGSK2
 
 mutable struct CompactBFGSK2{
   T<:Real,

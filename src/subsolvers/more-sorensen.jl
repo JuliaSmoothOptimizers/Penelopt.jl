@@ -49,13 +49,6 @@ function MoreSorensenSolver(
     solver = :mumps
   end
 
-  # Check for Krylov
-  krylov_loaded = !isnothing(Base.get_extension(@__MODULE__, :PeneloptKrylovExt))
-  if !krylov_loaded && solver == :minres_qlp
-    @warn "Penelopt.jl: Krylov extension is not loaded. Please install Krylov.jl. Switching to MUMPS..."
-    solver = :mumps
-  end
-
   H = K2(
     n,
     m,

@@ -1,16 +1,17 @@
 abstract type PenaltyWorkspace end
 abstract type PenaltyDirectWorkspace <: PenaltyWorkspace end
-abstract type PenaltyIterativeWorkspace <: PenaltyWorkspace end
 
 function construct_workspace(H::M, u1::V, n::Int, m::Int; solver = :mumps) where {M,V}
-  if solver == :minres_qlp
-    return construct_minres_qlp_workspace(H, u1, n, m)
-  elseif solver == :ldlt
+  if solver == :ldlt
     return construct_ldlt_workspace(H, u1, n, m)
   elseif solver == :ma57
     return construct_ma57_workspace(H, u1, n, m)
   elseif solver == :mumps
     return construct_mumps_workspace(H, u1, n, m)
+  else
+    error(
+      "Penelopt.jl: unknown linear solver `$(solver)`. Supported values are \"mumps\", \"ldlt\" and \"ma57\".",
+    )
   end
 end
 
@@ -25,13 +26,6 @@ end
 
 abstract type AbstractHSLWorkspace <: PenaltyDirectWorkspace end
 
-# Krylov Misc.
-function construct_minres_qlp_workspace(H, u1, n, m)
-  error("MINRES-QLP not available. Load PeneloptKrylovExt.")
-end
-
-abstract type AbstractKrylovWorkspace <: PenaltyIterativeWorkspace end
-
 # LDLFactorizations Misc.
 function construct_ldlt_workspace(H, u1, n, m)
   error("LDLFactorizations not available. Load PeneloptLDLFactorizationsExt.")
@@ -42,12 +36,7 @@ abstract type AbstractLDLTWorkspace <: PenaltyDirectWorkspace end
 # MUMPS Misc.
 abstract type AbstractMUMPSWorkspace <: PenaltyDirectWorkspace end
 
-get_n_fact(workspace::PenaltyIterativeWorkspace) = 0
 get_n_fact(workspace::PenaltyDirectWorkspace) = workspace._n_fact
-
-function set_n_fact!(workspace::PenaltyIterativeWorkspace, n::Int)
-  return
-end
 
 function set_n_fact!(workspace::PenaltyDirectWorkspace, n::Int)
   workspace._n_fact = n
@@ -64,12 +53,6 @@ end
 up_lb_is_pos_def(workspace::PenaltyWorkspace) = up_lb_is_pos_def(workspace, workspace.H)
 
 up_lb_is_pos_def(::PenaltyWorkspace, ::CompactBFGSK2) = true
-
-# LinearOperator-backed K2 systems (e.g. used by iterative solvers): fallback to the inertia; #TODO: implement a necessary and sufficient condition
-function up_lb_is_pos_def(workspace::PenaltyWorkspace, ::AbstractLinearOperator)
-  npos, nzero, nneg = get_inertia(workspace)
-  return npos == workspace.n && nneg == workspace.m
-end
 
 # Direct-solver K2 systems where H is stored as a concrete (sparse) matrix:
 # try simple necessary/sufficient conditions. #TODO: implement a necessary and 
