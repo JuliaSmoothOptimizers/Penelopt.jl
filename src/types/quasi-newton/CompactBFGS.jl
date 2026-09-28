@@ -103,7 +103,7 @@ see [Preallocation](@ref).
 # Keyword arguments
 - `mem::Int = 6`: number of pairs ``(s, y)`` stored.
 - `scaling::Bool = true`: whether the initial approximation is ``B_0 = \\gamma I`` with ``\\gamma = y^T y / s^T y``.
-- `max_skip::Int = 2`: the approximation is reset after `max_skip` consecutive skipped updates.
+- `max_skip::Int = 2`: an update is skipped when `dot(s, y) ≤ eps(T)`; the approximation is reset once more than `max_skip` consecutive updates have been skipped.
 
 These correspond to the `qn_mem`, `qn_scaling` and `qn_max_skip` options, see [Options Reference](@ref).
 """
