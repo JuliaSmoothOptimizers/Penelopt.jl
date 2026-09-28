@@ -18,19 +18,16 @@ SparseMatricesCOO = "fa32481b-f100-4b48-8dc8-c62f61b13870"
 
 [weakdeps]
 HSL = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"
-Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LDLFactorizations = "40e66cde-538c-5869-a4ad-c39174c6795b"
 
 [extensions]
 PeneloptHSLExt = "HSL"
-PeneloptKrylovExt = "Krylov"
 PeneloptLDLFactorizationsExt = "LDLFactorizations"
 
 [compat]
 ADNLPModels = "0.8.13"
 CUTEst = "1.3.6"
 HSL = "0.5.4"
-Krylov = "0.10"
 LDLFactorizations = "0.10.2"
 LinearAlgebra = "1.10"
 LinearOperators = "2.10.0"
@@ -56,4 +53,4 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["ADNLPModels", "CUTEst", "Krylov", "LDLFactorizations", "NLPModelsTest", "Test", "Random"]
+test = ["ADNLPModels", "CUTEst", "LDLFactorizations", "NLPModelsTest", "Test", "Random"]

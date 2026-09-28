@@ -247,12 +247,10 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > * mumps: use the [MUMPS](https://mumps-solver.org/index.php?page=doc) package (default).
     > * ldlt: use the [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) package.
     > * ma57: use the HSL routine MA57.
-    > * minres\_qlp (does not work well): use the minres\_qlp solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
     >
     > **NOTE**: Except for the default, you need to **load** corresponding packages to use each option.
     > * ldlt: Load [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
     > * ma57: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
-    > * minres\_qlp: Load [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
 
 ## Scaling
 

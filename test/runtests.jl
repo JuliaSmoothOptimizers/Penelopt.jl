@@ -1,7 +1,6 @@
 using Penelopt
 using ADNLPModels,
   CUTEst,
-  Krylov,
   LinearOperators,
   NLPModels,
   NLPModelsModifiers,
