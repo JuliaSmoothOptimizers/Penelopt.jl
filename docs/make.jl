@@ -29,6 +29,7 @@ makedocs(;
     ],
     "Developers" =>
       ["Contributing" => "90-contributing.md", "Developing" => "91-developer.md"],
+    "Reference" => "95-reference.md",
   ],
 )
 
