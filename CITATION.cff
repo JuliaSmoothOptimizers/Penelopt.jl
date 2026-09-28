@@ -1,4 +1,3 @@
-# Go to https://citation-file-format.github.io/cff-initializer-javascript/#/ to finish this
 cff-version: 1.2.0
 title: Penelopt.jl
 message: >-
@@ -6,4 +5,10 @@ message: >-
   metadata from this file.
 type: software
 authors:
-  - given-names: Maxence Gollier maxence-2.gollier@polymtl.ca
+  - given-names: Maxence
+    family-names: Gollier
+    email: maxence-2.gollier@polymtl.ca
+    affiliation: Polytechnique Montréal
+repository-code: 'https://github.com/MaxenceGollier/Penelopt.jl'
+url: 'https://maxencegollier.github.io/Penelopt.jl'
+license: MPL-2.0

@@ -1,8 +1,8 @@
 # Penelopt.jl: A Large-Scale Equality-Constrained Optimization Solver 
 
-| **License** | **Documentation** | **CI** | **Coverage** | **Contributors** | **doi** |
-|:-----------:|:-----------------:|:------:|:------------:|:----------------:|:-------:|
-| [![license-img]][license-url] | [![docs-stable-img]][docs-stable-url] [![docs-dev-img]][docs-dev-url] | [![ci-test-img]][ci-test-url] |  [![coverage-img]][coverage-url] | [![contributors-img]][contributors-url] | [![doi-img]][doi-url] |
+| **License** | **Documentation** | **CI** | **Coverage** | **Contributors** |
+|:-----------:|:-----------------:|:------:|:------------:|:----------------:|
+| [![license-img]][license-url] | [![docs-stable-img]][docs-stable-url] [![docs-dev-img]][docs-dev-url] | [![ci-test-img]][ci-test-url] |  [![coverage-img]][coverage-url] | [![contributors-img]][contributors-url] |
 
 
 [license-img]:     https://img.shields.io/badge/License-MPL--2.0-blue
@@ -15,8 +15,6 @@
 [ci-test-url]:      https://github.com/MaxenceGollier/Penelopt.jl/actions/workflows/Test.yml?query=branch%3Amain
 [coverage-img]:     https://codecov.io/gh/MaxenceGollier/Penelopt.jl/branch/main/graph/badge.svg
 [coverage-url]:     https://codecov.io/gh/MaxenceGollier/Penelopt.jl
-[doi-img]:          https://zenodo.org/badge/DOI/FIXME
-[doi-url]:          https://doi.org/FIXME
 [contributors-img]: https://img.shields.io/github/all-contributors/MaxenceGollier/Penelopt.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square
 [contributors-url]: #contributors
 
