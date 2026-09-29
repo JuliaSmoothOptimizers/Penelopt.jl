@@ -82,8 +82,12 @@ function certify_local_infeasibility(name::AbstractString, key::Symbol)
 
   nlp = CUTEstModel(name)
   try
+    if !equality_constrained(nlp)
+      @warn "Infeasibility certificate only covers c(x) = 0; skipping $(name) (has inequalities)."
+      return missing
+    end
     x = try
-      solve_fn(nlp).solution
+      solve_fn(nlp).solution[1:nlp.meta.nvar] # drop slacks, if any
     catch e
       @warn "Could not reproduce the $(key) run for $(name): $(e)"
       return missing
