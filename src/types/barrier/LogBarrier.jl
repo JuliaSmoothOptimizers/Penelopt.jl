@@ -106,6 +106,34 @@ end
 update_barrier!(::Nothing, x, tol; kwargs...) = nothing
 
 @doc raw"""
+    Δf = update_barrier!(g, ϕ::LogBarrier, x, tol; kwargs...)
+
+Decrease the barrier parameter from `μ` to `μ₊` (see `update_barrier!(ϕ, x, tol)`) and
+correct in place the gradient `g` of a model whose objective contains `ϕ`, without
+evaluating the rest of the objective. With `ϕ(x) = μ B(x)`:
+
+    g ← g + (μ₊ - μ) ∇B(x),
+
+and the objective correction `Δf = (μ₊ - μ) B(x)` is returned.
+
+The Hessian block of `ϕ` is primal-dual (see `hess_diag!`) and does not depend on `μ`,
+so it needs no correction.
+"""
+function update_barrier!(g, ϕ::LogBarrier{T}, x, tol; kwargs...) where {T}
+  μ = ϕ.μ
+  Δμ = update_barrier!(ϕ, x, tol; kwargs...) - μ
+  B = zero(T)
+  for i in eachindex(x)
+    l, u = ϕ.l[i], ϕ.u[i]
+    B += logterm(u, u - x[i]) + logterm(l, x[i] - l)
+    g[i] += Δμ * (invd(u, u - x[i]) - invd(l, x[i] - l))
+  end
+  return Δμ * B
+end
+
+update_barrier!(g, ::Nothing, x, tol; kwargs...) = zero(eltype(x))
+
+@doc raw"""
     compute_mu_compl_error!(compl_res_l, compl_res_u, ϕ::LogBarrier, xk)
 
 Perturbed complementarity error `max(‖Z_l (x - l) - μe‖∞, ‖Z_u (u - x) - μe‖∞)`,
@@ -157,10 +185,14 @@ function set_barrier!(ϕ::LogBarrier, μ) where {T,S}
   set_fraction_to_boundary!(ϕ)
 end
 
+function get_barrier(ϕ::LogBarrier)
+  return ϕ.μ
+end
+
 function compute_compl_ktol(ϕ::LogBarrier, κε)
   return κε * ϕ.μ
 end
-compute_compl_ktol(ϕ::Nothing, κε) = one(κε)
+compute_compl_ktol(ϕ::Nothing, κε) = zero(κε)
 
 @doc raw"""
     truncate_to_boundary!(s, s_z_l, s_z_u, xk, ϕ::LogBarrier)
@@ -227,9 +259,9 @@ function (ϕ::LogBarrier)(x)
   return ϕ.μ * val
 end
 
-function add_grad!(g, ϕ::LogBarrier, x)
+function add_grad!(g, ϕ::LogBarrier, x; α = one(ϕ.μ))
   for i in eachindex(g)
-    g[i] += ϕ.μ * invd(ϕ.u[i], ϕ.u[i] - x[i]) - ϕ.μ * invd(ϕ.l[i], x[i] - ϕ.l[i])
+    g[i] += α * ϕ.μ * invd(ϕ.u[i], ϕ.u[i] - x[i]) - α * ϕ.μ * invd(ϕ.l[i], x[i] - ϕ.l[i])
   end
   return g
 end

@@ -211,7 +211,7 @@ function SolverCore.solve!(
 
     set_primal_residual!(stats, norm(ψ.b, Inf))
     set_dual_residual!(stats, norm(dual_res, Inf))
-    solved = stats.dual_feas ≤ atol && compl_error ≤ compl_atol
+    solved = stats.dual_feas ≤ atol && compl_error ≤ atol
 
     if stats.iter == 0
       atol += stats.dual_feas * rtol

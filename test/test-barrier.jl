@@ -59,7 +59,7 @@
     @test Penelopt.compute_compl_error!(res_l, res_u, nothing, x) == 0
     @test Penelopt.compute_mu_compl_error!(res_l, res_u, nothing, x) == 0
     @test Penelopt.compute_compl_ktol(ϕ, 10.0) ≈ 10μ
-    @test Penelopt.compute_compl_ktol(nothing, 10.0) == 1
+    @test Penelopt.compute_compl_ktol(nothing, 10.0) == 0
   end
 
   @testset "multiplier steps and fraction to the boundary" begin
