@@ -26,6 +26,7 @@ using MPI, MUMPS
 import LinearAlgebra.BLAS: @blasfunc
 import LinearAlgebra: BlasInt, libblastrampoline
 
+import NLPModelsModifiers: get_model, get_op
 import SolverCore: get_status, reset!
 
 function __init__()
