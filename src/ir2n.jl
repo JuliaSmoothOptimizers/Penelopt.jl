@@ -44,9 +44,9 @@ function PenaltyR2NSolver(
   set_solver_specific!(substats, :alpha, 0)
   subsolver = MoreSorensenSolver(subpb; solver = Symbol(linear_solver))
 
-  checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
-
   barrier = find_model(LogBarrierModel, penalty_nlp.model)
+
+  checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone, barrier = get_barrier(barrier))
   s_z_l = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_l) 
   s_z_u = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_u)
   compl_res_l = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_l)
@@ -137,6 +137,9 @@ function SolverCore.solve!(
   s_z_l, s_z_u = solver.s_z_l, solver.s_z_u
   m_fh_hist = solver.m_fh_hist
   watchdog_checkpoint = solver.checkpoint
+  # A checkpoint left active by a previous call refers to a stale model (penalty, barrier
+  # parameter, iteration counter), never fall back to it.
+  deactivate!(watchdog_checkpoint)
 
   m_monotone = length(m_fh_hist) + 1
 
@@ -229,7 +232,7 @@ function SolverCore.solve!(
 
     # Check the watchdog
     if check_watchdog!(watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, watchdog_η0)
-      fallback!(mk, xk, y, watchdog_checkpoint)
+      fallback!(mk, xk, y, watchdog_checkpoint; barrier = barrier)
       φ.data.σ *= γ^watchdog_max_iter
       σk = φ.data.σ
       hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
@@ -319,9 +322,12 @@ function SolverCore.solve!(
 
         if η2 ≤ fρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
-          save!(watchdog_checkpoint, mk, xk, y, stats)
+          save!(watchdog_checkpoint, mk, xk, y, stats; barrier = barrier)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
           xk .= xkn
+
+          #update bound multipliers
+          update_multipliers!(barrier, s_z_l, s_z_u)
 
           #update functions
           fk, hk = fkn, hkn
