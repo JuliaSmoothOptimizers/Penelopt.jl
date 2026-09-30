@@ -13,8 +13,17 @@ function pairwise_plot(
   compare_n_fact = false,
   certified_infeasible = Dict{Symbol,Set{String}}(),
 )
-  df_1 = stats[keys[1]]
-  df_2 = stats[keys[2]]
+  # Problem sets may differ (e.g. bounds branch vs. reference from main):
+  # profiles need the same problems in the same order on both sides.
+  common = intersect(stats[keys[1]].name, stats[keys[2]].name)
+  for key in keys
+    n_dropped = nrow(stats[key]) - length(common)
+    n_dropped > 0 && @info "$(key): comparing on $(length(common)) common problems ($(n_dropped) dropped)"
+  end
+  stats_subset =
+    Dict(key => sort(filter(:name => in(Set(common)), stats[key]), :name) for key in keys)
+  df_1 = stats_subset[keys[1]]
+  df_2 = stats_subset[keys[2]]
 
   solved(df) =
     if CERTIFY_INFEASIBILITY
@@ -39,8 +48,6 @@ function pairwise_plot(
     costnames[1] = "# Factorizations"
     costs[1] = df -> .!solved(df) * Inf .+ coalesce.(df.n_fact, Inf)
   end
-
-  stats_subset = filter(kv -> kv[1] in keys, stats)
 
   # split the stat names. the first part is always l2penalty, then the method used, then the tolerance and finally the branch.
   parts_1 = Symbol.(split(string(keys[1]), "_"))

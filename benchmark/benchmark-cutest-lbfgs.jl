@@ -4,14 +4,7 @@ using CUTEst, Penelopt, SolverBenchmark
 
 include(joinpath(@__DIR__, "utils", "benchmark-utils.jl"))
 
-problem_names = CUTEst.select_sif_problems(
-  min_con = 1,
-  only_equ_con = true,
-  custom_filter = meta -> (
-    meta["variables"]["number"] >= meta["constraints"]["number"] &&
-    meta["variables"]["free"] + meta["variables"]["fixed"] == meta["variables"]["number"]
-  ),
-)
+problem_names = select_benchmark_problems()
 
 filter!(x -> x != "FLOSP2TL", problem_names) # This problem of the form min 0 st c(x) = 0 causes the benchmarks to timeout...
 
@@ -21,8 +14,6 @@ split = parse(Int, get(ENV, "CUTEST_SPLIT", "1"))
 n_splits = 4
 
 @assert 1 <= split <= n_splits
-
-problem_names = collect(problem_names)
 
 n = length(problem_names)
 first = fld((split - 1) * n, n_splits) + 1
