@@ -47,28 +47,29 @@ The extrapolated point is
 
 If `‖y‖₂ < τ₁`, complementarity forces `α = 0` and the solution does not move
 with `τ` (`ẋ = 0`), so no extrapolation is performed. Otherwise,
-`τ₁` is replaced by `min(τ₂, ‖y‖₂)` because ...
+Otherwise, `τ₁` is replaced by `‖y‖₂`. The first two components of `F` do not
+depend on `τ`, and the third vanishes at `τ = ‖y‖₂`, so
+
+    ‖F(x, y, α, ‖y‖₂)‖₂ ≤ ‖F(x, y, α, τ)‖₂   for all τ.
+
+Hence `(x, y, α)` is closest to the solution path at `τ = ‖y‖₂`, and we
+extrapolate from `‖y‖₂` to `τ₂`. If `‖y‖₂ ≥ τ₂`, no extrapolation is performed.
 
 # Arguments
 
-- `x::V`: current outer iterate `x_k`.
-- `solver::L2PenaltySolver`: solver workspace. `solver.y` holds `y_k`, and the
-  step-computation substats hold `α_k` in `solver_specific[:alpha]`.
+- `x::V`: current outer iterate.
+- `solver::L2PenaltySolver`: solver workspace.
 - `τ₂::T`: new penalty parameter.
 - `τ₁::T`: penalty parameter for which `(x, y)` was computed.
 
 # Returns
 
-`true` if the extrapolation was applied, `false` otherwise. It returns `false` when
-`‖y‖₂ < τ₁`, when the factorization fails or has the wrong inertia `(n, m, 0)`,
-or when the extrapolated point yields a non-finite objective or constraint value.
+`true` if the extrapolation was applied, `false` otherwise.
 
 # Side effects
 
 On success, overwrites `solver.x`, `solver.y`, `solver.cn` and
-`solver.substats.solver_specific[:smooth_obj]`. In all cases (once the
-factorization is reached), the factorization stored in the step-computation
-workspace is overwritten, so the next step computation must refactorize.
+`solver.substats.solver_specific[:smooth_obj]`.
 """
 function extrapolate!(
   x::V,
@@ -89,7 +90,10 @@ function extrapolate!(
   # If ‖y‖₂ < τ₁, then no extrapolation is needed.
   norm_y = norm(y, 2)
   norm_y < τ₁ && return false
-  τ₁ = min(τ₂, norm_y)
+  τ₁ = norm_y
+
+  # Step 1.1: Check if τ₂ is smaller than τ₁, in which case we cannot extrapolate.
+  τ₁ >= τ₂ && return false
 
   # Step 2: Solve K p = [0; y]
   update_workspace!(ms_solver.workspace, φ.data.H, ψ.A, zero(T), α)
