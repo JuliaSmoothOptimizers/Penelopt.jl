@@ -9,6 +9,11 @@ Logarithmic barrier for the bounds `l ≤ x ≤ u`:
 ϕ(x) = -μ \sum_i [\log(u_i - x_i) + \log(x_i - l_i)],
 ```
 where `μ > 0`. Infinite bounds are ignored, and `ϕ(x) = Inf` if `x` is not strictly feasible.
+
+The barrier is purely primal: no bound multipliers are stored. Whenever they are needed,
+they are the implicit multipliers `z_l = μ (X - L)⁻¹ e` and `z_u = μ (U - X)⁻¹ e`
+(see [`bound_multipliers!`](@ref)), for which the perturbed complementarity
+`Z_l (x - l) = Z_u (u - x) = μ e` holds exactly.
 """
 mutable struct LogBarrier{T<:Real,V<:AbstractVector{T}} <: AbstractBarrier
   μ::T
@@ -16,15 +21,12 @@ mutable struct LogBarrier{T<:Real,V<:AbstractVector{T}} <: AbstractBarrier
   τmin::T # Minimum fraction to boundary
   l::V
   u::V
-  z_l::V
-  z_u::V
 
   function LogBarrier(μ::T, l::V, u::V; τmin = T(0.99)) where {T<:Real,V<:AbstractVector{T}}
     @assert μ > 0 "Barrier parameter μ must be positive."
     @assert length(l) == length(u) && all(l .< u) "Bounds must satisfy l < u."
-    z_l, z_u = similar(l), similar(u)
     τ = max(τmin, 1 - μ)
-    return new{T,V}(μ, τ, τmin, l, u, z_l, z_u)
+    return new{T,V}(μ, τ, τmin, l, u)
   end
 end
 
@@ -34,23 +36,6 @@ end
 function set_fraction_to_boundary!(::Nothing) end
 function set_fraction_to_boundary!(ϕ::LogBarrier)
   ϕ.τ = max(ϕ.τmin, 1 - ϕ.μ)
-end
-
-function initialize_multipliers!(::Nothing) end
-function initialize_multipliers!(ϕ::LogBarrier)
-  for i in eachindex(ϕ.l)
-    l, u = ϕ.l[i], ϕ.u[i]
-    if isfinite(l)
-      ϕ.z_l[i] = 1
-    else
-      ϕ.z_l[i] = 0
-    end
-    if isfinite(u)
-      ϕ.z_u[i] = 1
-    else
-      ϕ.z_u[i] = 0
-    end
-  end
 end
 
 @doc raw"""
@@ -116,8 +101,8 @@ evaluating the rest of the objective. With `ϕ(x) = μ B(x)`:
 
 and the objective correction `Δf = (μ₊ - μ) B(x)` is returned.
 
-The Hessian block of `ϕ` is primal-dual (see `hess_diag!`) and does not depend on `μ`,
-so it needs no correction.
+The Hessian block of `ϕ` is primal (see `hess_diag!`) and scales with `μ`: it is *not*
+corrected here, the caller is responsible for re-evaluating the Hessian of the model.
 """
 function update_barrier!(g, ϕ::LogBarrier{T}, x, tol; kwargs...) where {T}
   μ = ϕ.μ
@@ -134,50 +119,26 @@ end
 update_barrier!(g, ::Nothing, x, tol; kwargs...) = zero(eltype(x))
 
 @doc raw"""
-    compute_mu_compl_error!(compl_res_l, compl_res_u, ϕ::LogBarrier, xk)
+    bound_multipliers!(z_l, z_u, ϕ::LogBarrier, x)
 
-Perturbed complementarity error `max(‖Z_l (x - l) - μe‖∞, ‖Z_u (u - x) - μe‖∞)`,
-using the bound multipliers stored in `ϕ`. Entries for infinite bounds are set to zero.
+Compute the implicit bound multipliers of the primal barrier,
+
+    z_l = μ (X - L)⁻¹ e   and   z_u = μ (U - X)⁻¹ e,
+
+for which `∇f(x) + ∇ϕ(x) = ∇f(x) - z_l + z_u` and `Z_l (x - l) = Z_u (u - x) = μ e`.
+Entries for infinite bounds are set to zero.
 """
-function compute_mu_compl_error!(compl_res_l, compl_res_u, ϕ::LogBarrier, xk)
-  _compl_residual!(compl_res_l, compl_res_u, ϕ, xk, ϕ.μ)
-  return max(norm(compl_res_l, Inf), norm(compl_res_u, Inf))
-end
-
-@doc raw"""
-    compute_compl_error!(compl_res_l, compl_res_u, ϕ::LogBarrier, xk)
-
-Complementarity error `max(‖Z_l (x - l)‖∞, ‖Z_u (u - x)‖∞)`, using the bound multipliers
-stored in `ϕ`. Entries for infinite bounds are set to zero.
-"""
-function compute_compl_error!(compl_res_l, compl_res_u, ϕ::LogBarrier{T}, xk) where {T}
-  _compl_residual!(compl_res_l, compl_res_u, ϕ, xk, zero(T))
-  return max(norm(compl_res_l, Inf), norm(compl_res_u, Inf))
-end
-
-function _compl_residual!(compl_res_l, compl_res_u, ϕ::LogBarrier, xk, μ)
-  for i in eachindex(xk)
+function bound_multipliers!(z_l, z_u, ϕ::LogBarrier, x)
+  μ = ϕ.μ
+  for i in eachindex(x)
     l, u = ϕ.l[i], ϕ.u[i]
-    compl_res_l[i] = isfinite(l) ? ϕ.z_l[i] * (xk[i] - l) - μ : zero(μ)
-    compl_res_u[i] = isfinite(u) ? ϕ.z_u[i] * (u - xk[i]) - μ : zero(μ)
+    z_l[i] = μ * invd(l, x[i] - l)
+    z_u[i] = μ * invd(u, u - x[i])
   end
-  return compl_res_l, compl_res_u
+  return z_l, z_u
 end
 
-compute_mu_compl_error!(compl_res_l, compl_res_u, ::Nothing, xk) = zero(eltype(xk))
-compute_compl_error!(compl_res_l, compl_res_u, ::Nothing, xk) = zero(eltype(xk))
-
-"""
-    update_multipliers!(ϕ, s_z_l, s_z_u)
-
-Take the (already truncated) step on the bound multipliers stored in `ϕ`.
-"""
-function update_multipliers!(ϕ::LogBarrier, s_z_l, s_z_u)
-  ϕ.z_l .+= s_z_l
-  ϕ.z_u .+= s_z_u
-  return ϕ
-end
-update_multipliers!(::Nothing, s_z_l, s_z_u) = nothing
+bound_multipliers!(z_l, z_u, ::Nothing, x) = (fill!(z_l, 0), fill!(z_u, 0))
 
 function set_barrier!(::Nothing) end
 function set_barrier!(ϕ::LogBarrier, μ) where {T,S}
@@ -189,67 +150,54 @@ function get_barrier(ϕ::LogBarrier)
   return ϕ.μ
 end
 
-function compute_compl_ktol(ϕ::LogBarrier, κε)
-  return κε * ϕ.μ
-end
-compute_compl_ktol(ϕ::Nothing, κε) = zero(κε)
+"""
+    get_barrier_parameter(ϕ)
+
+Return `μ`, or zero if there is no barrier. With the implicit bound multipliers
+(see [`bound_multipliers!`](@ref)), `μ` is exactly the complementarity residual
+`max(‖Z_l (x - l)‖∞, ‖Z_u (u - x)‖∞)` of the original problem.
+"""
+get_barrier_parameter(ϕ::LogBarrier) = ϕ.μ
+get_barrier_parameter(::Nothing) = false
+
+"""
+    compute_barrier_ktol(ϕ, κε)
+
+Tolerance `κε μ` on the dual feasibility of the barrier subproblem (Wächter & Biegler, eq. (7)).
+"""
+compute_barrier_ktol(ϕ::LogBarrier, κε) = κε * ϕ.μ
+compute_barrier_ktol(::Nothing, κε) = zero(κε)
 
 @doc raw"""
-    truncate_to_boundary!(s, s_z_l, s_z_u, xk, ϕ::LogBarrier)
+    truncate_to_boundary!(s, xk, ϕ::LogBarrier)
 
 Apply the fraction-to-the-boundary rule (Wächter & Biegler, eq. (15)) so that the next
-iterate stays strictly inside the bounds, and the bound multipliers stay strictly positive.
-
-The largest primal step `α ∈ (0, 1]` is computed so that
+iterate stays strictly inside the bounds. The largest `α ∈ (0, 1]` is computed so that
 
     xk + α s - l ≥ (1 - τ)(xk - l)   and   u - xk - α s ≥ (1 - τ)(u - xk),
 
-and, separately, the largest dual step `α_z ∈ (0, 1]` so that
-
-    zk_L + α_z s_z_l ≥ (1 - τ) zk_L   and   zk_U + α_z s_z_u ≥ (1 - τ) zk_U,
-
-where `τ = ϕ.τ`, `zk_L = ϕ.z_l` and `zk_U = ϕ.z_u`. Then `s` is scaled in place by `α`
-and `s_z = (s_z_l, s_z_u)` is scaled in place by `α_z`. Infinite bounds are ignored. Returns `(α, α_z)`.
+where `τ = ϕ.τ`, and `s` is scaled in place by `α`. Infinite bounds are ignored. Returns `α`.
 """
-function truncate_to_boundary!(s, s_z_l, s_z_u, xk, ϕ::LogBarrier{T}) where {T}
+function truncate_to_boundary!(s, xk, ϕ::LogBarrier{T}) where {T}
   τ = ϕ.τ
-  zk_L, zk_U = ϕ.z_l, ϕ.z_u
   α = one(T)
-  α_z = one(T)
 
   for i in eachindex(xk)
     l, u = ϕ.l[i], ϕ.u[i]
-
-    if isfinite(l)
-      # Primal: only a step towards l can hit the bound.
-      if s[i] < 0
-        α = min(α, -τ * (xk[i] - l) / s[i])
-      end
-      # Dual: only a decreasing multiplier can hit 0.
-      if s_z_l[i] < 0
-        α_z = min(α_z, -τ * zk_L[i] / s_z_l[i])
-      end
+    # Only a step towards l (resp. u) can hit the bound.
+    if isfinite(l) && s[i] < 0
+      α = min(α, -τ * (xk[i] - l) / s[i])
     end
-
-    if isfinite(u)
-      # Primal: only a step towards u can hit the bound.
-      if s[i] > 0
-        α = min(α, τ * (u - xk[i]) / s[i])
-      end
-      if s_z_u[i] < 0
-        α_z = min(α_z, -τ * zk_U[i] / s_z_u[i])
-      end
+    if isfinite(u) && s[i] > 0
+      α = min(α, τ * (u - xk[i]) / s[i])
     end
   end
 
   s .*= α
-  s_z_l .*= α_z
-  s_z_u .*= α_z
-
-  return α, α_z
+  return α
 end
 
-truncate_to_boundary!(s, s_z_l, s_z_u, xk, ::Nothing) = (one(eltype(s)), one(eltype(s)))
+truncate_to_boundary!(s, xk, ::Nothing) = one(eltype(s))
 
 function (ϕ::LogBarrier)(x)
   val = zero(eltype(x))
@@ -266,63 +214,15 @@ function add_grad!(g, ϕ::LogBarrier, x; α = one(ϕ.μ))
   return g
 end
 
-"`h = α * diag(z_l/(x-l) + z_u/(u-x))`"
+"`h = α * μ * diag(1/(x-l)² + 1/(u-x)²)`, the (primal) Hessian of `ϕ`."
 function hess_diag!(h, ϕ::LogBarrier, x, α = one(ϕ.μ))
+  μ = ϕ.μ
   for i in eachindex(h)
-    h[i] = α * (ϕ.z_l[i] * invd(ϕ.l[i], x[i] - ϕ.l[i]) + ϕ.z_u[i] * invd(ϕ.u[i], ϕ.u[i] - x[i]))
+    dl = invd(ϕ.l[i], x[i] - ϕ.l[i])
+    du = invd(ϕ.u[i], ϕ.u[i] - x[i])
+    h[i] = α * μ * (dl^2 + du^2)
   end
   return h
-end
-
-function get_z_l_step!(s_z_l, ϕ::Nothing, x, s_x) end
-function get_z_u_step!(s_z_u, ϕ::Nothing, x, s_x) end
-
-@doc raw"""
-    get_z_l_step!(s_z_l, ϕ::LogBarrier, x, s_x)
-
-Compute the primal-dual step for the lower-bound multipliers (Wächter & Biegler, eq. (12))
-with slack ``x - l``:
-
-    s_z_l = μ/(x-l) - z_l - z_l/(x-l) .* s_x
-
-Entries for infinite lower bounds are set to zero.
-"""
-function get_z_l_step!(s_z_l, ϕ::LogBarrier, x, s_x)
-  μ = ϕ.μ
-  for i in eachindex(x)
-    l = ϕ.l[i]
-    if isfinite(l)
-      d = inv(x[i] - l)
-      s_z_l[i] = μ * d - ϕ.z_l[i] - ϕ.z_l[i] * d * s_x[i]
-    else
-      s_z_l[i] = zero(eltype(s_z_l))
-    end
-  end
-  return s_z_l
-end
-
-@doc raw"""
-    get_z_u_step!(s_z_u, ϕ::LogBarrier, x, s_x)
-
-Compute the primal-dual step for the upper-bound multipliers (Wächter & Biegler, eq. (12))
-with slack ``u - x``, whose step is ``-s_x``:
-
-    s_z_u = μ/(u-x) - z_u + z_u/(u-x) .* s_x
-
-Entries for infinite upper bounds are set to zero.
-"""
-function get_z_u_step!(s_z_u, ϕ::LogBarrier, x, s_x)
-  μ = ϕ.μ
-  for i in eachindex(x)
-    u = ϕ.u[i]
-    if isfinite(u)
-      d = inv(u - x[i])
-      s_z_u[i] = μ * d - ϕ.z_u[i] + ϕ.z_u[i] * d * s_x[i]
-    else
-      s_z_u[i] = zero(eltype(s_z_u))
-    end
-  end
-  return s_z_u
 end
 
 isinterior(ϕ::LogBarrier, x) = all(i -> ϕ.l[i] < x[i] < ϕ.u[i], eachindex(x))

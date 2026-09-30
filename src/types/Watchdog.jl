@@ -15,14 +15,11 @@ mutable struct watchdog_checkpoint{T,V,HV}
   m_fh_hist::V
   s::V
   v::V
-  z_l::V # Bound multipliers of the log barrier (empty if there are no bounds)
-  z_u::V
 end
 
 function watchdog_checkpoint(
   nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
   m_monotone = 5,
-  barrier = nothing,
 ) where {T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
@@ -47,15 +44,12 @@ function watchdog_checkpoint(
     similar(∇f_model, m_monotone-1),
     similar(xk),
     similar(xk),
-    _similar_z(barrier, ∇f_model, :z_l),
-    _similar_z(barrier, ∇f_model, :z_u),
   )
 end
 
 function watchdog_checkpoint(
   nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
   m_monotone = 5,
-  barrier = nothing,
 ) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
@@ -82,24 +76,7 @@ function watchdog_checkpoint(
     similar(∇f_model, m_monotone-1),
     similar(xk),
     similar(xk),
-    _similar_z(barrier, ∇f_model, :z_l),
-    _similar_z(barrier, ∇f_model, :z_u),
   )
-end
-
-_similar_z(::Nothing, v, ::Symbol) = similar(v, 0)
-_similar_z(ϕ::LogBarrier, v, name::Symbol) = similar(getfield(ϕ, name))
-
-_save_bound_multipliers!(checkpoint::watchdog_checkpoint, ::Nothing) = nothing
-function _save_bound_multipliers!(checkpoint::watchdog_checkpoint, ϕ::LogBarrier)
-  checkpoint.z_l .= ϕ.z_l
-  checkpoint.z_u .= ϕ.z_u
-end
-
-_restore_bound_multipliers!(::Nothing, checkpoint::watchdog_checkpoint) = nothing
-function _restore_bound_multipliers!(ϕ::LogBarrier, checkpoint::watchdog_checkpoint)
-  ϕ.z_l .= checkpoint.z_l
-  ϕ.z_u .= checkpoint.z_u
 end
 
 function save!(
@@ -107,8 +84,7 @@ function save!(
   nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x,
   y,
-  stats;
-  barrier = nothing,
+  stats,
 ) where {T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
 
@@ -124,7 +100,6 @@ function save!(
   checkpoint.iter = stats.iter
   checkpoint.fk = stats.solver_specific[:smooth_obj]
   checkpoint.hk = stats.solver_specific[:nonsmooth_obj]
-  _save_bound_multipliers!(checkpoint, barrier)
 end
 
 function save!(
@@ -132,8 +107,7 @@ function save!(
   nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x,
   y,
-  stats;
-  barrier = nothing,
+  stats,
 ) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   φ, ψ = nlp.model, nlp.h
 
@@ -149,15 +123,13 @@ function save!(
   checkpoint.iter = stats.iter
   checkpoint.fk = stats.solver_specific[:smooth_obj]
   checkpoint.hk = stats.solver_specific[:nonsmooth_obj]
-  _save_bound_multipliers!(checkpoint, barrier)
 end
 
 function fallback!(
   nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x,
   y,
-  checkpoint::watchdog_checkpoint;
-  barrier = nothing,
+  checkpoint::watchdog_checkpoint,
 ) where {T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
 
@@ -168,15 +140,13 @@ function fallback!(
   φ.data.σ = checkpoint.σk
   ψ.b .= checkpoint.ck
   ψ.A.vals .= checkpoint.Jkvals
-  _restore_bound_multipliers!(barrier, checkpoint)
 end
 
 function fallback!(
   nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x,
   y,
-  checkpoint::watchdog_checkpoint;
-  barrier = nothing,
+  checkpoint::watchdog_checkpoint,
 ) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   φ, ψ = nlp.model, nlp.h
 
@@ -187,7 +157,6 @@ function fallback!(
   φ.data.σ = checkpoint.σk
   ψ.b .= checkpoint.ck
   ψ.A.vals .= checkpoint.Jkvals
-  _restore_bound_multipliers!(barrier, checkpoint)
 end
 
 function activate!(checkpoint::watchdog_checkpoint)

@@ -8,11 +8,6 @@
   @test_throws AssertionError Penelopt.LogBarrier(-1.0, l, u)
   @test_throws AssertionError Penelopt.LogBarrier(1.0, u, l)
 
-  Penelopt.initialize_multipliers!(ϕ)
-  @test ϕ.z_l == [0.0, 1.0, 1.0, 0.0]
-  @test ϕ.z_u == [1.0, 0.0, 1.0, 0.0]
-  @test isnothing(Penelopt.initialize_multipliers!(nothing))
-
   @testset "push_to_interior!" begin
     # upper only, lower only, two-sided (clamped at u - p_u), free
     x = [5.0, -3.0, 5.0, 7.0]
@@ -44,49 +39,40 @@
 
     h = zeros(4)
     Penelopt.hess_diag!(h, ϕ, x, 2.0)
-    @test h ≈ 2 .* [1 / 0.5, 1 / 0.5, 1 / 0.9 + 1 / 1.0, 0.0]
+    @test h ≈ 2μ .* [1 / 0.5^2, 1 / 0.5^2, 1 / 0.9^2 + 1 / 1.0^2, 0.0]
   end
 
-  @testset "complementarity" begin
-    res_l, res_u = zeros(4), zeros(4)
-    # z = 1 on finite bounds; slacks are x - l = (0.5, 0.9) and u - x = (0.5, 1.0)
-    @test Penelopt.compute_compl_error!(res_l, res_u, ϕ, x) ≈ 1.0
-    @test res_l ≈ [0.0, 0.5, 0.9, 0.0] && res_u ≈ [0.5, 0.0, 1.0, 0.0]
-    @test Penelopt.compute_mu_compl_error!(res_l, res_u, ϕ, x) ≈ 0.9
-    @test res_l ≈ [0.0, 0.4, 0.8, 0.0] && res_u ≈ [0.4, 0.0, 0.9, 0.0]
-    @test !any(isnan, res_l) && !any(isnan, res_u) # infinite bounds do not produce NaN
+  @testset "implicit bound multipliers" begin
+    z_l, z_u = fill(NaN, 4), fill(NaN, 4)
+    Penelopt.bound_multipliers!(z_l, z_u, ϕ, x)
+    # slacks are x - l = (0.5, 0.9) and u - x = (0.5, 1.0)
+    @test z_l ≈ [0.0, μ / 0.5, μ / 0.9, 0.0] && z_u ≈ [μ / 0.5, 0.0, μ / 1.0, 0.0]
+    # ∇ϕ(x) = -z_l + z_u
+    @test Penelopt.add_grad!(zeros(4), ϕ, x) ≈ z_u .- z_l
+    # perturbed complementarity holds exactly on finite bounds
+    @test z_l[2:3] .* (x[2:3] .- l[2:3]) ≈ [μ, μ]
+    @test z_u[[1, 3]] .* (u[[1, 3]] .- x[[1, 3]]) ≈ [μ, μ]
+    @test Penelopt.bound_multipliers!(z_l, z_u, nothing, x) == (zeros(4), zeros(4))
 
-    @test Penelopt.compute_compl_error!(res_l, res_u, nothing, x) == 0
-    @test Penelopt.compute_mu_compl_error!(res_l, res_u, nothing, x) == 0
-    @test Penelopt.compute_compl_ktol(ϕ, 10.0) ≈ 10μ
-    @test Penelopt.compute_compl_ktol(nothing, 10.0) == 0
+    @test Penelopt.get_barrier_parameter(ϕ) == μ
+    @test Penelopt.get_barrier_parameter(nothing) == 0
+    @test Penelopt.compute_barrier_ktol(ϕ, 10.0) ≈ 10μ
+    @test Penelopt.compute_barrier_ktol(nothing, 10.0) == 0
   end
 
-  @testset "multiplier steps and fraction to the boundary" begin
-    s = [1.0, -1.0, 0.5, 10.0]
-    s_z_l, s_z_u = zeros(4), zeros(4)
-
-    Penelopt.get_z_l_step!(s_z_l, ϕ, x, s)
-    Penelopt.get_z_u_step!(s_z_u, ϕ, x, s)
-    @test s_z_l ≈ [0.0, μ / 0.5 - 1 + 1 / 0.5, μ / 0.9 - 1 - 0.5 / 0.9, 0.0]
-    @test s_z_u ≈ [μ / 0.5 - 1 + 1 / 0.5, 0.0, μ / 1.0 - 1 + 0.5 / 1.0, 0.0]
-    @test isnothing(Penelopt.get_z_l_step!(s_z_l, nothing, x, s))
-    @test isnothing(Penelopt.get_z_u_step!(s_z_u, nothing, x, s))
-
-    # Primal: x₁ → u₁ and x₂ → l₂ both give α = τ * 0.5; dual: z_l₂ decreases fastest.
+  @testset "fraction to the boundary" begin
+    # x₁ → u₁ and x₂ → l₂ both give α = τ * 0.5.
     s = [1.0, -1.0, 0.0, 10.0]
-    s_z_l, s_z_u = [0.0, -4.0, 0.0, 0.0], [-0.5, 0.0, 0.0, 0.0]
-    α, α_z = Penelopt.truncate_to_boundary!(s, s_z_l, s_z_u, x, ϕ)
-    @test α ≈ 0.99 * 0.5 && α_z ≈ 0.99 * 0.25
+    α = Penelopt.truncate_to_boundary!(s, x, ϕ)
+    @test α ≈ 0.99 * 0.5
     @test s ≈ α .* [1.0, -1.0, 0.0, 10.0]
-    @test s_z_l ≈ α_z .* [0.0, -4.0, 0.0, 0.0] && s_z_u ≈ α_z .* [-0.5, 0.0, 0.0, 0.0]
     @test Penelopt.isinterior(ϕ, x .+ s)
-    @test Penelopt.truncate_to_boundary!(s, s_z_l, s_z_u, x, nothing) == (1.0, 1.0)
 
-    Penelopt.update_multipliers!(ϕ, s_z_l, s_z_u)
-    @test ϕ.z_l ≈ [0.0, 1.0, 1.0, 0.0] .+ s_z_l && ϕ.z_u ≈ [1.0, 0.0, 1.0, 0.0] .+ s_z_u
-    @test isnothing(Penelopt.update_multipliers!(nothing, s_z_l, s_z_u))
-    Penelopt.initialize_multipliers!(ϕ)
+    # A step moving away from every bound is not truncated.
+    s = [-1.0, 1.0, 0.0, 10.0]
+    @test Penelopt.truncate_to_boundary!(s, x, ϕ) == 1.0
+    @test s == [-1.0, 1.0, 0.0, 10.0]
+    @test Penelopt.truncate_to_boundary!(s, x, nothing) == 1.0
   end
 
   @testset "barrier parameter updates" begin
@@ -120,11 +106,7 @@ end
   ref = ADNLPModel(x -> f(x) + ϕ(x), x, c, [0.0], [0.0])
   bnlp = LogBarrierModel(nlp; μ)
 
-  # The barrier Hessian is primal-dual, Z_l (X - L)⁻¹ + Z_u (U - X)⁻¹. It coincides with
-  # the primal barrier Hessian μ (X - L)⁻² + μ (U - X)⁻² when z = μ / slack.
-  bnlp.ϕ.z_l .= [isfinite(l[i]) ? μ / (x[i] - l[i]) : 0.0 for i in eachindex(x)]
-  bnlp.ϕ.z_u .= [isfinite(u[i]) ? μ / (u[i] - x[i]) : 0.0 for i in eachindex(x)]
-
+  # The barrier is primal: all derivatives match those of f + ϕ exactly.
   @test all(==(-Inf), bnlp.meta.lvar) && all(==(Inf), bnlp.meta.uvar)
   @test get_nnzh(bnlp) == get_nnzh(nlp) + 3
   @test obj(bnlp, x) ≈ obj(ref, x)
