@@ -61,7 +61,7 @@ function build_up_lb_check(H::SparseMatrixCOO{T}, n) where {T}
   # ICNTL(24): null pivot row detection.
   icntl[24] = 1
 
-  S = Mumps{T}(mumps_symmetric, icntl, cntl)
+  S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
   S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
   S.n = n
   S.nnz = length(idx)
@@ -113,7 +113,7 @@ function construct_mumps_workspace(
   # root node.
   icntl[13] = 1
 
-  S = Mumps{T}(mumps_symmetric, icntl, cntl)
+  S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
 
   # Associate the row, cols and vals of the mumps structure with those of H.
   irn, jcn, a = H.data.rows, H.data.cols, H.data.vals
@@ -193,7 +193,7 @@ function construct_mumps_workspace(
   # 1: Null pivot row detection.
   icntl[24] = 1
 
-  S = Mumps{T}(mumps_symmetric, icntl, cntl)
+  S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
 
   # Associate the row, cols and vals of the mumps structure with those of H.
   irn, jcn, a = H.H.data.rows, H.H.data.cols, H.H.data.vals

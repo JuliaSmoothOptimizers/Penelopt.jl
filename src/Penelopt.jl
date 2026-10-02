@@ -8,19 +8,10 @@ Penelopt.jl: A Large-Scale Equality-Constrained Optimization Solver.
 """
 module Penelopt
 
-# Prefer the sequential, MPI-free build of MUMPS (MUMPS_seq_jll) by default,
-# unless the user already requested a custom installation or explicitly set
-# MUMPS_SEQ themselves. MUMPS.jl reads these environment variables at module
-# *load* (i.e. precompile) time, so this only has an effect the first time
-# MUMPS.jl gets precompiled in a given Julia depot/environment.
-if !haskey(ENV, "JULIA_MUMPS_LIBRARY_PATH") && !haskey(ENV, "MUMPS_SEQ")
-  ENV["MUMPS_SEQ"] = "true"
-end
-
 using LinearAlgebra, Printf, SparseArrays
 using NLPModels, NLPModelsModifiers
 using LinearOperators, QuadraticModels, SolverCore, SparseMatricesCOO
-using MPI, MUMPS
+using MUMPS
 
 # Import BLAS functions
 import LinearAlgebra.BLAS: @blasfunc
@@ -28,13 +19,6 @@ import LinearAlgebra: BlasInt, libblastrampoline
 
 import NLPModelsModifiers: get_model, get_op
 import SolverCore: get_status, reset!
-
-function __init__()
-  MPI.Init()
-  if isdefined(MUMPS, :MUMPS_jll)
-    @warn "Penelopt.jl: MUMPS.jl was loaded with its default parallel build, which requires a working MPI installation. Penelopt.jl will still work, but for the best experience we recommend using the sequential MUMPS_seq_jll build instead: set the MUMPS_SEQ environment variable before MUMPS.jl is (re)precompiled."
-  end
-end
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
