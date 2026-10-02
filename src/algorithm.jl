@@ -267,9 +267,6 @@ function SolverCore.solve!(
   y = solver.y
 
   barrier = get_barrier(find_model(LogBarrierModel, nlp))
-
-  # The barrier is primal: the bound multipliers are implicitly z_l = μ (X - L)⁻¹ e and
-  # z_u = μ (U - X)⁻¹ e, so only x has to be initialized.
   push_to_interior!(barrier, x)
 
   shift!(ψ, x)

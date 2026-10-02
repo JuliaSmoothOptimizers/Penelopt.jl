@@ -229,7 +229,7 @@ function conclusion_message(solver, nlp, stats; type = :outer_loop)
     log *= @sprintf("Objective...........: %-+16.15e\n", stats.objective)
     log *= @sprintf("Primal Feasibility..:  %16.15e\n", stats.primal_feas)
     log *= @sprintf("Dual Feasibility....:  %16.15e\n", stats.dual_feas)
-    log *= @sprintf("Barrier parameter...:  %16.15e\n", solver.substats.solver_specific[:mu])
+    log *= @sprintf("Complementarity.....:  %16.15e\n", solver.substats.solver_specific[:mu])
     log *= "\n\n"
     log *= "EXIT: $(stats.status).\n"
     return log
