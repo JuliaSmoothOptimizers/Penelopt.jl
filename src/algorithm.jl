@@ -311,7 +311,7 @@ function SolverCore.solve!(
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), τ0)
   set_penalty!(mk, τ)
-  νsub = 1 / r2n_σmin
+  νsub = sqrt(1 / r2n_σmin)
   set_solver_specific!(solver.substats, :tau, τ)
 
   ## Logging
@@ -400,7 +400,7 @@ function SolverCore.solve!(
     if solver.substats.status == :unbounded
       τ *= 10
       set_penalty!(mk, τ)
-      νsub = 1 / r2n_σmin
+      νsub = sqrt(1 / r2n_σmin)
       shift!(mk, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       set_solver_specific!(solver.substats, :tau, τ)
