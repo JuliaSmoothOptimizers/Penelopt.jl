@@ -4,7 +4,7 @@
   nlp = CUTEstModel(&quot;BT7&quot;)
   stats = L2Penalty(nlp; print_level = 1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">┌ Info: </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>This is Penelopt.jl v1.0.0.
-<span class="sgr36"><span class="sgr1">│ </span></span>Running with linear solver MUMPS v5.8.2.
+<span class="sgr36"><span class="sgr1">│ </span></span>Running with linear solver MUMPS v5.9.1.
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>ScaledModel{Float64, Vector{Float64}, CUTEst.CUTEstModel{Float64}, NLPModels.NLPModelMeta{Float64, Vector{Float64}}}
 <span class="sgr36"><span class="sgr1">│ </span></span>  Problem name: BT7 (scaled)
@@ -34,18 +34,18 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Iter   sIter  Objective       pfeas       dfeas       τ           ptol        dtol        ‖x‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>0      0      +9.0900000e+02  3.44e+03    4.00e+00    1.03e+03    1.00e+00    1.00e+00    2.83e+00
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>1      24     +1.5070984e+02  1.02e-01    6.05e-01    1.03e+03    1.02e-03    6.05e-03    2.45e+00
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>2      14     +1.5120522e+02  1.01e-01    5.40e-03    1.36e+03    1.02e-03    5.12e-05    2.67e+00
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>3      5      +2.1458090e+02  5.26e-02    6.24e-01    1.79e+03    1.02e-03    5.12e-05    2.93e+00
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>4      2      +3.0650000e+02  4.72e-10    5.31e-02    1.79e+03    7.45e-08    5.31e-04    2.96e+00
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>5      1      +3.0650000e+02  3.89e-13    2.85e-07    1.79e+03    7.45e-08    5.12e-05    2.96e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>1      26     +1.5060995e+02  1.02e-01    5.80e-01    1.03e+03    1.02e-03    5.80e-03    2.45e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>2      28     +1.5120521e+02  1.01e-01    5.49e-03    1.36e+03    1.02e-03    5.12e-05    2.67e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>3      7      +2.1445634e+02  5.27e-02    7.31e-01    1.78e+03    1.02e-03    5.12e-05    2.93e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>4      2      +3.0650000e+02  6.21e-10    1.65e-02    1.78e+03    7.45e-08    1.65e-04    2.96e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>5      1      +3.0650000e+02  3.89e-13    2.84e-08    1.78e+03    7.45e-08    5.12e-05    2.96e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Number of Iterations: 5
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Objective...........: +3.064999999992104e+02
 <span class="sgr36"><span class="sgr1">│ </span></span>Primal Feasibility..:  3.888001032237298e-13
-<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.849695997703169e-07
+<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.838234415374622e-08
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><h3 id="Inner-(R2N)-Loop-Header"><a class="docs-heading-anchor" href="#Inner-(R2N)-Loop-Header">Inner (R2N)-Loop Header</a><a id="Inner-(R2N)-Loop-Header-1"></a><a class="docs-heading-anchor-permalink" href="#Inner-(R2N)-Loop-Header" title="Permalink"></a></h3><p>For the inner loop logger, the logger prints the following columns:</p><ul><li><code>Iter</code>: R2N iteration counter (within the current penalized subproblem).</li><li><code>sIter</code>: number of Moré–Sorensen iterations used to compute the current step.</li><li><code>Objective</code>: current value of the penalized objective <span>$f(x) + \tau_k \lVert c(x) \rVert_2$</span>.</li><li><code>pfeas</code>, <code>dfeas</code>: as above.</li><li><code>σ</code>: current R2N quadratic regularization parameter.</li><li><code>ρ</code>: ratio of actual to first-order predicted decrease for the last step.</li><li>An iteration type symbol: <code>w</code> (active watchdog), <code>↗</code> (step rejected, <code>σ</code> increased), <code>=</code> (step accepted, <code>σ</code> unchanged), <code>↘</code> (step accepted, <code>σ</code> decreased).</li><li><code>‖x‖</code>: norm of the current inner iterate.</li><li><code>‖s‖</code>: norm of the last computed step.</li></ul><p>For example,</p><pre><code class="language-julia hljs">  using CUTEst, Penelopt
@@ -53,7 +53,7 @@
   nlp = CUTEstModel(&quot;BT7&quot;)
   stats = L2Penalty(nlp; print_level = 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">┌ Info: </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>This is Penelopt.jl v1.0.0.
-<span class="sgr36"><span class="sgr1">│ </span></span>Running with linear solver MUMPS v5.8.2.
+<span class="sgr36"><span class="sgr1">│ </span></span>Running with linear solver MUMPS v5.9.1.
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>ScaledModel{Float64, Vector{Float64}, CUTEst.CUTEstModel{Float64}, NLPModels.NLPModelMeta{Float64, Vector{Float64}}}
 <span class="sgr36"><span class="sgr1">│ </span></span>  Problem name: BT7 (scaled)
@@ -94,106 +94,127 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      0      +1.7076691e+03  2.80e+00    3.82e+02    8.22e+01    +6.23e-01   ↘     1.46e+00    1.63e+00
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      0      +1.3012830e+03  1.63e+00    5.80e+02    2.74e+01    +7.27e-01   ↘     7.69e-01    1.51e+00
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      0      +2.9219305e+03  1.07e+00    3.41e+02    9.14e+00    +3.64e-01   ↘     2.35e+00    2.32e+00
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      2      +2.6591844e+03  2.64e+00    6.26e+03    3.05e+04    +9.99e-01   ↘     2.33e+00    5.38e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      2      +1.7919128e+03  2.40e+00    4.08e+03    1.02e+04    +9.97e-01   ↘     2.27e+00    1.82e-01
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      1      +3.0616131e+02  1.59e+00    4.27e+03    3.38e+03    +1.01e+00   ↘     2.29e+00    3.42e-01
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      1      +2.7484975e+02  1.55e-01    2.54e+03    1.13e+03    +1.00e+00   ↘     2.31e+00    4.37e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     1      +2.6923664e+02  1.44e-01    9.45e+01    3.76e+02    +1.00e+00   ↘     2.34e+00    6.15e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     1      +2.6586917e+02  1.30e-01    5.28e+01    1.25e+02    +1.00e+00   ↘     2.39e+00    7.15e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     1      +2.6578939e+02  1.15e-01    1.72e+01    4.18e+03    +1.00e+00   ↘     2.40e+00    2.44e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     1      +2.6562959e+02  1.15e-01    1.88e+01    1.39e+03    +1.00e+00   ↘     2.40e+00    6.22e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     1      +2.6534512e+02  1.14e-01    1.70e+01    4.64e+02    +1.00e+00   ↘     2.41e+00    1.37e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 15     1      +2.6505483e+02  1.12e-01    1.32e+01    1.55e+02    +1.00e+00   ↘     2.43e+00    2.14e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 16     1      +2.6504751e+02  1.07e-01    7.31e+00    5.16e+03    +1.00e+00   ↘     2.43e+00    7.80e-04
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 17     1      +2.6502850e+02  1.07e-01    8.80e+00    1.72e+03    +1.00e+00   ↘     2.43e+00    2.13e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     1      +2.6499043e+02  1.07e-01    8.12e+00    5.73e+02    +1.00e+00   ↘     2.44e+00    4.95e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 19     1      +2.6494565e+02  1.06e-01    6.33e+00    1.91e+02    +1.00e+00   ↘     2.44e+00    8.21e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      1      +3.3219848e+02  2.64e+00    6.26e+03    3.05e+03    +1.01e+00   ↘     2.34e+00    5.64e-01
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      1      +2.7243130e+02  1.72e-01    3.79e+03    1.02e+03    +1.00e+00   ↘     2.36e+00    5.56e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      1      +2.6756062e+02  1.37e-01    1.06e+02    3.38e+02    +1.00e+00   ↘     2.38e+00    5.99e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      1      +2.6680859e+02  1.21e-01    4.71e+01    1.13e+03    +1.00e+00   ↘     2.38e+00    1.43e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     1      +2.6580378e+02  1.19e-01    3.80e+01    3.76e+02    +1.00e+00   ↘     2.40e+00    2.67e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     1      +2.6560626e+02  1.14e-01    2.14e+01    1.25e+03    +1.00e+00   ↘     2.40e+00    7.22e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     1      +2.6529076e+02  1.13e-01    1.75e+01    4.18e+02    +1.00e+00   ↘     2.42e+00    1.49e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     1      +2.6522120e+02  1.11e-01    1.18e+01    1.39e+03    +1.00e+00   ↘     2.42e+00    4.22e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     1      +2.6509738e+02  1.10e-01    1.16e+01    4.64e+02    +1.00e+00   ↘     2.43e+00    9.22e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 15     1      +2.6506769e+02  1.08e-01    8.85e+00    1.55e+03    +1.00e+00   ↘     2.43e+00    2.73e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 16     1      +2.6501138e+02  1.07e-01    8.94e+00    5.16e+02    +1.00e+00   ↘     2.43e+00    6.15e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 17     1      +2.6499709e+02  1.06e-01    6.85e+00    1.72e+03    +1.00e+00   ↘     2.44e+00    1.88e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     1      +2.6496901e+02  1.06e-01    7.08e+00    5.73e+02    +1.00e+00   ↘     2.44e+00    4.31e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 19     1      +2.6496161e+02  1.05e-01    5.46e+00    1.91e+03    +1.00e+00   ↘     2.44e+00    1.36e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 20     1      +2.6494430e+02  1.04e-01    3.54e+00    6.37e+03    +1.00e+00   ↘     2.44e+00    3.60e-04
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 21     1      +2.6494063e+02  1.04e-01    5.15e+00    2.12e+03    +1.00e+00   ↘     2.44e+00    9.76e-04
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 22     1      +2.6493318e+02  1.04e-01    4.68e+00    7.08e+02    +9.99e-01   ↘     2.45e+00    2.26e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 23     1      +2.6492471e+02  1.03e-01    3.61e+00    2.36e+02    +9.98e-01   ↘     2.45e+00    3.62e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 24     1      +2.6492067e+02  1.02e-01    1.94e+00    7.86e+01    +9.98e-01   ↘     2.45e+00    3.39e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 20     1      +2.6494675e+02  1.05e-01    5.77e+00    6.37e+02    +9.99e-01   ↘     2.44e+00    3.13e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 21     1      +2.6494276e+02  1.04e-01    4.45e+00    2.12e+03    +1.00e+00   ↘     2.44e+00    1.01e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 22     1      +2.6493460e+02  1.04e-01    4.80e+00    7.08e+02    +9.99e-01   ↘     2.45e+00    2.34e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 23     1      +2.6492527e+02  1.03e-01    3.72e+00    2.36e+02    +9.94e-01   ↘     2.45e+00    3.77e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 24     2      +2.6492407e+02  1.02e-01    2.01e+00    7.86e+02    +1.00e+00   ↘     2.45e+00    6.87e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 25     1      +2.6492122e+02  1.02e-01    1.21e+00    2.62e+02    +9.95e-01   ↘     2.45e+00    2.31e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 26     2      +2.6492095e+02  1.02e-01    1.37e+00    8.74e+02    +1.00e+00   ↘     2.45e+00    2.99e-04
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 24 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.6053568644909773
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 26 iterations.
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.5801996056312508
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>1      24     +1.5070984e+02  1.02e-01    6.05e-01    1.03e+03    1.02e-03    6.05e-03    2.45e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>1      26     +1.5060995e+02  1.02e-01    5.80e-01    1.03e+03    1.02e-03    5.80e-03    2.45e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.03e+03 ‖c(x)‖₂ with tolerance 6.05e-03...
+<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.03e+03 ‖c(x)‖₂ with tolerance 5.80e-03...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      1      +2.6492067e+02  0.00e+00    6.05e-01    7.86e+01    +0.00e+00         2.45e+00    3.39e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      1      +2.6492004e+02  1.02e-01    6.05e-01    2.62e+01    +9.99e-01   ↘     2.45e+00    1.64e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      2      +2.6492004e+02  1.01e-01    9.79e-02    8.74e+03    +1.00e+00   ↘     2.45e+00    4.68e-06
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      2      +2.6492003e+02  1.01e-01    9.09e-02    2.91e+03    +1.00e+00   ↘     2.45e+00    1.36e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      2      +2.6492003e+02  1.01e-01    8.93e-02    9.71e+02    +1.00e+00   ↘     2.45e+00    3.66e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      2      +2.6492002e+02  1.01e-01    8.04e-02    3.24e+02    +1.00e+00   ↘     2.45e+00    8.24e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      2      +2.6492001e+02  1.01e-01    6.04e-02    1.08e+02    +1.00e+00   ↘     2.45e+00    1.24e-04
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      2      +2.6492001e+02  1.01e-01    3.04e-02    3.59e+03    +1.00e+00   ↘     2.45e+00    3.68e-06
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      2      +2.6492001e+02  1.01e-01    2.99e-02    1.20e+03    +1.00e+00   ↘     2.45e+00    1.01e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      2      +2.6492001e+02  1.01e-01    2.75e-02    3.99e+02    +1.00e+00   ↘     2.45e+00    2.38e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     2      +2.6492001e+02  1.01e-01    2.15e-02    1.33e+02    +1.00e+00   ↘     2.45e+00    3.95e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     2      +2.6492001e+02  1.01e-01    1.19e-02    4.44e+03    +1.00e+00   ↘     2.45e+00    1.19e-06
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     2      +2.6492001e+02  1.01e-01    1.20e-02    1.48e+03    +1.00e+00   ↘     2.45e+00    3.35e-06
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     2      +2.6492001e+02  1.01e-01    1.12e-02    4.93e+02    +1.00e+00   ↘     2.45e+00    8.08e-06
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     2      +2.6492001e+02  1.01e-01    9.02e-03    1.64e+02    +9.98e-01   ↘     2.45e+00    1.45e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      2      +2.6492095e+02  0.00e+00    5.80e-01    8.74e+02    +0.00e+00         2.45e+00    2.99e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      2      +2.6492052e+02  1.02e-01    5.80e-01    2.91e+02    +9.99e-01   ↘     2.45e+00    6.50e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      2      +2.6492042e+02  1.02e-01    4.28e-01    9.71e+02    +1.00e+00   ↘     2.45e+00    1.76e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      2      +2.6492024e+02  1.02e-01    3.86e-01    3.24e+02    +1.00e+00   ↘     2.45e+00    3.96e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      2      +2.6492020e+02  1.01e-01    2.90e-01    1.08e+03    +1.00e+00   ↘     2.45e+00    1.08e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      2      +2.6492013e+02  1.01e-01    2.64e-01    3.59e+02    +1.00e+00   ↘     2.45e+00    2.51e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      2      +2.6492011e+02  1.01e-01    2.04e-01    1.20e+03    +1.00e+00   ↘     2.45e+00    6.92e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      2      +2.6492007e+02  1.01e-01    1.88e-01    3.99e+02    +1.00e+00   ↘     2.45e+00    1.64e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      2      +2.6492006e+02  1.01e-01    1.48e-01    1.33e+03    +1.00e+00   ↘     2.45e+00    4.56e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      2      +2.6492005e+02  1.01e-01    1.37e-01    4.44e+02    +1.00e+00   ↘     2.45e+00    1.10e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     2      +2.6492004e+02  1.01e-01    1.11e-01    1.48e+03    +1.00e+00   ↘     2.45e+00    3.09e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     2      +2.6492003e+02  1.01e-01    1.04e-01    4.93e+02    +1.00e+00   ↘     2.45e+00    7.61e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     2      +2.6492003e+02  1.01e-01    8.50e-02    1.64e+03    +1.00e+00   ↘     2.45e+00    2.15e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     2      +2.6492002e+02  1.01e-01    8.01e-02    5.48e+02    +9.99e-01   ↘     2.45e+00    5.39e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     2      +2.6492002e+02  1.01e-01    6.69e-02    1.83e+03    +1.00e+00   ↘     2.45e+00    1.53e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 15     2      +2.6492002e+02  1.01e-01    6.34e-02    6.09e+02    +9.99e-01   ↘     2.45e+00    3.90e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 16     2      +2.6492002e+02  1.01e-01    5.38e-02    2.03e+03    +1.00e+00   ↘     2.45e+00    1.12e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 17     2      +2.6492002e+02  1.01e-01    5.14e-02    6.76e+02    +9.99e-01   ↘     2.45e+00    2.89e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     2      +2.6492002e+02  1.01e-01    4.42e-02    2.25e+03    +1.00e+00   ↘     2.45e+00    8.31e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 19     2      +2.6492002e+02  1.01e-01    4.25e-02    7.52e+02    +9.98e-01   ↘     2.45e+00    2.18e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 20     2      +2.6492001e+02  1.01e-01    3.70e-02    2.51e+02    +9.90e-01   ↘     2.45e+00    4.56e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 21     2      +2.6492001e+02  1.01e-01    2.59e-02    8.35e+02    +9.99e-01   ↘     2.45e+00    1.23e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 22     2      +2.6492001e+02  1.01e-01    2.32e-02    2.78e+02    +9.94e-01   ↘     2.45e+00    2.63e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 23     2      +2.6492001e+02  1.01e-01    1.66e-02    9.28e+02    +1.00e+00   ↘     2.45e+00    7.21e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 24     2      +2.6492001e+02  1.01e-01    1.51e-02    3.09e+02    +9.97e-01   ↘     2.45e+00    1.58e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 25     2      +2.6492001e+02  1.01e-01    1.11e-02    1.03e+03    +1.00e+00   ↘     2.45e+00    4.41e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 26     2      +2.6492001e+02  1.01e-01    1.03e-02    3.44e+02    +9.98e-01   ↘     2.45e+00    9.86e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 27     2      +2.6492001e+02  1.01e-01    7.68e-03    1.15e+03    +1.00e+00   ↘     2.45e+00    2.81e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 28     2      +2.6492001e+02  1.01e-01    7.29e-03    3.82e+02    +9.99e-01   ↘     2.45e+00    6.35e-06
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 14 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.005396792656184795
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 28 iterations.
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.005494017423279708
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>2      14     +1.5120522e+02  1.01e-01    5.40e-03    1.36e+03    1.02e-03    5.12e-05    2.67e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>2      28     +1.5120521e+02  1.01e-01    5.49e-03    1.36e+03    1.02e-03    5.12e-05    2.67e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.36e+03 ‖c(x)‖₂ with tolerance 5.12e-05...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      2      +2.9459851e+02  0.00e+00    5.40e-03    1.64e+02    +0.00e+00         2.67e+00    1.45e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      1      +2.9199984e+02  4.67e-02    1.03e+02    5.48e+03    +9.99e-01   ↘     2.67e+00    5.01e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      1      +2.9196392e+02  5.07e-02    6.66e+01    1.83e+03    +9.95e-01   ↘     2.67e+00    9.46e-04
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      1      +2.9195675e+02  5.15e-02    4.59e+00    6.09e+02    +9.90e-01   ↘     2.67e+00    1.64e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      1      +2.9194306e+02  5.19e-02    2.24e+00    2.03e+02    +9.58e-01   ↘     2.67e+00    4.06e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      1      +2.9194297e+02  5.26e-02    1.84e+00    6.76e+03    +1.00e+00   ↘     2.67e+00    4.29e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      2      +2.9459856e+02  0.00e+00    5.49e-03    3.82e+02    +0.00e+00         2.67e+00    6.35e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      1      +2.9196604e+02  4.67e-02    1.03e+02    1.27e+03    +9.99e-01   ↘     2.67e+00    5.66e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      1      +2.9195366e+02  5.14e-02    1.81e+01    4.24e+02    +9.18e-01   ↘     2.67e+00    2.38e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      1      +2.9195187e+02  5.20e-02    2.28e+00    1.41e+03    +9.98e-01   ↘     2.67e+00    4.89e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      1      +2.9194643e+02  5.21e-02    1.54e+00    4.71e+02    +9.80e-01   ↘     2.67e+00    1.62e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      1      +2.9194551e+02  5.24e-02    1.71e+00    1.57e+03    +9.99e-01   ↘     2.67e+00    3.04e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      1      +2.9194229e+02  5.25e-02    1.07e+00    5.24e+02    +9.92e-01   ↘     2.67e+00    1.13e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      1      +2.9194181e+02  5.27e-02    1.33e+00    1.75e+03    +1.00e+00   ↘     2.67e+00    1.88e-04
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 5 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.6240560007296344
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 7 iterations.
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.7311309283174767
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>3      5      +2.1458090e+02  5.26e-02    6.24e-01    1.79e+03    1.02e-03    5.12e-05    2.93e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>3      7      +2.1445634e+02  5.27e-02    7.31e-01    1.78e+03    1.02e-03    5.12e-05    2.93e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.79e+03 ‖c(x)‖₂ with tolerance 5.12e-05...
+<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.78e+03 ‖c(x)‖₂ with tolerance 5.12e-05...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      1      +3.2603812e+02  0.00e+00    6.24e-01    6.76e+03    +0.00e+00         2.93e+00    4.29e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0660458e+02  1.15e-02    1.32e+02    2.25e+03    +9.92e-01   ↘     2.96e+00    3.27e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      0      +3.0650000e+02  6.20e-05    1.62e+02    7.52e+02    +1.00e+00   ↘     2.96e+00    2.38e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      1      +3.2586101e+02  0.00e+00    7.31e-01    1.75e+03    +0.00e+00         2.93e+00    1.88e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0660157e+02  1.15e-02    1.32e+02    5.82e+02    +9.91e-01   ↘     2.96e+00    3.32e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      0      +3.0650000e+02  6.08e-05    4.26e+01    1.94e+02    +1.00e+00   ↘     2.96e+00    2.98e-05
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 2 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.05310006854843343
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.016542476191571214
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>4      2      +3.0650000e+02  4.72e-10    5.31e-02    1.79e+03    7.45e-08    5.31e-04    2.96e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>4      2      +3.0650000e+02  6.21e-10    1.65e-02    1.78e+03    7.45e-08    1.65e-04    2.96e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.79e+03 ‖c(x)‖₂ with tolerance 5.31e-04...
+<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.78e+03 ‖c(x)‖₂ with tolerance 1.65e-04...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +3.0650000e+02  0.00e+00    5.31e-02    7.52e+02    +0.00e+00         2.96e+00    2.38e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0650000e+02  4.72e-10    5.31e-02    2.51e+02    +1.00e+00   ↘     2.96e+00    3.95e-10
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +3.0650000e+02  0.00e+00    1.65e-02    1.94e+02    +0.00e+00         2.96e+00    2.98e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0650000e+02  6.21e-10    1.65e-02    6.47e+01    +1.00e+00   ↘     2.96e+00    1.48e-10
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 1 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.8496959977031687e-7
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.838234415374622e-8
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>5      1      +3.0650000e+02  3.89e-13    2.85e-07    1.79e+03    7.45e-08    5.12e-05    2.96e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>5      1      +3.0650000e+02  3.89e-13    2.84e-08    1.78e+03    7.45e-08    5.12e-05    2.96e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Number of Iterations: 5
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Objective...........: +3.064999999992104e+02
 <span class="sgr36"><span class="sgr1">│ </span></span>Primal Feasibility..:  3.888001032237298e-13
-<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.849695997703169e-07
+<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.838234415374622e-08
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><h3 id="MS-Loop-Header"><a class="docs-heading-anchor" href="#MS-Loop-Header">MS-Loop Header</a><a id="MS-Loop-Header-1"></a><a class="docs-heading-anchor-permalink" href="#MS-Loop-Header" title="Permalink"></a></h3><div class="admonition is-warning" id="Warning-83e7922efc67ac99"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-83e7922efc67ac99" title="Permalink"></a></header><div class="admonition-body"><p>Using <code>print_level = 3</code> prints out a lot of information (you are printing 3 nested loops), as you will see below. We recommend to use <code>print_level &lt; 3</code> first before increasing the value.</p></div></div><p>For the Moré–Sorensen loop logger, the logger prints the following columns:</p><ul><li><code>Iter</code>: Moré–Sorensen iteration counter (within the current R2N step computation).</li><li><code>σ</code>: current primal regularization parameter of the augmented system.</li><li><code>α</code>: current dual regularization parameter of the augmented system.</li><li><code>‖y‖</code>: norm of the dual step computed by solving the augmented system, compared against the trust-region radius <code>Δ</code>.</li><li><code>Δ</code>: current trust-region radius.</li><li><code>inertia</code>: observed inertia <span>$(n_+, n_0, n_-)$</span> of the augmented system, i.e., the number of positive, zero, and negative eigenvalues.</li><li><code>lsolve</code>: status reported by the linear solver for the last system solved.</li><li><code>descent</code>: whether the computed step was found to be a descent direction for the quadratic model (<code>true</code>/<code>false</code>); see <code>ms_accept_descent</code>.</li></ul><p>For example,</p><pre><code class="language-julia hljs">  using CUTEst, Penelopt
@@ -201,7 +222,7 @@
   nlp = CUTEstModel(&quot;BT7&quot;)
   stats = L2Penalty(nlp; print_level = 3)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">┌ Info: </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>This is Penelopt.jl v1.0.0.
-<span class="sgr36"><span class="sgr1">│ </span></span>Running with linear solver MUMPS v5.8.2.
+<span class="sgr36"><span class="sgr1">│ </span></span>Running with linear solver MUMPS v5.9.1.
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>ScaledModel{Float64, Vector{Float64}, CUTEst.CUTEstModel{Float64}, NLPModels.NLPModelMeta{Float64, Vector{Float64}}}
 <span class="sgr36"><span class="sgr1">│ </span></span>  Problem name: BT7 (scaled)
@@ -236,7 +257,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +5.7728911e+03  Inf         Inf         2.22e-16    +0.00e+00         2.83e+00    9.83e-310
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +5.7728911e+03  Inf         Inf         2.22e-16    +0.00e+00         2.83e+00    NaN
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
@@ -281,158 +302,156 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      9.14e+03    2.22e-16    2.18e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      9.14e+04    3.00e-13    2.92e+05    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      9.14e+04    2.13e-04    6.07e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      9.14e+04    2.31e-03    1.05e+03    1.03e+03    (5,0,3)     success     true
-<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
-<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
-<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      2      +2.6591844e+03  2.64e+00    6.26e+03    3.05e+04    +9.99e-01   ↘     2.33e+00    5.38e-02
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.05e+04    2.22e-16    8.89e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.05e+04    2.04e-04    2.93e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.05e+04    1.32e-03    1.21e+03    1.03e+03    (5,0,3)     success     true
-<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
-<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
-<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      2      +1.7919128e+03  2.40e+00    4.08e+03    1.02e+04    +9.97e-01   ↘     2.27e+00    1.82e-01
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.02e+04    2.22e-16    2.21e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.02e+04    1.73e-04    1.26e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      9.14e+03    1.79e-04    1.51e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      1      +3.0616131e+02  1.59e+00    4.27e+03    3.38e+03    +1.01e+00   ↘     2.29e+00    3.42e-01
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      1      +3.3219848e+02  2.64e+00    6.26e+03    3.05e+03    +1.01e+00   ↘     2.34e+00    5.64e-01
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.38e+03    2.22e-16    7.49e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.38e+03    1.53e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.05e+03    2.22e-16    6.49e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.05e+03    1.41e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      1      +2.7484975e+02  1.55e-01    2.54e+03    1.13e+03    +1.00e+00   ↘     2.31e+00    4.37e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      1      +2.7243130e+02  1.72e-01    3.79e+03    1.02e+03    +1.00e+00   ↘     2.36e+00    5.56e-02
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.13e+03    2.22e-16    3.51e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.13e+03    1.38e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.02e+03    2.22e-16    3.23e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.02e+03    1.28e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     1      +2.6923664e+02  1.44e-01    9.45e+01    3.76e+02    +1.00e+00   ↘     2.34e+00    6.15e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      1      +2.6756062e+02  1.37e-01    1.06e+02    3.38e+02    +1.00e+00   ↘     2.38e+00    5.99e-02
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.76e+02    2.22e-16    2.29e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.76e+02    1.22e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.38e+02    2.22e-16    2.22e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.38e+03    3.00e-13    7.94e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.38e+03    1.26e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     1      +2.6586917e+02  1.30e-01    5.28e+01    1.25e+02    +1.00e+00   ↘     2.39e+00    7.15e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      1      +2.6680859e+02  1.21e-01    4.71e+01    1.13e+03    +1.00e+00   ↘     2.38e+00    1.43e-02
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.25e+02    2.22e-16    1.85e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.25e+03    3.00e-13    4.02e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.25e+04    3.00e-13    2.59e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.25e+04    1.22e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.13e+03    2.22e-16    3.73e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.13e+03    1.21e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     1      +2.6578939e+02  1.15e-01    1.72e+01    4.18e+03    +1.00e+00   ↘     2.40e+00    2.44e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     1      +2.6580378e+02  1.19e-01    3.80e+01    3.76e+02    +1.00e+00   ↘     2.40e+00    2.67e-02
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.18e+03    2.22e-16    9.67e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.18e+03    1.21e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.76e+02    2.22e-16    2.32e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.76e+03    3.00e-13    8.80e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.76e+03    1.19e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     1      +2.6562959e+02  1.15e-01    1.88e+01    1.39e+03    +1.00e+00   ↘     2.40e+00    6.22e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     1      +2.6560626e+02  1.14e-01    2.14e+01    1.25e+03    +1.00e+00   ↘     2.40e+00    7.22e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.39e+03    2.22e-16    4.28e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.39e+03    1.18e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.25e+03    2.22e-16    4.00e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.25e+03    1.17e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     1      +2.6534512e+02  1.14e-01    1.70e+01    4.64e+02    +1.00e+00   ↘     2.41e+00    1.37e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     1      +2.6529076e+02  1.13e-01    1.75e+01    4.18e+02    +1.00e+00   ↘     2.42e+00    1.49e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.18e+02    2.22e-16    2.41e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.18e+03    3.00e-13    9.58e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.18e+03    1.15e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     1      +2.6522120e+02  1.11e-01    1.18e+01    1.39e+03    +1.00e+00   ↘     2.42e+00    4.22e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.39e+03    2.22e-16    4.26e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.39e+03    1.14e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     1      +2.6509738e+02  1.10e-01    1.16e+01    4.64e+02    +1.00e+00   ↘     2.43e+00    9.22e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.64e+02    2.22e-16    2.50e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.64e+02    1.13e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.64e+03    3.00e-13    1.04e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.64e+03    1.13e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 15     1      +2.6505483e+02  1.12e-01    1.32e+01    1.55e+02    +1.00e+00   ↘     2.43e+00    2.14e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 15     1      +2.6506769e+02  1.08e-01    8.85e+00    1.55e+03    +1.00e+00   ↘     2.43e+00    2.73e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.55e+02    2.22e-16    1.91e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.55e+03    3.00e-13    4.54e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.55e+04    3.00e-13    3.10e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.55e+04    1.12e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.55e+03    2.22e-16    4.55e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.55e+03    1.12e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 16     1      +2.6504751e+02  1.07e-01    7.31e+00    5.16e+03    +1.00e+00   ↘     2.43e+00    7.80e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 16     1      +2.6501138e+02  1.07e-01    8.94e+00    5.16e+02    +1.00e+00   ↘     2.43e+00    6.15e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.16e+03    2.22e-16    1.14e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.16e+03    1.12e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.16e+02    2.22e-16    2.59e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.16e+03    3.00e-13    1.14e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.16e+03    1.11e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 17     1      +2.6502850e+02  1.07e-01    8.80e+00    1.72e+03    +1.00e+00   ↘     2.43e+00    2.13e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 17     1      +2.6499709e+02  1.06e-01    6.85e+00    1.72e+03    +1.00e+00   ↘     2.44e+00    1.88e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.72e+03    2.22e-16    4.87e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.72e+03    1.11e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.72e+03    2.22e-16    4.86e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.72e+03    1.10e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     1      +2.6499043e+02  1.07e-01    8.12e+00    5.73e+02    +1.00e+00   ↘     2.44e+00    4.95e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     1      +2.6496901e+02  1.06e-01    7.08e+00    5.73e+02    +1.00e+00   ↘     2.44e+00    4.31e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.73e+02    2.22e-16    2.70e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.73e+02    1.10e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.73e+03    3.00e-13    1.24e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.73e+03    1.10e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 19     1      +2.6494565e+02  1.06e-01    6.33e+00    1.91e+02    +1.00e+00   ↘     2.44e+00    8.21e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 19     1      +2.6496161e+02  1.05e-01    5.46e+00    1.91e+03    +1.00e+00   ↘     2.44e+00    1.36e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.91e+02    2.22e-16    1.98e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.91e+03    3.00e-13    5.20e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.91e+04    3.00e-13    3.75e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.91e+04    1.09e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.91e+03    2.22e-16    5.21e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.91e+03    1.09e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 20     1      +2.6494430e+02  1.04e-01    3.54e+00    6.37e+03    +1.00e+00   ↘     2.44e+00    3.60e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 20     1      +2.6494675e+02  1.05e-01    5.77e+00    6.37e+02    +9.99e-01   ↘     2.44e+00    3.13e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.37e+03    2.22e-16    1.36e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      6.37e+03    1.08e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.37e+02    2.22e-16    2.82e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.37e+03    3.00e-13    1.36e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      6.37e+03    1.09e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 21     1      +2.6494063e+02  1.04e-01    5.15e+00    2.12e+03    +1.00e+00   ↘     2.44e+00    9.76e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 21     1      +2.6494276e+02  1.04e-01    4.45e+00    2.12e+03    +1.00e+00   ↘     2.44e+00    1.01e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
@@ -441,7 +460,7 @@
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 22     1      +2.6493318e+02  1.04e-01    4.68e+00    7.08e+02    +9.99e-01   ↘     2.45e+00    2.26e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 22     1      +2.6493460e+02  1.04e-01    4.80e+00    7.08e+02    +9.99e-01   ↘     2.45e+00    2.34e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
@@ -450,111 +469,112 @@
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 23     1      +2.6492471e+02  1.03e-01    3.61e+00    2.36e+02    +9.98e-01   ↘     2.45e+00    3.62e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 23     1      +2.6492527e+02  1.03e-01    3.72e+00    2.36e+02    +9.94e-01   ↘     2.45e+00    3.77e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.36e+02    2.22e-16    2.07e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.36e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.36e+03    3.00e-13    6.03e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.36e+03    1.07e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.36e+03    1.08e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 24     2      +2.6492407e+02  1.02e-01    2.01e+00    7.86e+02    +1.00e+00   ↘     2.45e+00    6.87e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      7.86e+02    2.22e-16    3.09e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      7.86e+02    1.07e-04    1.04e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 24     1      +2.6492067e+02  1.02e-01    1.94e+00    7.86e+01    +9.98e-01   ↘     2.45e+00    3.39e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 25     1      +2.6492122e+02  1.02e-01    1.21e+00    2.62e+02    +9.95e-01   ↘     2.45e+00    2.31e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.62e+02    2.22e-16    2.11e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.62e+03    3.00e-13    6.51e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.62e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.62e+03    1.08e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 26     2      +2.6492095e+02  1.02e-01    1.37e+00    8.74e+02    +1.00e+00   ↘     2.45e+00    2.99e-04
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 24 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.6053568644909773
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 26 iterations.
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.5801996056312508
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>1      24     +1.5070984e+02  1.02e-01    6.05e-01    1.03e+03    1.02e-03    6.05e-03    2.45e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>1      26     +1.5060995e+02  1.02e-01    5.80e-01    1.03e+03    1.02e-03    5.80e-03    2.45e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.03e+03 ‖c(x)‖₂ with tolerance 6.05e-03...
+<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.03e+03 ‖c(x)‖₂ with tolerance 5.80e-03...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      1      +2.6492067e+02  0.00e+00    6.05e-01    7.86e+01    +0.00e+00         2.45e+00    3.39e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      2      +2.6492095e+02  0.00e+00    5.80e-01    8.74e+02    +0.00e+00         2.45e+00    2.99e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      7.86e+01    2.22e-16    1.77e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      7.86e+01    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
-<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
-<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
-<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      1      +2.6492004e+02  1.02e-01    6.05e-01    2.62e+01    +9.99e-01   ↘     2.45e+00    1.64e-03
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.62e+01    2.22e-16    1.68e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.62e+02    3.00e-13    2.11e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.62e+03    3.00e-13    6.50e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.62e+04    3.00e-13    5.05e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.62e+04    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.62e+04    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      8.74e+02    2.22e-16    3.25e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      8.74e+02    1.07e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      8.74e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      2      +2.6492004e+02  1.01e-01    9.79e-02    8.74e+03    +1.00e+00   ↘     2.45e+00    4.68e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      2      +2.6492052e+02  1.02e-01    5.80e-01    2.91e+02    +9.99e-01   ↘     2.45e+00    6.50e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      8.74e+03    2.22e-16    1.79e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      8.74e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      8.74e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
-<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
-<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
-<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      2      +2.6492003e+02  1.01e-01    9.09e-02    2.91e+03    +1.00e+00   ↘     2.45e+00    1.36e-05
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.91e+03    2.22e-16    7.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.91e+02    2.22e-16    2.17e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.91e+03    3.00e-13    7.05e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.91e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.91e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      2      +2.6492003e+02  1.01e-01    8.93e-02    9.71e+02    +1.00e+00   ↘     2.45e+00    3.66e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      2      +2.6492042e+02  1.02e-01    4.28e-01    9.71e+02    +1.00e+00   ↘     2.45e+00    1.76e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      9.71e+02    2.22e-16    3.43e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      9.71e+02    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      9.71e+02    1.07e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      9.71e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      2      +2.6492002e+02  1.01e-01    8.04e-02    3.24e+02    +1.00e+00   ↘     2.45e+00    8.24e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      2      +2.6492024e+02  1.02e-01    3.86e-01    3.24e+02    +1.00e+00   ↘     2.45e+00    3.96e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.24e+02    2.22e-16    2.23e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.24e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.24e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.24e+03    3.00e-13    7.65e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.24e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.24e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      2      +2.6492001e+02  1.01e-01    6.04e-02    1.08e+02    +1.00e+00   ↘     2.45e+00    1.24e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      2      +2.6492020e+02  1.01e-01    2.90e-01    1.08e+03    +1.00e+00   ↘     2.45e+00    1.08e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.08e+02    2.22e-16    1.83e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.08e+03    3.00e-13    3.63e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.08e+04    3.00e-13    2.17e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.08e+04    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.08e+04    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.08e+03    2.22e-16    3.63e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.08e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.08e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      2      +2.6492001e+02  1.01e-01    3.04e-02    3.59e+03    +1.00e+00   ↘     2.45e+00    3.68e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      2      +2.6492013e+02  1.01e-01    2.64e-01    3.59e+02    +1.00e+00   ↘     2.45e+00    2.51e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.59e+03    2.22e-16    8.31e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.59e+02    2.22e-16    2.29e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.59e+03    3.00e-13    8.32e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.59e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.59e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      2      +2.6492001e+02  1.01e-01    2.99e-02    1.20e+03    +1.00e+00   ↘     2.45e+00    1.01e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      2      +2.6492011e+02  1.01e-01    2.04e-01    1.20e+03    +1.00e+00   ↘     2.45e+00    6.92e-05
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
@@ -564,39 +584,39 @@
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      2      +2.6492001e+02  1.01e-01    2.75e-02    3.99e+02    +1.00e+00   ↘     2.45e+00    2.38e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      2      +2.6492007e+02  1.01e-01    1.88e-01    3.99e+02    +1.00e+00   ↘     2.45e+00    1.64e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.99e+02    2.22e-16    2.37e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.99e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.99e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.99e+03    3.00e-13    9.06e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.99e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.99e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     2      +2.6492001e+02  1.01e-01    2.15e-02    1.33e+02    +1.00e+00   ↘     2.45e+00    3.95e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      2      +2.6492006e+02  1.01e-01    1.48e-01    1.33e+03    +1.00e+00   ↘     2.45e+00    4.56e-05
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.33e+02    2.22e-16    1.87e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.33e+03    3.00e-13    4.10e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.33e+04    3.00e-13    2.64e+04    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.33e+04    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.33e+04    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.33e+03    2.22e-16    4.10e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.33e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.33e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     2      +2.6492001e+02  1.01e-01    1.19e-02    4.44e+03    +1.00e+00   ↘     2.45e+00    1.19e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 9      2      +2.6492005e+02  1.01e-01    1.37e-01    4.44e+02    +1.00e+00   ↘     2.45e+00    1.10e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.44e+03    2.22e-16    9.89e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.44e+02    2.22e-16    2.45e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.44e+03    3.00e-13    9.89e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.44e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      4.44e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     2      +2.6492001e+02  1.01e-01    1.20e-02    1.48e+03    +1.00e+00   ↘     2.45e+00    3.35e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 10     2      +2.6492004e+02  1.01e-01    1.11e-01    1.48e+03    +1.00e+00   ↘     2.45e+00    3.09e-05
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
@@ -606,135 +626,324 @@
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     2      +2.6492001e+02  1.01e-01    1.12e-02    4.93e+02    +1.00e+00   ↘     2.45e+00    8.08e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 11     2      +2.6492003e+02  1.01e-01    1.04e-01    4.93e+02    +1.00e+00   ↘     2.45e+00    7.61e-05
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.93e+02    2.22e-16    2.54e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.93e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      4.93e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.93e+03    3.00e-13    1.08e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.93e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      4.93e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     2      +2.6492001e+02  1.01e-01    9.02e-03    1.64e+02    +9.98e-01   ↘     2.45e+00    1.45e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 12     2      +2.6492003e+02  1.01e-01    8.50e-02    1.64e+03    +1.00e+00   ↘     2.45e+00    2.15e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.64e+03    2.22e-16    4.68e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.64e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.64e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 13     2      +2.6492002e+02  1.01e-01    8.01e-02    5.48e+02    +9.99e-01   ↘     2.45e+00    5.39e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.48e+02    2.22e-16    2.64e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.48e+03    3.00e-13    1.18e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.48e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      5.48e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 14     2      +2.6492002e+02  1.01e-01    6.69e-02    1.83e+03    +1.00e+00   ↘     2.45e+00    1.53e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.83e+03    2.22e-16    5.02e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.83e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.83e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 15     2      +2.6492002e+02  1.01e-01    6.34e-02    6.09e+02    +9.99e-01   ↘     2.45e+00    3.90e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.09e+02    2.22e-16    2.76e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.09e+03    3.00e-13    1.30e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      6.09e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      6.09e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 16     2      +2.6492002e+02  1.01e-01    5.38e-02    2.03e+03    +1.00e+00   ↘     2.45e+00    1.12e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.03e+03    2.22e-16    5.40e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.03e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.03e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 17     2      +2.6492002e+02  1.01e-01    5.14e-02    6.76e+02    +9.99e-01   ↘     2.45e+00    2.89e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.76e+02    2.22e-16    2.88e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.76e+03    3.00e-13    1.42e+04    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      6.76e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      6.76e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     2      +2.6492002e+02  1.01e-01    4.42e-02    2.25e+03    +1.00e+00   ↘     2.45e+00    8.31e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.25e+03    2.22e-16    5.82e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.25e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.25e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 19     2      +2.6492002e+02  1.01e-01    4.25e-02    7.52e+02    +9.98e-01   ↘     2.45e+00    2.18e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      7.52e+02    2.22e-16    3.02e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      7.52e+02    1.06e-04    1.03e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      7.52e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 20     2      +2.6492001e+02  1.01e-01    3.70e-02    2.51e+02    +9.90e-01   ↘     2.45e+00    4.56e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.51e+02    2.22e-16    2.09e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.51e+03    3.00e-13    6.28e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.51e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.51e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 21     2      +2.6492001e+02  1.01e-01    2.59e-02    8.35e+02    +9.99e-01   ↘     2.45e+00    1.23e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      8.35e+02    2.22e-16    3.18e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      8.35e+02    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      8.35e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 22     2      +2.6492001e+02  1.01e-01    2.32e-02    2.78e+02    +9.94e-01   ↘     2.45e+00    2.63e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.78e+02    2.22e-16    2.14e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.78e+03    3.00e-13    6.80e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.78e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      2.78e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 23     2      +2.6492001e+02  1.01e-01    1.66e-02    9.28e+02    +1.00e+00   ↘     2.45e+00    7.21e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      9.28e+02    2.22e-16    3.35e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      9.28e+02    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      9.28e+02    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 24     2      +2.6492001e+02  1.01e-01    1.51e-02    3.09e+02    +9.97e-01   ↘     2.45e+00    1.58e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.09e+02    2.22e-16    2.20e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.09e+03    3.00e-13    7.38e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.09e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.09e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 25     2      +2.6492001e+02  1.01e-01    1.11e-02    1.03e+03    +1.00e+00   ↘     2.45e+00    4.41e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.03e+03    2.22e-16    3.54e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.03e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.03e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 26     2      +2.6492001e+02  1.01e-01    1.03e-02    3.44e+02    +9.98e-01   ↘     2.45e+00    9.86e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.44e+02    2.22e-16    2.26e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.44e+03    3.00e-13    8.02e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.44e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      3.44e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 27     2      +2.6492001e+02  1.01e-01    7.68e-03    1.15e+03    +1.00e+00   ↘     2.45e+00    2.81e-06
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.15e+03    2.22e-16    3.75e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.15e+03    1.06e-04    1.04e+03    1.03e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 2      1.15e+03    1.07e-04    1.03e+03    1.03e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 2 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 28     2      +2.6492001e+02  1.01e-01    7.29e-03    3.82e+02    +9.99e-01   ↘     2.45e+00    6.35e-06
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 14 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.005396792656184795
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 28 iterations.
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.005494017423279708
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>2      14     +1.5120522e+02  1.01e-01    5.40e-03    1.36e+03    1.02e-03    5.12e-05    2.67e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>2      28     +1.5120521e+02  1.01e-01    5.49e-03    1.36e+03    1.02e-03    5.12e-05    2.67e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.36e+03 ‖c(x)‖₂ with tolerance 5.12e-05...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      2      +2.9459851e+02  0.00e+00    5.40e-03    1.64e+02    +0.00e+00         2.67e+00    1.45e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      2      +2.9459856e+02  0.00e+00    5.49e-03    3.82e+02    +0.00e+00         2.67e+00    6.35e-06
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.64e+02    2.22e-16    2.03e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.64e+03    3.00e-13    4.07e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.64e+04    3.00e-13    2.46e+04    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.64e+04    4.09e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.82e+02    2.22e-16    2.33e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      3.82e+03    3.00e-13    7.09e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      3.82e+03    4.10e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      1      +2.9199984e+02  4.67e-02    1.03e+02    5.48e+03    +9.99e-01   ↘     2.67e+00    5.01e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      1      +2.9196604e+02  4.67e-02    1.03e+02    1.27e+03    +9.99e-01   ↘     2.67e+00    5.66e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.48e+03    2.22e-16    9.27e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.48e+03    4.10e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.27e+03    2.22e-16    3.52e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.27e+03    4.15e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      1      +2.9196392e+02  5.07e-02    6.66e+01    1.83e+03    +9.95e-01   ↘     2.67e+00    9.46e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      1      +2.9195366e+02  5.14e-02    1.81e+01    4.24e+02    +9.18e-01   ↘     2.67e+00    2.38e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.83e+03    2.22e-16    4.27e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.83e+03    4.13e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.24e+02    2.22e-16    2.37e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.24e+03    3.00e-13    7.59e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.24e+03    4.15e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      1      +2.9195675e+02  5.15e-02    4.59e+00    6.09e+02    +9.90e-01   ↘     2.67e+00    1.64e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      1      +2.9195187e+02  5.20e-02    2.28e+00    1.41e+03    +9.98e-01   ↘     2.67e+00    4.89e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.09e+02    2.22e-16    2.62e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      6.09e+02    4.21e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.41e+03    2.22e-16    3.72e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.41e+03    4.18e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      1      +2.9194306e+02  5.19e-02    2.24e+00    2.03e+02    +9.58e-01   ↘     2.67e+00    4.06e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 4      1      +2.9194643e+02  5.21e-02    1.54e+00    4.71e+02    +9.80e-01   ↘     2.67e+00    1.62e-03
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.03e+02    2.22e-16    2.07e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.03e+03    3.00e-13    4.58e+03    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.03e+04    3.00e-13    2.97e+04    1.36e+03    (5,0,3)     success     false
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      2.03e+04    4.18e-05    1.37e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.71e+02    2.22e-16    2.44e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      4.71e+03    3.00e-13    8.26e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      4.71e+03    4.17e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      1      +2.9194297e+02  5.26e-02    1.84e+00    6.76e+03    +1.00e+00   ↘     2.67e+00    4.29e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 5      1      +2.9194551e+02  5.24e-02    1.71e+00    1.57e+03    +9.99e-01   ↘     2.67e+00    3.04e-04
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.57e+03    2.22e-16    3.95e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      1.57e+03    4.20e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 6      1      +2.9194229e+02  5.25e-02    1.07e+00    5.24e+02    +9.92e-01   ↘     2.67e+00    1.13e-03
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.24e+02    2.22e-16    2.51e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.24e+03    3.00e-13    9.00e+03    1.36e+03    (5,0,3)     success     false
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 1      5.24e+03    4.19e-05    1.36e+03    1.36e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
+<span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 1 iterations.
+<span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 7      1      +2.9194181e+02  5.27e-02    1.33e+00    1.75e+03    +1.00e+00   ↘     2.67e+00    1.88e-04
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 5 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.6240560007296344
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 7 iterations.
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.7311309283174767
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>3      5      +2.1458090e+02  5.26e-02    6.24e-01    1.79e+03    1.02e-03    5.12e-05    2.93e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>3      7      +2.1445634e+02  5.27e-02    7.31e-01    1.78e+03    1.02e-03    5.12e-05    2.93e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.79e+03 ‖c(x)‖₂ with tolerance 5.12e-05...
+<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.78e+03 ‖c(x)‖₂ with tolerance 5.12e-05...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      1      +3.2603812e+02  0.00e+00    6.24e-01    6.76e+03    +0.00e+00         2.93e+00    4.29e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      1      +3.2586101e+02  0.00e+00    7.31e-01    1.75e+03    +0.00e+00         2.93e+00    1.88e-04
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      6.76e+03    2.22e-16    3.19e+03    1.79e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.75e+03    2.22e-16    2.23e+03    1.78e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 0 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0660458e+02  1.15e-02    1.32e+02    2.25e+03    +9.92e-01   ↘     2.96e+00    3.27e-02
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0660157e+02  1.15e-02    1.32e+02    5.82e+02    +9.91e-01   ↘     2.96e+00    3.32e-02
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      2.25e+03    2.22e-16    1.89e+03    1.79e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      5.82e+02    2.22e-16    1.89e+03    1.78e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 0 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      0      +3.0650000e+02  6.20e-05    1.62e+02    7.52e+02    +1.00e+00   ↘     2.96e+00    2.38e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      0      +3.0650000e+02  6.08e-05    4.26e+01    1.94e+02    +1.00e+00   ↘     2.96e+00    2.98e-05
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 2 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.05310006854843343
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.016542476191571214
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>4      2      +3.0650000e+02  4.72e-10    5.31e-02    1.79e+03    7.45e-08    5.31e-04    2.96e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>4      2      +3.0650000e+02  6.21e-10    1.65e-02    1.78e+03    7.45e-08    1.65e-04    2.96e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.79e+03 ‖c(x)‖₂ with tolerance 5.31e-04...
+<span class="sgr36"><span class="sgr1">└ </span></span>            |  Solving subproblem minₓ f(x) + 1.78e+03 ‖c(x)‖₂ with tolerance 1.65e-04...
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +3.0650000e+02  0.00e+00    5.31e-02    7.52e+02    +0.00e+00         2.96e+00    2.38e-05
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +3.0650000e+02  0.00e+00    1.65e-02    1.94e+02    +0.00e+00         2.96e+00    2.98e-05
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      7.52e+02    2.22e-16    1.89e+03    1.79e+03    (5,0,3)     success     true
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>            | 0      1.94e+02    2.22e-16    1.89e+03    1.78e+03    (5,0,3)     success     true
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>            |
 <span class="sgr36"><span class="sgr1">│ </span></span>                  |  Step computed with status first_order after 0 iterations.
 <span class="sgr36"><span class="sgr1">└ </span></span>                  | -----------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0650000e+02  4.72e-10    5.31e-02    2.51e+02    +1.00e+00   ↘     2.96e+00    3.95e-10
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.0650000e+02  6.21e-10    1.65e-02    6.47e+01    +1.00e+00   ↘     2.96e+00    1.48e-10
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 1 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.8496959977031687e-7
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.838234415374622e-8
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>5      1      +3.0650000e+02  3.89e-13    2.85e-07    1.79e+03    7.45e-08    5.12e-05    2.96e+00
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>5      1      +3.0650000e+02  3.89e-13    2.84e-08    1.78e+03    7.45e-08    5.12e-05    2.96e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Number of Iterations: 5
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Objective...........: +3.064999999992104e+02
 <span class="sgr36"><span class="sgr1">│ </span></span>Primal Feasibility..:  3.888001032237298e-13
-<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.849695997703169e-07
+<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.838234415374622e-08
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
-<span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><div class="admonition is-success" id="Reading-lsolve-f41570b18f8a0767"><header class="admonition-header">Reading `lsolve`<a class="admonition-anchor" href="#Reading-lsolve-f41570b18f8a0767" title="Permalink"></a></header><div class="admonition-body"><p>The <code>lsolve</code> column reports the status returned directly by the chosen <code>linear_solver</code> (see <a href="../options/#Linear-Solver">options</a>) for the corresponding factorization/solve. A value other than <code>success</code> typically triggers either a regularization increase or a fallback strategy (e.g., switching MUMPS to an indefinite factorization), and does not necessarily indicate that the overall Moré–Sorensen iteration failed.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../options/">« Options</a><a class="docs-footer-nextpage" href="../performance/">Performance »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Friday 2 October 2026 20:30">Friday 2 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><div class="admonition is-success" id="Reading-lsolve-f41570b18f8a0767"><header class="admonition-header">Reading `lsolve`<a class="admonition-anchor" href="#Reading-lsolve-f41570b18f8a0767" title="Permalink"></a></header><div class="admonition-body"><p>The <code>lsolve</code> column reports the status returned directly by the chosen <code>linear_solver</code> (see <a href="../options/#Linear-Solver">options</a>) for the corresponding factorization/solve. A value other than <code>success</code> typically triggers either a regularization increase or a fallback strategy (e.g., switching MUMPS to an indefinite factorization), and does not necessarily indicate that the overall Moré–Sorensen iteration failed.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../options/">« Options</a><a class="docs-footer-nextpage" href="../performance/">Performance »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Friday 2 October 2026 21:43">Friday 2 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
