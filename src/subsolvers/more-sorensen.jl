@@ -242,8 +242,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     )
   end
 
+  is_pos_def = up_lb_is_pos_def(solver_workspace)
   if norm_x1 <= Δ || (is_descent && accept_descent)
-    if up_lb_is_pos_def(solver_workspace) ||
+    if is_pos_def ||
        (is_descent && accept_descent && check_cauchy_decrease(solver, reg_nlp; ηC = ηC))
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
@@ -254,10 +255,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
       return
     end
+  end
 
-    # Neither positive-definiteness of H + σI, nor (when applicable) the
-    # Cauchy decrease condition, could certify x1: increase σ and re-solve
-    # instead of accepting it here.
+  if !is_pos_def
     return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
   end
 
