@@ -11,6 +11,4 @@ coverage:
         threshold: 0.5%
 
 ignore:
-  - "ext/PeneloptHSLExt.jl"
-  - "ext/HSL"
   - "src/logging.jl"

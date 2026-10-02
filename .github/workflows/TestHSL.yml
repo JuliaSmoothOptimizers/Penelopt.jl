@@ -1,0 +1,74 @@
+name: Test HSL
+
+# MA57 needs a licensed HSL_jll.jl, which cannot be redistributed and is
+# therefore not available on GitHub-hosted runners. Like HSL.jl, this job runs
+# on the JuliaSmoothOptimizers self-hosted runner `moonshot`, where licensed
+# copies of HSL_jll.jl are stored under /scratch/github-actions/actions_runner_hsl.
+# See https://github.com/JuliaSmoothOptimizers/HSL.jl/blob/main/.github/workflows/ci.yml
+
+on:
+  push:
+    branches:
+      - main
+    tags: ["*"]
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "ext/**"
+      - "test/**"
+      - "*.toml"
+      - ".github/workflows/TestHSL.yml"
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# The self-hosted runner is shared across the organization: do not queue
+# outdated runs of the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-hsl:
+    name: Julia ${{ matrix.version }} - HSL_jll ${{ matrix.hsl-version }} - ${{ github.event_name }}
+    # Never run code from forks on the self-hosted runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: moonshot
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "lts"
+          - "1"
+        hsl-version:
+          - "2025.7.21"
+    env:
+      HSL_VERSION: ${{ matrix.hsl-version }}
+      # Make test/test-hsl.jl fail if MA57 is not functional on this runner.
+      PENELOPT_TEST_HSL: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: x64
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Install licensed HSL_jll.jl
+        shell: julia --color=yes --project=. {0}
+        run: |
+          using Pkg
+          path_HSL_jll = "/scratch/github-actions/actions_runner_hsl/HSL_jll.jl.v" * ENV["HSL_VERSION"]
+          isdir(path_HSL_jll) || error("Licensed HSL_jll.jl not found at $(path_HSL_jll)")
+          Pkg.develop(path = path_HSL_jll)
+      - name: Test Penelopt.jl with HSL
+        shell: julia --color=yes --project=. {0}
+        run: |
+          using Pkg
+          Pkg.test("Penelopt"; coverage = true)
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v4
+        with:
+          file: lcov.info
+          flags: hsl
+          token: ${{ secrets.CODECOV_TOKEN }}
