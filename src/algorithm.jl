@@ -70,7 +70,7 @@ function L2PenaltySolver(
   set_solver_specific!(substats, :rho, T(0))
   set_solver_specific!(substats, :smooth_obj, T(0))
   set_solver_specific!(substats, :nonsmooth_obj, T(0))
-  set_solver_specific!(substats, :compl_error, T(0))
+  set_solver_specific!(substats, :mu, T(0))
 
   return L2PenaltySolver(
     x,
@@ -200,8 +200,6 @@ function SolverCore.solve!(
   dual_inf_rtol::T = zero(T),
   primal_inf_atol::T = zero(T),
   primal_inf_rtol::T = zero(T),
-  compl_inf_atol::T = zero(T),
-  compl_inf_rtol::T = zero(T),
   max_eval::Int = -1,
   max_time::Float64 = 30.0,
   max_iter::Int = 100,
@@ -269,10 +267,6 @@ function SolverCore.solve!(
   y = solver.y
 
   barrier = get_barrier(find_model(LogBarrierModel, nlp))
-
-  # TODO: users should be able to pass z_l_0 and z_u_0 as keyword arguments
-  # Initialize z_l, z_u
-  initialize_multipliers!(barrier)
   push_to_interior!(barrier, x)
 
   shift!(ψ, x)
@@ -295,27 +289,26 @@ function SolverCore.solve!(
   dual_feas = least_square_dual_feas!(solver)
   solver.subsolver.y .= solver.y
 
-  compl_feas = compute_compl_error!(
-      solver.subsolver.compl_res_l,
-      solver.subsolver.compl_res_u,
-      barrier,
-      x,
-    )
-
   primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
-  compl_tol = max(compl_inf_atol, atol) + max(compl_inf_rtol, rtol) * compl_feas
+
+  # With implicit multipliers z = μ / slack, the complementarity residual of the original
+  # problem is exactly μ: the barrier parameter is driven down to `dual_tol / 10` and
+  # termination only requires μ ≤ dual_tol.
+  barrier_tol = dual_tol
 
   primal_ktol = one(primal_tol)
   dual_ktol = min(one(dual_tol), max(μ * dual_feas, dual_tol))
   dual_krtol = T(0)
-  compl_ktol = compute_compl_ktol(barrier, κε)
+  barrier_ktol = compute_barrier_ktol(barrier, κε)
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
   set_residuals!(stats, dual_feas, primal_feas)
 
-  solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
+  set_solver_specific!(solver.substats, :mu, get_barrier_parameter(barrier))
+
+  solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && get_barrier_parameter(barrier) ≤ barrier_tol
 
   ## Scaling
   scaling_model = find_model(ScaledModel, nlp)
@@ -374,9 +367,8 @@ function SolverCore.solve!(
       x = x,
 
       ## Termination arguments
-      atol = max(dual_ktol, compl_ktol),
+      atol = max(dual_ktol, barrier_ktol),
       rtol = dual_krtol,
-      # compl_atol = compl_ktol,
       max_iter = r2n_max_iter,
       ms_max_iter = ms_max_iter,
       max_time = max_time - stats.elapsed_time,
@@ -437,15 +429,9 @@ function SolverCore.solve!(
     ## Compute feasibility 
     primal_feas = kkt_primal_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
+    barrier_feas = get_barrier_parameter(barrier)
 
-    compl_feas = compute_compl_error!(
-      solver.subsolver.compl_res_l,
-      solver.subsolver.compl_res_u,
-      barrier,
-      x,
-    )
-
-    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && (primal_feas > primal_tol || compl_feas > compl_tol))
+    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && (primal_feas > primal_tol || barrier_feas > barrier_tol))
       # Update penalty parameter
       τ₊ = max(τ + τmin, norm(y, 1))
       if extrapolate!(x, solver, τ₊, τ)
@@ -492,22 +478,25 @@ function SolverCore.solve!(
       first_increase = false
     end
 
-    if compl_feas > compl_tol && !isnothing(barrier)
-
-      Δf = update_barrier!(φ.data.c, barrier, x, compl_tol)
-      compl_ktol = compute_compl_ktol(barrier, κε)
+    if !isnothing(barrier) && barrier.μ > barrier_tol / 10
+      Δf = update_barrier!(φ.data.c, barrier, x, barrier_tol)
+      barrier_ktol = compute_barrier_ktol(barrier, κε)
       fx = solver.substats.solver_specific[:smooth_obj] + Δf
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       solver.∇fk .= φ.data.c
+      # The primal barrier Hessian μ (X - L)⁻² + μ (U - X)⁻² scales with μ: re-evaluate the
+      # Hessian of the model (gradient, constraints and quasi-Newton data are left untouched).
+      shift!(φ, penalty_pb.model, x, ∇f = φ.data.c, y = y)
     end
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev < hx
       τmin *= 10
     end
 
-    set_solver_specific!(solver.substats, :compl_error, compl_feas)
+    barrier_feas = get_barrier_parameter(barrier)
+    set_solver_specific!(solver.substats, :mu, barrier_feas)
 
-    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && compl_feas ≤ compl_tol
+    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && barrier_feas ≤ barrier_tol
 
     # Infeasiblity detection
     if stats.iter % infeasible_iter == 0

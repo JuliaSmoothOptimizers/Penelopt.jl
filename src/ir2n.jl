@@ -10,12 +10,8 @@ mutable struct PenaltyR2NSolver{
   xk::V
   y::V
   dual_res::V
-  compl_res_l::V
-  compl_res_u::V
   xkn::V
   s::V
-  s_z_l::V
-  s_z_u::V
   m_fh_hist::V
   subsolver::ST
   subpb::PB
@@ -44,24 +40,14 @@ function PenaltyR2NSolver(
   set_solver_specific!(substats, :alpha, 0)
   subsolver = MoreSorensenSolver(subpb; solver = Symbol(linear_solver))
 
-  barrier = find_model(LogBarrierModel, penalty_nlp.model)
-
-  checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone, barrier = get_barrier(barrier))
-  s_z_l = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_l) 
-  s_z_u = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_u)
-  compl_res_l = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_l)
-  compl_res_u = isnothing(barrier) ? T[] : similar(barrier.ϕ.z_u)
+  checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
 
   return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb),typeof(checkpoint)}(
     xk,
     y,
     dual_res,
-    compl_res_l,
-    compl_res_u,
     xkn,
     s,
-    s_z_l,
-    s_z_u,
     m_fh_hist,
     subsolver,
     subpb,
@@ -86,7 +72,6 @@ function SolverCore.solve!(
   x::V = reg_nlp.model.meta.x0,
   atol::T = √eps(T),
   rtol::T = √eps(T),
-  compl_atol::T = √eps(T),
   print_level::Int = 0,
   verbose::Int = 0,
   max_iter::Int = 1000,
@@ -133,8 +118,6 @@ function SolverCore.solve!(
   ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
   s, y, dual_res = solver.s, solver.y, solver.dual_res
-  compl_res_l, compl_res_u = solver.compl_res_l, solver.compl_res_u
-  s_z_l, s_z_u = solver.s_z_l, solver.s_z_u
   m_fh_hist = solver.m_fh_hist
   watchdog_checkpoint = solver.checkpoint
   # A checkpoint left active by a previous call refers to a stale model (penalty, barrier
@@ -202,19 +185,15 @@ function SolverCore.solve!(
   while !done
 
     # Check stopping criteria
+    # With a primal barrier, ∇fk already contains ∇ϕ(xk) = -z_l + z_u with the implicit
+    # multipliers z = μ / slack, so the perturbed complementarity holds exactly and only
+    # the dual residual has to be checked.
     dual_res .= ∇fk
     mul!(dual_res, ψ.A', y, one(T), one(T))
 
-    compl_error = compute_mu_compl_error!(
-      compl_res_l,
-      compl_res_u,
-      barrier,
-      xk,
-    )
-
     set_primal_residual!(stats, norm(ψ.b, Inf))
     set_dual_residual!(stats, norm(dual_res, Inf))
-    solved = stats.dual_feas ≤ atol && compl_error ≤ atol
+    solved = stats.dual_feas ≤ atol
 
     if stats.iter == 0
       atol += stats.dual_feas * rtol
@@ -232,7 +211,7 @@ function SolverCore.solve!(
 
     # Check the watchdog
     if check_watchdog!(watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, watchdog_η0)
-      fallback!(mk, xk, y, watchdog_checkpoint; barrier = barrier)
+      fallback!(mk, xk, y, watchdog_checkpoint)
       φ.data.σ *= γ^watchdog_max_iter
       σk = φ.data.σ
       hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
@@ -263,16 +242,7 @@ function SolverCore.solve!(
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
 
-    get_z_l_step!(s_z_l, barrier, xk, s)
-    get_z_u_step!(s_z_u, barrier, xk, s)
-
-    truncate_to_boundary!(
-      s,
-      s_z_l,
-      s_z_u,
-      xk,
-      barrier,
-    )
+    truncate_to_boundary!(s, xk, barrier)
 
     # Step acceptance
     xkn .= xk .+ s
@@ -288,9 +258,6 @@ function SolverCore.solve!(
 
     if η1 ≤ ρk < Inf
       xk .= xkn
-
-      #update bound multipliers
-      update_multipliers!(barrier, s_z_l, s_z_u)
 
       #update functions
       fk, hk = fkn, hkn
@@ -322,12 +289,9 @@ function SolverCore.solve!(
 
         if η2 ≤ fρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
-          save!(watchdog_checkpoint, mk, xk, y, stats; barrier = barrier)
+          save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
           xk .= xkn
-
-          #update bound multipliers
-          update_multipliers!(barrier, s_z_l, s_z_u)
 
           #update functions
           fk, hk = fkn, hkn
