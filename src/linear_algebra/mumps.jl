@@ -567,7 +567,7 @@ end
 function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
 
-  MUMPS.set_cntl!(mumps, 1, mumps.cntl[1] / 10)
+  MUMPS.set_cntl!(mumps, 1, max(mumps.cntl[1] / 10, eps(eltype(workspace.x))))
   MUMPS.set_icntl!(mumps, 10, 10)
 end
 
