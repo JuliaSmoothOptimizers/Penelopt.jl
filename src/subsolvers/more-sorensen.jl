@@ -257,7 +257,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     end
   end
 
-  !is_pos_def && (max_iter = min(max_iter, 2)) # If the matrix is not positive definite, we will escalate and restart.
+  !is_pos_def && (max_iter = min(max_iter, 5)) # If the matrix is not positive definite, we will escalate and restart.
 
   # [ H + σI Aᵀ][x'] = -[0]
   # [   A    0 ][y'] = -[x] 
