@@ -584,7 +584,7 @@ function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
     workspace._n_precise = 0
   elseif relative_error < eps(eltype(workspace.x)) * 100 
     workspace._n_precise += 1
-    if workspace._n_precise > 5
+    if workspace._n_precise > 20
       decrease_pivtol!(workspace)
     end
   else
