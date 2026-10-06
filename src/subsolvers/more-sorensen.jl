@@ -249,8 +249,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   # Either H + σI is positive definite or the step satisfies
   # f_l + τ_l‖c(x_l)‖₂ - (f_l + ∇f_lᵀs_l + τ_l‖c(x_l) + J(x_l)s_l‖₂) ≥ ηC‖(H_l + σ_lI)s_l‖₂²
-  pos_def_check = up_lb_is_pos_def(solver_workspace) || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
-  
+  pos_def_check =
+    up_lb_is_pos_def(solver_workspace) || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
+
   if converged && pos_def_check
     set_solution!(stats, @view x1[1:n])
     set_status!(stats, :first_order)
