@@ -22,6 +22,7 @@ mutable struct PenaltyMUMPSWorkspace{
   _Hcheck::WPC # Preallocated, reused MUMPS instance for up_lb_is_pos_def_exact!
   _Hcheck_idx::Vector{Int} # Fixed indices into H.data.vals for the H + σI block
   _Hcheck_a::V # Preallocated values buffer for _Hcheck, refreshed on each call
+  _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
 
 function get_H(
@@ -96,7 +97,7 @@ function construct_mumps_workspace(
   icntl[2], icntl[3], icntl[4] = 0, 0, 0
 
   # Max number of iterative refinement steps
-  icntl[10] = 10
+  icntl[10] = 5
 
   # ICNTL(11): error analysis
   # 2: Main statistics (recommended)
@@ -150,6 +151,7 @@ function construct_mumps_workspace(
     Scheck,
     idx,
     a_check,
+    0
   )
 end
 
@@ -176,7 +178,7 @@ function construct_mumps_workspace(
   icntl[2], icntl[3], icntl[4] = 0, 0, 0
 
   # Max number of iterative refinement steps
-  icntl[10] = 10
+  icntl[10] = 5
 
   # ICNTL(11): error analysis
   # 2: Main statistics (recommended)
@@ -228,6 +230,7 @@ function construct_mumps_workspace(
     nothing,
     Int[],
     zeros(T, 0),
+    0
   )
 end
 
@@ -561,14 +564,14 @@ function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
 
   MUMPS.set_cntl!(mumps, 1, 1e-2)
-  MUMPS.set_icntl!(mumps, 10, -10)
+  MUMPS.set_icntl!(mumps, 10, -5)
 end
 
 function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
 
-  MUMPS.set_cntl!(mumps, 1, mumps.cntl[1] / 10)
-  MUMPS.set_icntl!(mumps, 10, 10)
+  MUMPS.set_cntl!(mumps, 1, max(mumps.cntl[1] / 10, eps(eltype(workspace.x))))
+  MUMPS.set_icntl!(mumps, 10, 5)
 end
 
 function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
@@ -578,14 +581,20 @@ function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
   if relative_error > sqrt(eps(eltype(workspace.x)))
     increase_pivtol!(workspace)
     workspace.status = :failed
-  elseif relative_error < eps(eltype(workspace.x)) / 100
-    decrease_pivtol!(workspace)
+    workspace._n_precise = 0
+  elseif relative_error < eps(eltype(workspace.x)) * 100 
+    workspace._n_precise += 1
+    if workspace._n_precise > 20
+      decrease_pivtol!(workspace)
+    end
+  else
+    workspace._n_precise = 0
   end
 end
 
 function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   set_n_fact!(workspace, 0)
-  MUMPS.set_icntl!(workspace.M, 10, 10)
+  MUMPS.set_icntl!(workspace.M, 10, 5)
   MUMPS.set_cntl!(workspace.M, 1, eps(eltype(workspace.x)))
 end
 
