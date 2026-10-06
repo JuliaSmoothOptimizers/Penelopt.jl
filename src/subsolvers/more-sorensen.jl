@@ -260,7 +260,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     print_level > 0 && @info conclusion_message(solver, stats)
 
     return
-  elseif !pos_def_check
+  elseif converged && !pos_def_check
     return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
   end
 
