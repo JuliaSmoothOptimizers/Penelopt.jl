@@ -151,7 +151,7 @@ function construct_mumps_workspace(
     Scheck,
     idx,
     a_check,
-    0
+    0,
   )
 end
 
@@ -230,7 +230,7 @@ function construct_mumps_workspace(
     nothing,
     Int[],
     zeros(T, 0),
-    0
+    0,
   )
 end
 
@@ -582,7 +582,7 @@ function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
     increase_pivtol!(workspace)
     workspace.status = :failed
     workspace._n_precise = 0
-  elseif relative_error < eps(eltype(workspace.x)) * 100 
+  elseif relative_error < eps(eltype(workspace.x)) * 100
     workspace._n_precise += 1
     if workspace._n_precise > 20
       decrease_pivtol!(workspace)
