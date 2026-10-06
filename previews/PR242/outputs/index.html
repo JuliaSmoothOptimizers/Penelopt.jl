@@ -43,7 +43,7 @@
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Objective...........: +3.603797671466713e+02
 <span class="sgr36"><span class="sgr1">│ </span></span>Primal Feasibility..:  1.872504373778838e-10
-<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.128663933070271e-05
+<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.128663933061057e-05
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><h3 id="Inner-(R2N)-Loop-Header"><a class="docs-heading-anchor" href="#Inner-(R2N)-Loop-Header">Inner (R2N)-Loop Header</a><a id="Inner-(R2N)-Loop-Header-1"></a><a class="docs-heading-anchor-permalink" href="#Inner-(R2N)-Loop-Header" title="Permalink"></a></h3><p>For the inner loop logger, the logger prints the following columns:</p><ul><li><code>Iter</code>: R2N iteration counter (within the current penalized subproblem).</li><li><code>sIter</code>: number of Moré–Sorensen iterations used to compute the current step.</li><li><code>Objective</code>: current value of the penalized objective <span>$f(x) + \tau_k \lVert c(x) \rVert_2$</span>.</li><li><code>pfeas</code>, <code>dfeas</code>: as above.</li><li><code>σ</code>: current R2N quadratic regularization parameter.</li><li><code>ρ</code>: ratio of actual to first-order predicted decrease for the last step.</li><li>An iteration type symbol: <code>w</code> (active watchdog), <code>↗</code> (step rejected, <code>σ</code> increased), <code>=</code> (step accepted, <code>σ</code> unchanged), <code>↘</code> (step accepted, <code>σ</code> decreased).</li><li><code>‖x‖</code>: norm of the current inner iterate.</li><li><code>‖s‖</code>: norm of the last computed step.</li></ul><p>For example,</p><pre><code class="language-julia hljs">  using CUTEst, Penelopt
@@ -86,7 +86,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +5.7728911e+03  Inf         Inf         4.93e-32    +0.00e+00         2.83e+00    1.20e-309
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +5.7728911e+03  Inf         Inf         4.93e-32    +0.00e+00         2.83e+00    1.38e-309
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +2.7548283e+03  4.00e+00    1.37e+03    1.64e+02    +4.97e-01   ↘     2.25e+00    1.93e+00
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 2      1      +1.6755576e+03  2.34e+00    8.49e+02    5.48e+02    +6.65e-01   ↘     1.63e+00    8.28e-01
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 3      1      +1.1175802e+03  1.49e+00    1.07e+03    1.83e+02    +8.86e-01   ↘     1.02e+00    7.88e-01
@@ -107,7 +107,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     0      +4.0399915e+02  1.12e-05    2.81e+00    8.35e+02    +1.00e+00   ↘     1.87e+00    2.85e-04
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 18 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.7131904261233021
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.7131904261233006
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>1      18     +4.0399907e+02  8.11e-08    7.13e-01    1.03e+03    7.45e-08    7.13e-03    1.87e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      0      +3.6038014e+02  1.73e-04    1.85e-01    1.27e+00    +1.00e+00   ↘     2.08e+00    1.06e-03
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 8 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.003117103168322655
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.003117103168322442
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>2      8      +3.6037969e+02  4.10e-07    3.12e-03    1.03e+03    7.45e-08    5.12e-05    2.08e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
@@ -138,7 +138,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.6037977e+02  4.10e-07    3.12e-03    4.24e-01    +1.00e+00   ↘     2.08e+00    2.04e-05
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 1 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.128663933070271e-5
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.128663933061057e-5
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>3      1      +3.6037977e+02  1.87e-10    2.13e-05    1.03e+03    7.45e-08    5.12e-05    2.08e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>
@@ -147,7 +147,7 @@
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Objective...........: +3.603797671466713e+02
 <span class="sgr36"><span class="sgr1">│ </span></span>Primal Feasibility..:  1.872504373778838e-10
-<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.128663933070271e-05
+<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.128663933061057e-05
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><h3 id="MS-Loop-Header"><a class="docs-heading-anchor" href="#MS-Loop-Header">MS-Loop Header</a><a id="MS-Loop-Header-1"></a><a class="docs-heading-anchor-permalink" href="#MS-Loop-Header" title="Permalink"></a></h3><div class="admonition is-warning" id="Warning-83e7922efc67ac99"><header class="admonition-header">Warning<a class="admonition-anchor" href="#Warning-83e7922efc67ac99" title="Permalink"></a></header><div class="admonition-body"><p>Using <code>print_level = 3</code> prints out a lot of information (you are printing 3 nested loops), as you will see below. We recommend to use <code>print_level &lt; 3</code> first before increasing the value.</p></div></div><p>For the Moré–Sorensen loop logger, the logger prints the following columns:</p><ul><li><code>Iter</code>: Moré–Sorensen iteration counter (within the current R2N step computation).</li><li><code>σ</code>: current primal regularization parameter of the augmented system.</li><li><code>α</code>: current dual regularization parameter of the augmented system.</li><li><code>‖y‖</code>: norm of the dual step computed by solving the augmented system, compared against the trust-region radius <code>Δ</code>.</li><li><code>Δ</code>: current trust-region radius.</li><li><code>inertia</code>: observed inertia <span>$(n_+, n_0, n_-)$</span> of the augmented system, i.e., the number of positive, zero, and negative eigenvalues.</li><li><code>lsolve</code>: status reported by the linear solver for the last system solved.</li><li><code>descent</code>: whether the computed step was found to be a descent direction for the quadratic model (<code>true</code>/<code>false</code>); see <code>ms_accept_descent</code>.</li></ul><p>For example,</p><pre><code class="language-julia hljs">  using CUTEst, Penelopt
@@ -190,7 +190,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | Iter   sIter  Objective       pfeas       dfeas       σ           ρ           Type  ‖x‖         ‖s‖
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +5.7728911e+03  Inf         Inf         4.93e-32    +0.00e+00         2.83e+00    9.80e-310
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 0      0      +5.7728911e+03  Inf         Inf         4.93e-32    +0.00e+00         2.83e+00    6.90e-310
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | Iter   σ           α           ‖y‖         Δ           inertia     lsolve      descent
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>            | -----------------------------------------------------------------------------------------------------
@@ -348,7 +348,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 18     0      +4.0399915e+02  1.12e-05    2.81e+00    8.35e+02    +1.00e+00   ↘     1.87e+00    2.85e-04
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 18 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.7131904261233021
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.7131904261233006
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>1      18     +4.0399907e+02  8.11e-08    7.13e-01    1.03e+03    7.45e-08    7.13e-03    1.87e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
@@ -423,7 +423,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 8      0      +3.6038014e+02  1.73e-04    1.85e-01    1.27e+00    +1.00e+00   ↘     2.08e+00    1.06e-03
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 8 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.003117103168322655
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 0.003117103168322442
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>2      8      +3.6037969e+02  4.10e-07    3.12e-03    1.03e+03    7.45e-08    5.12e-05    2.08e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      | ----------------------------------------------------------------------------------------------------------------
@@ -442,7 +442,7 @@
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>      | 1      0      +3.6037977e+02  4.10e-07    3.12e-03    4.24e-01    +1.00e+00   ↘     2.08e+00    2.04e-05
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>      |
 <span class="sgr36"><span class="sgr1">│ </span></span>            |  Subproblem solved with status first_order after 1 iterations.
-<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.128663933070271e-5
+<span class="sgr36"><span class="sgr1">│ </span></span>            |  Reached dfeas = 2.128663933061057e-5
 <span class="sgr36"><span class="sgr1">└ </span></span>            | ----------------------------------------------------------------------------------------------------------------
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>3      1      +3.6037977e+02  1.87e-10    2.13e-05    1.03e+03    7.45e-08    5.12e-05    2.08e+00
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>
@@ -451,7 +451,7 @@
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>Objective...........: +3.603797671466713e+02
 <span class="sgr36"><span class="sgr1">│ </span></span>Primal Feasibility..:  1.872504373778838e-10
-<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.128663933070271e-05
+<span class="sgr36"><span class="sgr1">│ </span></span>Dual Feasibility....:  2.128663933061057e-05
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>
-<span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><div class="admonition is-success" id="Reading-lsolve-f41570b18f8a0767"><header class="admonition-header">Reading `lsolve`<a class="admonition-anchor" href="#Reading-lsolve-f41570b18f8a0767" title="Permalink"></a></header><div class="admonition-body"><p>The <code>lsolve</code> column reports the status returned directly by the chosen <code>linear_solver</code> (see <a href="../options/#Linear-Solver">options</a>) for the corresponding factorization/solve. A value other than <code>success</code> typically triggers either a regularization increase or a fallback strategy (e.g., switching MUMPS to an indefinite factorization), and does not necessarily indicate that the overall Moré–Sorensen iteration failed.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../options/">« Options</a><a class="docs-footer-nextpage" href="../performance/">Performance »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Tuesday 6 October 2026 18:32">Tuesday 6 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<span class="sgr36"><span class="sgr1">└ </span></span>EXIT: first_order.</code></pre><div class="admonition is-success" id="Reading-lsolve-f41570b18f8a0767"><header class="admonition-header">Reading `lsolve`<a class="admonition-anchor" href="#Reading-lsolve-f41570b18f8a0767" title="Permalink"></a></header><div class="admonition-body"><p>The <code>lsolve</code> column reports the status returned directly by the chosen <code>linear_solver</code> (see <a href="../options/#Linear-Solver">options</a>) for the corresponding factorization/solve. A value other than <code>success</code> typically triggers either a regularization increase or a fallback strategy (e.g., switching MUMPS to an indefinite factorization), and does not necessarily indicate that the overall Moré–Sorensen iteration failed.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../options/">« Options</a><a class="docs-footer-nextpage" href="../performance/">Performance »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Tuesday 6 October 2026 18:35">Tuesday 6 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
