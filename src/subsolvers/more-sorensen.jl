@@ -242,24 +242,30 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     )
   end
 
-  if norm_x1 <= Δ || (is_descent && accept_descent)
-    if up_lb_is_pos_def(solver_workspace) ||
-       (is_descent && accept_descent && check_cauchy_decrease(solver, reg_nlp; ηC = ηC))
-      set_solution!(stats, @view x1[1:n])
-      set_status!(stats, :first_order)
+  # Check that H + σI is positive definite.
+  is_pos_def = up_lb_is_pos_def(solver_workspace)
 
-      !is_descent && set_status!(stats, :not_desc)
-      set_solver_specific!(stats, :alpha, α)
-      print_level > 0 && @info conclusion_message(solver, stats)
+  converged = (is_descent && accept_descent) || norm_x1 <= Δ
 
-      return
-    end
+  # Either H + σI is positive definite or the step satisfies
+  # f_l + τ_l‖c(x_l)‖₂ - (f_l + ∇f_lᵀs_l + τ_l‖c(x_l) + J(x_l)s_l‖₂) ≥ ηC‖(H_l + σ_lI)s_l‖₂²
+  pos_def_check = up_lb_is_pos_def(solver_workspace) || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
+  
+  if converged && pos_def_check
+    set_solution!(stats, @view x1[1:n])
+    set_status!(stats, :first_order)
 
-    # Neither positive-definiteness of H + σI, nor (when applicable) the
-    # Cauchy decrease condition, could certify x1: increase σ and re-solve
-    # instead of accepting it here.
+    !is_descent && set_status!(stats, :not_desc)
+    set_solver_specific!(stats, :alpha, α)
+    print_level > 0 && @info conclusion_message(solver, stats)
+
+    return
+  elseif !pos_def_check
     return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
   end
+
+  # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
+  !is_pos_def && (max_iter = min(max_iter, 5))
 
   # [ H + σI Aᵀ][x'] = -[0]
   # [   A    0 ][y'] = -[x] 
@@ -282,8 +288,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     # Check whether x1 decreases the model.
     is_descent = check_descent(reg_nlp, @view x1[1:n])
     norm_x1 = norm(@view x1[(n+1):(n+m)])
+    pos_def_check = is_pos_def || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
 
-    if is_descent && accept_descent
+    if is_descent && accept_descent && pos_def_check
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
       set_solver_specific!(stats, :alpha, α)
@@ -348,6 +355,12 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
   if !check_descent(reg_nlp, @view x1[1:n])
     return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
+  end
+
+  pos_def_check = is_pos_def || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
+  if !pos_def_check
+    set_status!(stats, :exception)
+    return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
   end
 end
 
