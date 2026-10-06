@@ -22,6 +22,7 @@ mutable struct PenaltyMUMPSWorkspace{
   _Hcheck::WPC # Preallocated, reused MUMPS instance for up_lb_is_pos_def_exact!
   _Hcheck_idx::Vector{Int} # Fixed indices into H.data.vals for the H + σI block
   _Hcheck_a::V # Preallocated values buffer for _Hcheck, refreshed on each call
+  _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
 
 function get_H(
@@ -150,6 +151,7 @@ function construct_mumps_workspace(
     Scheck,
     idx,
     a_check,
+    0
   )
 end
 
@@ -228,6 +230,7 @@ function construct_mumps_workspace(
     nothing,
     Int[],
     zeros(T, 0),
+    0
   )
 end
 
@@ -578,8 +581,14 @@ function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
   if relative_error > sqrt(eps(eltype(workspace.x)))
     increase_pivtol!(workspace)
     workspace.status = :failed
-  elseif relative_error < eps(eltype(workspace.x)) * 10
-    decrease_pivtol!(workspace)
+    workspace._n_precise = 0
+  elseif relative_error < eps(eltype(workspace.x)) * 100 
+    workspace._n_precise += 1
+    if workspace._n_precise > 5
+      decrease_pivtol!(workspace)
+    end
+  else
+    workspace._n_precise = 0
   end
 end
 
