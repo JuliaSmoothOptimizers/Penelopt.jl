@@ -110,22 +110,7 @@ function escalate_and_resolve!(
   return solve!(solver, reg_nlp, stats; opts..., α0 = αmin, _restart = true)
 end
 
-function nullify_and_resolve!(
-  solver::MoreSorensenSolver{T,V},
-  reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-  stats::GenericExecutionStats,
-  αmin::T,
-  failure_status::Symbol,
-  opts::NamedTuple,
-) where {T,V,M,H,P}
-  isa(reg_nlp.model.data.H, CompactBFGS) ? NLPModels.reset!(reg_nlp.model.data.H) :
-  reg_nlp.model.data.H.vals .= 0
-  solver_workspace = solver.workspace
-  update_workspace!(solver_workspace, reg_nlp.h.A, reg_nlp.model.data.σ, αmin)
-  return solve!(solver, reg_nlp, stats; opts..., α0 = αmin, _restart = true)
-end
-
-function SolverCore.solve!( #TODO add verbose and kwargs
+function SolverCore.solve!(
   solver::MoreSorensenSolver{T,V},
   reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   stats::GenericExecutionStats{T,V,V};
@@ -222,11 +207,16 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     # [ H + σI Aᵀ][x] = -[∇f]
     # [   A    0 ][y] = -[c] 
     npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
+  end
 
-    # Solve with H = 0 instead.
-    if reg_nlp.model.data.σ > σmax && (npos < n || status == :failed) && !_restart
-      return nullify_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
-    end
+  # Solve with H = 0 instead.
+  if reg_nlp.model.data.σ > σmax && (npos < n || status == :failed)
+    isa(reg_nlp.model.data.H, CompactBFGS) ? NLPModels.reset!(reg_nlp.model.data.H) :
+    reg_nlp.model.data.H.vals .= 0
+    update_workspace!(solver_workspace, reg_nlp.h.A, reg_nlp.model.data.σ, α)
+    # [ σI Aᵀ][x] = -[∇f]
+    # [ A  0 ][y] = -[c] 
+    npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
   end
 
   if (npos < n || status == :failed)
@@ -356,12 +346,10 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   stats.iter >= max_iter && set_status!(stats, :max_iter)
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
+
   is_descent = check_descent(reg_nlp, @view x1[1:n])
   !is_descent && set_status!(stats, :not_desc)
-
-  if !is_descent && !_restart
-    return nullify_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
-  elseif !is_descent
+  if !is_descent
     return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
   end
 end
