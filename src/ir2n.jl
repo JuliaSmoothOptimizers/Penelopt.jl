@@ -82,6 +82,7 @@ function SolverCore.solve!(
   σmin::T = eps(T)^2,
   η1::T = √√eps(T),
   η2::T = T(0.1),
+  η3::T = T(0.95),
   γ::T = T(3),
   watchdog_max_iter::Int = 10,
   watchdog_η0::T = eps(T),
@@ -278,8 +279,7 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
-      elseif ρk < 0 &&
-             ρk > -1 / eps(T) &&
+      elseif ρk > -1 / eps(T) &&
              !is_active(watchdog_checkpoint) &&
              !isa(nlp, NullHessianModel) # Watchdog procedure
 
@@ -291,7 +291,7 @@ function SolverCore.solve!(
             -d∇fks + max(1, abs(fk)) * 10 * eps()
           ) : zero(T)
 
-        if η2 ≤ fρk < Inf # Activate watchdog
+        if η3 ≤ fρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist

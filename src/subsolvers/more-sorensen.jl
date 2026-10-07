@@ -260,7 +260,7 @@ function SolverCore.solve!(
   end
 
   # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
-  !is_pos_def && (max_iter = min(max_iter, 3))
+  !is_pos_def && (max_iter = min(max_iter, 5))
 
   # [ H + σI Aᵀ][x'] = -[0]
   # [   A    0 ][y'] = -[x] 
