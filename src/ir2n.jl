@@ -247,6 +247,14 @@ function SolverCore.solve!(
 
     ρk = Δmod < 0 ? 0 : Δobj / Δmod
 
+    # Check step assumption 3.4
+    pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
+    if !pos_def_check
+      sHs = obj(φ, s) - dot(∇fk, s) 
+      pos_def_check = Δmod >= 1/2 * sHs * ms_ηC
+    end
+    ρk = pos_def_check ? ρk : 0
+
     if η1 ≤ ρk < Inf
       xk .= xkn
 

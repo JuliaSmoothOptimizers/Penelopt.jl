@@ -110,6 +110,21 @@ function escalate_and_resolve!(
   return solve!(solver, reg_nlp, stats; opts..., α0 = αmin, _restart = true)
 end
 
+function nullify_and_resolve!(
+  solver::MoreSorensenSolver{T,V},
+  reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  stats::GenericExecutionStats,
+  αmin::T,
+  failure_status::Symbol,
+  opts::NamedTuple,
+) where {T,V,M,H,P}
+  isa(reg_nlp.model.data.H, CompactBFGS) ? NLPModels.reset!(reg_nlp.model.data.H) :
+  reg_nlp.model.data.H.vals .= 0
+  solver_workspace = solver.workspace
+  update_workspace!(solver_workspace, reg_nlp.h.A, reg_nlp.model.data.σ, αmin)
+  return solve!(solver, reg_nlp, stats; opts..., α0 = αmin, _restart = true)
+end
+
 function SolverCore.solve!( #TODO add verbose and kwargs
   solver::MoreSorensenSolver{T,V},
   reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
@@ -207,16 +222,11 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     # [ H + σI Aᵀ][x] = -[∇f]
     # [   A    0 ][y] = -[c] 
     npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
-  end
 
-  # Solve with H = 0 instead.
-  if reg_nlp.model.data.σ > σmax && (npos < n || status == :failed)
-    isa(reg_nlp.model.data.H, CompactBFGS) ? NLPModels.reset!(reg_nlp.model.data.H) :
-    reg_nlp.model.data.H.vals .= 0
-    update_workspace!(solver_workspace, reg_nlp.h.A, reg_nlp.model.data.σ, α)
-    # [ σI Aᵀ][x] = -[∇f]
-    # [ A  0 ][y] = -[c] 
-    npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
+    # Solve with H = 0 instead.
+    if reg_nlp.model.data.σ > σmax && (npos < n || status == :failed) && !_restart
+      return nullify_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
+    end
   end
 
   if (npos < n || status == :failed)
@@ -244,15 +254,11 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   # Check that H + σI is positive definite.
   is_pos_def = up_lb_is_pos_def(solver_workspace)
+  set_solver_specific!(stats, :is_pos_def, is_pos_def)
 
   converged = (is_descent && accept_descent) || norm_x1 <= Δ
 
-  # Either H + σI is positive definite or the step satisfies
-  # f_l + τ_l‖c(x_l)‖₂ - (f_l + ∇f_lᵀs_l + τ_l‖c(x_l) + J(x_l)s_l‖₂) ≥ ηC‖(H_l + σ_lI)s_l‖₂²
-  pos_def_check =
-    up_lb_is_pos_def(solver_workspace) || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
-
-  if converged && pos_def_check
+  if converged
     set_solution!(stats, @view x1[1:n])
     set_status!(stats, :first_order)
 
@@ -261,8 +267,6 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     print_level > 0 && @info conclusion_message(solver, stats)
 
     return
-  elseif converged && !pos_def_check
-    return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
   end
 
   # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
@@ -289,9 +293,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     # Check whether x1 decreases the model.
     is_descent = check_descent(reg_nlp, @view x1[1:n])
     norm_x1 = norm(@view x1[(n+1):(n+m)])
-    pos_def_check = is_pos_def || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
 
-    if is_descent && accept_descent && pos_def_check
+    if is_descent && accept_descent
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
       set_solver_specific!(stats, :alpha, α)
@@ -353,15 +356,13 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   stats.iter >= max_iter && set_status!(stats, :max_iter)
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
-  !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
-  if !check_descent(reg_nlp, @view x1[1:n])
-    return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
-  end
+  is_descent = check_descent(reg_nlp, @view x1[1:n])
+  !is_descent && set_status!(stats, :not_desc)
 
-  pos_def_check = is_pos_def || check_cauchy_decrease(solver, reg_nlp; ηC = ηC)
-  if !pos_def_check
-    set_status!(stats, :exception)
-    return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
+  if !is_descent && !_restart
+    return nullify_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
+  elseif !is_descent
+    return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
   end
 end
 
@@ -369,45 +370,6 @@ function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
   n = length(s)
   s .= @view solver.x1[1:n]
   y .= @view solver.x1[(n+1):end]
-end
-
-"""
-    check_cauchy_decrease(solver::MoreSorensenSolver, reg_nlp::ShiftedL2PenalizedProblem; ηC = ...)
-
-Checks the Cauchy decrease condition on the current primal-dual step
-`solver.x1`, i.e. whether
-
-    τₖ‖c(xₗ)‖₂ - ∇f(xₗ)ᵀsₗ - τₖ‖c(xₗ) + J(xₗ)sₗ‖₂ ≥ ηC ‖(Hₗ+σₗI)sₗ‖₂²
-
-holds, where `sₗ = solver.x1[1:n]` is the primal step and
-`yₗ = solver.x1[(n+1):(n+m)]` the associated dual step from the KKT system
-just solved (`Hₗ` is the current Hessian approximation and `σₗ` the current
-primal regularization parameter, `reg_nlp.model.data.σ`). If this holds,
-`sₗ` is an acceptable step even though `Hₗ+σₗI` was not confirmed to be
-positive definite by `up_lb_is_pos_def`.
-"""
-function check_cauchy_decrease(
-  solver::MoreSorensenSolver{T,V},
-  reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
-  ηC::T = T(1e-2),
-) where {T,V,M,H,P}
-  n = reg_nlp.model.meta.nvar
-  m = length(reg_nlp.h.b)
-  x1 = solver.x1
-
-  s = @view x1[1:n]
-  y = @view x1[(n+1):(n+m)]
-  ∇f = reg_nlp.model.data.c
-  τ = reg_nlp.h.h.lambda
-
-  model_decrease = τ * norm(reg_nlp.h.b) - dot(∇f, s) - reg_nlp.h(s)
-
-  Hs = reg_nlp.model.data.v
-  mul!(Hs, reg_nlp.h.A', y)
-  @. Hs += ∇f
-  # ‖(Hₗ+σₗI)sₗ‖₂² = ‖-∇f(xₗ) - J(xₗ)ᵀyₗ‖₂² = ‖Hs‖₂² regardless of sign.
-
-  return model_decrease >= ηC * dot(Hs, Hs)
 end
 
 function SolverCore.reset!(solver::MoreSorensenSolver{T}) where {T}
