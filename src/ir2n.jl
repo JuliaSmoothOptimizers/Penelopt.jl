@@ -251,7 +251,7 @@ function SolverCore.solve!(
     pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
     if !pos_def_check
       # sHs = (∇fᵀs + 0.5 * sᵀ(H + σI)s) - ∇fᵀs = 0.5 * sᵀ(H + σI)s
-      sHs = obj(φ, s) - dot(∇fk, s) 
+      sHs = obj(φ, s) - dot(∇fk, s)
 
       # Step Assumption 3.4 in implementation paper:
       # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * sᵀ(H + σI)s
