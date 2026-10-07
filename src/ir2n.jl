@@ -82,7 +82,7 @@ function SolverCore.solve!(
   σmin::T = eps(T)^2,
   η1::T = √√eps(T),
   η2::T = T(0.1),
-  η3::T = T(0.95),
+  η3::T = T(0.9),
   γ::T = T(3),
   watchdog_max_iter::Int = 10,
   watchdog_η0::T = eps(T),
