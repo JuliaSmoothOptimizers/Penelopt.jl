@@ -284,6 +284,13 @@ function SolverCore.solve!(
     is_descent = check_descent(reg_nlp, @view x1[1:n])
     norm_x1 = norm(@view x1[(n+1):(n+m)])
 
+    # Safeguard step assumption 3.2 in implementation paper.
+    norm_s = norm(@view x1[1:n])
+    if norm_s < 1 && norm_x1 < Δ && !is_pos_def
+      set_status!(stats, :exception)
+      return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
+    end
+
     if is_descent && accept_descent
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
