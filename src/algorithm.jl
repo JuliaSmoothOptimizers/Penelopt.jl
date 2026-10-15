@@ -227,6 +227,7 @@ function SolverCore.solve!(
   r2n_η1::T = √√eps(T),
   r2n_η2::T = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
   r2n_σmin::T = eps(T)^2,
+  r2n_σ0::T = eps(T),
   r2n_γ::T = T(3),
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
@@ -311,7 +312,7 @@ function SolverCore.solve!(
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), τ0)
   set_penalty!(mk, τ)
-  νsub = 1 / r2n_σmin
+  νsub = 1 / r2n_σ0
   set_solver_specific!(solver.substats, :tau, τ)
 
   ## Logging
@@ -400,7 +401,7 @@ function SolverCore.solve!(
     if solver.substats.status == :unbounded
       τ *= 10
       set_penalty!(mk, τ)
-      νsub = 1 / r2n_σmin
+      νsub = 1 / r2n_σ0
       shift!(mk, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       set_solver_specific!(solver.substats, :tau, τ)

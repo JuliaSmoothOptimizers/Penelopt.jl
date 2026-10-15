@@ -195,6 +195,9 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
  * `r2n_σmin::T = eps(T)^2` (*advanced*): minimum quadratic regularization parameter.
     > The quadratic regularization parameter is bounded from below by `r2n_σmin`. When `T == Float64`, the default value is $\approx 10^{-32}$. This value should be very small.
 
+ * `r2n_σ0::T = eps(T)` (*advanced*): initial quadratic regularization parameter.
+    > The first subproblem is solved with an initial quadratic regularization parameter $\max(\text{r2n\_σ0}, \text{r2n\_σmin})$. Subsequent subproblems are warm-started with the last regularization parameter of the previous subproblem, except when the penalty parameter is increased after an unbounded subproblem, in which case it is reset to `r2n_σ0`. This is $\sigma_0$ in the implementation paper. Note that `r2n_σ0 ≥ r2n_σmin` should hold. When `T == Float64`, the default value is $\approx 10^{-16}$.
+
  * `r2n_m_monotone::Int = 12` (*advanced*): non-monotone memory parameter.
     > When computing the ratio of the actual decrease and the first-order decrease (see `r2n_η1`), the decrease is computed with respect to the maximum of the last `r2n_m_monotone` values of the objective.
 
