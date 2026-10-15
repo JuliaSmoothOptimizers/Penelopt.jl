@@ -280,8 +280,8 @@ function SolverCore.solve!(
         first_increase = false
       elseif ρk < 0 &&
              ρk > -1 / eps(T) &&
-             !is_active(watchdog_checkpoint) &&
-             !isa(nlp, NullHessianModel) # Watchdog procedure
+             !is_active(watchdog_checkpoint) #&&
+             #!isa(nlp, NullHessianModel) # Watchdog procedure
 
         # Check acceptance w.r.t f
         d∇fks = dot(∇fk, s)
