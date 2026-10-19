@@ -21,6 +21,7 @@ import NLPModelsModifiers: get_model, get_op
 import SolverCore: get_status, reset!
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
+abstract type AbstractL2PenaltySolver{T,V} <: AbstractOptimizationSolver end
 
 include("PeneloptExecutionStats.jl")
 
@@ -50,6 +51,7 @@ include("subsolvers/more-sorensen.jl")
 include("ir2n.jl")
 
 include("algorithm.jl")
+include("types/EnveloptL2PenaltySolver.jl")
 
 include("extrapolate.jl")
 include("feas_computer.jl")
