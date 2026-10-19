@@ -116,12 +116,7 @@ function Penelopt.L2Penalty(
   return stats
 end
 
-function Penelopt.L2Penalty(
-  nlp::AbstractNLPModel,
-  h;
-  selected = 1:get_nvar(nlp),
-  kwargs...,
-)
+function Penelopt.L2Penalty(nlp::AbstractNLPModel, h; selected = 1:get_nvar(nlp), kwargs...)
   return Penelopt.L2Penalty(RegularizedNLPModel(nlp, h, selected); kwargs...)
 end
 
