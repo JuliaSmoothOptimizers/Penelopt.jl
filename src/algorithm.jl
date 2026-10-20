@@ -1,4 +1,4 @@
-export L2Penalty, L2PenaltySolver, solve!
+export AbstractL2PenaltySolver, L2Penalty, L2PenaltySolver, solve!
 
 import SolverCore.solve!
 
@@ -8,7 +8,7 @@ mutable struct L2PenaltySolver{
   S<:AbstractOptimizationSolver,
   PB<:L2PenalizedProblem,
   ST<:AbstractExecutionStats,
-} <: AbstractOptimizationSolver
+} <: AbstractL2PenaltySolver{T,V}
   x::V
   xn::V
   y::V
