@@ -288,6 +288,7 @@ function SolverCore.solve!(
     # Safeguard step assumption 3.2 in implementation paper.
     if norm_x1 < Δ && !is_pos_def
       set_status!(stats, :exception)
+      # Increase σ with a smaller factor to avoid correcting σ too much.
       return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts; μσ = T(3))
     end
 
