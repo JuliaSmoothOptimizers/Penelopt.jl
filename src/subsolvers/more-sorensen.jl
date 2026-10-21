@@ -99,10 +99,9 @@ function escalate_and_resolve!(
   stats::GenericExecutionStats,
   αmin::T,
   failure_status::Symbol,
-  opts::NamedTuple;
-  μσ::T = opts.μσ,
+  opts::NamedTuple
 ) where {T,V,M,H,P}
-  reg_nlp.model.data.σ *= μσ
+  reg_nlp.model.data.σ *= opts.μσ
   if reg_nlp.model.data.σ >= opts.σmax
     set_status!(stats, failure_status)
     opts.print_level > 0 && @info conclusion_message(solver, stats)
@@ -287,9 +286,12 @@ function SolverCore.solve!(
 
     # Safeguard step assumption 3.2 in implementation paper.
     if norm_x1 < Δ && !is_pos_def
-      set_status!(stats, :exception)
-      # Increase σ with a smaller factor to avoid correcting σ too much.
-      return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts; μσ = T(3))
+      norm_Hs = compute_norm_Hs(reg_nlp, @view x1[1:n])
+      if norm_Hs < 1 
+        set_status!(stats, :exception)
+        # Increase σ with a smaller factor to avoid correcting σ too much.
+        return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
+      end
     end
 
     if is_descent && accept_descent

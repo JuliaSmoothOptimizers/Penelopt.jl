@@ -241,6 +241,16 @@ function check_descent(
   return ψ0 - obj(φ, s) - ψ(s) >= 0
 end
 
+function compute_norm_Hs(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T},
+  s::AbstractVector,
+) where {T}
+  φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
+  isa(φ.data.H, LinearOperator) ? mul!(φ.data.v, φ.data.H, s) : mul!(φ.data.v, Symmetric(φ.data.H, :L), s)
+  φ.data.v .+= φ.data.σ .* s
+  return norm(φ.data.v, 2)
+end
+
 function reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}) where {T,V,M,H,P} end
 
 function reset!(
