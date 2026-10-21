@@ -310,7 +310,7 @@ function SolverCore.solve!(
   end
 
   ## Initialize penalty parameter
-  τ = max(norm(solver.y, 2), τ0) # Use the 2-norm for the initial penalty parameter.
+  τ = max(norm(solver.y, 1), τ0)
   set_penalty!(mk, τ)
   νsub = 1 / r2n_σ0
   set_solver_specific!(solver.substats, :tau, τ)
@@ -425,7 +425,7 @@ function SolverCore.solve!(
 
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
-      τ₊ = max(τ + τmin, norm(y, 1)) # Use the 1-norm for the penalty parameter update.
+      τ₊ = max(τ + τmin, norm(y, 1))
       if extrapolate!(x, solver, τ₊, τ)
         shift!(mk, x, y = y, c = solver.cn)
 
