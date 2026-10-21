@@ -285,7 +285,7 @@ function SolverCore.solve!(
     norm_x1 = norm(@view x1[(n+1):(n+m)])
 
     # Safeguard step assumption 3.2 in implementation paper.
-    if α < 1 &&norm_x1 < Δ && !is_pos_def
+    if norm_x1 < Δ && !is_pos_def
       set_status!(stats, :exception)
       return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
     end
