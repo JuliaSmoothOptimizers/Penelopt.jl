@@ -10,10 +10,23 @@
 #
 #   minimize f(x) + e_{μ τ‖⋅‖₂}(c(x) + μy) + h(x)
 #
-# are solved by a solver from RegularizedOptimization.jl (R2N by default) that
+# are solved by a solver from RegularizedOptimization.jl (R2 by default) that
 # handles h through its proximal operator.
-#
-# The penalty loop is ported from `Envelopt.exact_penalty_solver`.
+
+function Penelopt.L2Penalty(
+  reg_nlp::RegularizedNLPModel{T,V};
+  envelopt_subsolver = R2EnveloptSubSolver,
+  kwargs...,
+) where {T<:Real,V}
+  solver = Penelopt.L2PenaltySolver(
+    reg_nlp;
+    envelopt_subsolver = envelopt_subsolver,
+  )
+  stats = PeneloptExecutionStats(reg_pb)
+  SolverCore.solve!(solver, reg_pb, stats; kwargs...)
+  return stats
+end
+
 
 # Envelopt only needs h to be callable and to have a prox!, which it uses to evaluate the
 # Moreau envelope and to update u. For h = λ‖⋅‖₂,
@@ -86,34 +99,6 @@ function check_regularized_problem(nlp::AbstractNLPModel)
   has_bounds(nlp) && error(
     "L2Penalty: bounds, including fixed variables, are not supported together with a regularizer; include them in the regularizer instead.",
   )
-end
-
-# Entry points: L2Penalty(reg_nlp) or L2Penalty(nlp, h; selected).
-function Penelopt.L2Penalty(
-  reg_nlp::AbstractRegularizedNLPModel{T,V};
-  envelopt_subsolver = R2NEnveloptSubSolver,
-  envelopt_subsolver_kwargs::NamedTuple = NamedTuple(),
-  kwargs...,
-) where {T,V}
-  nlp = reg_nlp.model
-  check_regularized_problem(nlp)
-
-  # Envelopt only uses the body of the constraints, so c(x) = b must become c(x) - b = 0.
-  # Fixed variables are not removed and the problem is not scaled because both would
-  # change the variables seen by h.
-  shifted_nlp = remove_constraint_shift(nlp)
-  reg_pb =
-    shifted_nlp === nlp ? reg_nlp :
-    RegularizedNLPModel(shifted_nlp, reg_nlp.h, reg_nlp.selected)
-
-  solver = EnveloptL2PenaltySolver(
-    reg_pb;
-    envelopt_subsolver = envelopt_subsolver,
-    envelopt_subsolver_kwargs = envelopt_subsolver_kwargs,
-  )
-  stats = RegularizedExecutionStats(reg_pb)
-  SolverCore.solve!(solver, reg_pb, stats; kwargs...)
-  return stats
 end
 
 function Penelopt.L2Penalty(nlp::AbstractNLPModel, h; selected = 1:get_nvar(nlp), kwargs...)
