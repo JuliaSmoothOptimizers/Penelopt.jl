@@ -53,6 +53,18 @@ end
   include("test-cutest.jl")
 end
 
+# Regularized problems through the Envelopt extension. Envelopt.jl and the
+# RegularizedProblems.jl branch are only reachable through [sources] (Julia ≥ 1.11).
+if VERSION < v"1.11"
+  @info "Skipping the Envelopt extension tests: [sources] requires Julia ≥ 1.11."
+else
+  using Envelopt, RegularizedOptimization, RegularizedProblems, ShiftedProximalOperators
+
+  @testset "Regularized" begin
+    include("test-regularized.jl")
+  end
+end
+
 # HSL.jl is always installed for the tests, but MA57 is only functional when a
 # licensed HSL_jll.jl is available (see .github/workflows/TestHSL.yml). On the
 # GitHub-hosted runners, only the fallback path is exercised.
