@@ -29,7 +29,8 @@ function Penelopt.L2PenaltySolver(
   reg_nlp::AbstractRegularizedNLPModel{T,V};
   kwargs...,
 ) where {T,V}
-  x0 = reg_nlp.model.meta.x0
+  nlp = reg_nlp.model
+  x0 = nlp.meta.x0
   x, xn, s, s0 = similar(x0), similar(x0), similar(x0), zero(x0)
   temp_b = similar(x0, nlp.meta.ncon)
   dual_res = similar(x0)
@@ -38,13 +39,13 @@ function Penelopt.L2PenaltySolver(
   y_report = similar(x0, nlp.meta.ncon)
   ∇fk = similar(x0)
 
-  penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
+  penalty_subproblem = Penelopt.L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
   envelopt_subproblem = EnveloptNLPModel(penalty_subproblem)
-  regularized_subproblem = RegularizedNLPModel(penalty_subproblem, reg_nlp.h, reg_nlp.selected) # f(x) + τ‖c(x)‖₂ + h(x)
+  regularized_subproblem = RegularizedNLPModel(envelopt_subproblem, reg_nlp.h, reg_nlp.selected) # f(x) + τ‖c(x)‖₂ + h(x)
 
 
-  substats = EnveloptExecutionStats(regularized_subproblem)
-  solver = EnveloptSolver(
+  substats = Envelopt.EnveloptExecutionStats(regularized_subproblem)
+  solver = Envelopt.EnveloptSolver(
     regularized_subproblem;
   )
 
@@ -63,4 +64,9 @@ function Penelopt.L2PenaltySolver(
     regularized_subproblem,
     substats,
   )
+end
+
+function Envelopt.EnveloptNLPModel(nlp::M; kwargs...) where {M <: Penelopt.AbstractPenalizedProblem}
+  Fmodel = CFModel(nlp)  # min 0 s.t. F(x) = c(x) = 0
+  EnveloptNLPModel(nlp, Fmodel, nlp.h; kwargs...)
 end
