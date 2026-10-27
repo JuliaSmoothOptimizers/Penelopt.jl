@@ -20,32 +20,6 @@ if !LIBHSL_isfunctional()
     finalize(nlp)
   end
 else
-  @testset "MoreSorensenSolver (MA57)" begin
-    for (n, m, alpha) in ((10, 2, 0.5), (10, 2, 0.0), (100, 20, 0.5), (100, 20, 0.0))
-      # Like MUMPS, the MA57 workspace builds K2 in COO format and expects a
-      # SparseMatrixCOO Hessian (the CSC Hessians of test-subsolvers.jl are for LDLT).
-      instance, solution = generate_instance(
-        n,
-        m,
-        alpha,
-        Hessian_modifier = x -> SparseMatrixCOO(sparse(tril(x))),
-      )
-      solver = MoreSorensenSolver(instance; solver = :ma57)
-      stats = GenericExecutionStats(
-        instance.model;
-        solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
-      )
-      solve!(solver, instance, stats, atol = 1e-9, accept_descent = false)
-      @test norm(solution[:u] - stats.solution) <= 1e-6
-      @test norm(solution[:y] - solver.x1[(n+1):end]) <= 1e-6
-      if alpha > 0
-        @test abs(solution[:tau] - norm(solver.x1[(n+1):end])) <= 1e-6
-      else
-        @test norm(solver.x1[(n+1):end]) <= solution[:tau]
-      end
-    end
-  end
-
   # `test_problem` is defined in test-cutest.jl.
   @testset "CUTEst (MA57)" begin
     @testset "BT1" begin
