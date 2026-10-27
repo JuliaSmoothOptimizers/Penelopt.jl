@@ -46,6 +46,30 @@ function SolverCore.reset!(workspace::PenaltyWorkspace)
   set_n_fact!(workspace, 0)
 end
 
+# Hyperparameters of the dynamic pivoting strategy, shared by MUMPS and MA57.
+pivtol_min(::Type{T}) where {T} = eps(T)
+const PIVTOL_ROBUST = 1e-2
+const PIVTOL_DECREASE_FACTOR = 10
+const N_ITREF = 5 # MA57 requires at least 2 steps for its error analysis.
+const N_PRECISE_SOLVES = 20
+
+function update_pivtol!(workspace::PenaltyDirectWorkspace)
+  T = eltype(workspace.x)
+  relative_error = relative_error!(workspace)
+  if relative_error > sqrt(eps(T))
+    increase_pivtol!(workspace)
+    workspace.status = :failed
+    workspace._n_precise = 0
+  elseif relative_error < eps(T) * 100
+    workspace._n_precise += 1
+    if workspace._n_precise > N_PRECISE_SOLVES
+      decrease_pivtol!(workspace)
+    end
+  else
+    workspace._n_precise = 0
+  end
+end
+
 # up_lb_is_pos_def: whether the H + σI of
 # the augmented K2 system is positive definite. `H` is the current Hessian
 # (of the Lagrangian) approximation stored in `workspace` and σ is the

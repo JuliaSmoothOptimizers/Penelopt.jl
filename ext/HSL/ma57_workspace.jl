@@ -21,7 +21,12 @@ mutable struct PenaltyMA57Workspace{
   _n_fact::Int
   _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
+  _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
+
+# Ma57 cntl(3): stop iterative refinement if the error does not decrease by cntl(3).
+const MA57_ITREF_STAGNATION = 0.5
+const MA57_ITREF_STAGNATION_ROBUST = 1.0
 
 function get_H(
   solver_workspace::PenaltyMA57Workspace{WP,K2},
@@ -33,13 +38,45 @@ function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:Comp
   return solver_workspace.H.H.data
 end
 
+function mumps_like_ma57_control(::Type{T}) where {T}
+  # Deactivate Logging
+  control = Ma57_Control{T}(print_level = -1)
+  icntl, cntl = control.icntl, control.cntl
+
+  # Ma57 icntl(7): 1 performs threshold partial pivoting with relative threshold cntl(1).
+  icntl[7] = 1
+  cntl[1] = pivtol_min(T)
+
+  # Ma57 icntl(6): 5 chooses the ordering automatically.
+  icntl[6] = 5
+
+  # Ma57 icntl(15): 1 scales the matrix with MC64.
+  icntl[15] = 1
+
+  # Max number of iterative refinement steps
+  icntl[9] = N_ITREF
+  cntl[3] = MA57_ITREF_STAGNATION
+
+  # Ma57 icntl(10): 0 skips the condition number estimates in the error analysis.
+  icntl[10] = 0
+
+  return control
+end
+
 function construct_ma57_workspace(
   H::M,
   u1::V,
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  S = ma57_coord(n + m, H.data.rows, H.data.cols, H.data.vals, sqd = true, print_level = -1)
+  S = ma57_coord(
+    n + m,
+    H.data.rows,
+    H.data.cols,
+    H.data.vals,
+    mumps_like_ma57_control(T),
+    Ma57_Info{T}(),
+  )
   return PenaltyMA57Workspace(
     S,
     H,
@@ -57,6 +94,7 @@ function construct_ma57_workspace(
     0,
     zeros(T, n),
     zeros(T, n),
+    0,                          # _n_precise
   )
 end
 
@@ -71,8 +109,8 @@ function construct_ma57_workspace(
     H.H.data.rows,
     H.H.data.cols,
     H.H.data.vals,
-    sqd = true,
-    print_level = -1,
+    mumps_like_ma57_control(T),
+    Ma57_Info{T}(),
   )
   return PenaltyMA57Workspace(
     S,
@@ -91,6 +129,7 @@ function construct_ma57_workspace(
     0,
     zeros(T, 0),
     zeros(T, 0),
+    0,                                                   # _n_precise
   )
 end
 
@@ -172,50 +211,61 @@ function set_primal_inertia!(solver_workspace::PenaltyMA57Workspace, σ)
   solver_workspace.factorized = false
 end
 
+function factorize_workspace!(workspace::PenaltyMA57Workspace)
+  workspace.factorized && return true
+
+  try
+    ma57_factorize!(workspace.M)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+  workspace._n_fact += 1
+
+  # Ma57 info(1): a negative value is an error in the factorization.
+  # Ma57 info(1): a value of 4 indicates that the matrix is singular.
+  info = workspace.M.info.info[1]
+  if info < 0 || info == 4
+    workspace.status = :failed
+    return false
+  end
+  workspace.factorized = true
+  return true
+end
+
+function solve_with_refinement!(workspace::PenaltyMA57Workspace, b, x)
+  M = workspace.M
+  rinfo = M.info.rinfo
+
+  # Discard the error analysis of the previous solve.
+  rinfo[6] = rinfo[7] = rinfo[10] = Inf
+
+  try
+    ma57_solve!(M, b, x, workspace.dx, workspace.work, Int(M.control.icntl[9]))
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+
+  # Ma57 info(1): a value of -8 indicates that iterative refinement did not converge.
+  info = M.info.info[1]
+  if any(isnan, x) || (info < 0 && info != -8)
+    workspace.status = :failed
+    workspace._n_precise = 0
+    return false
+  end
+  info > 0 && return true
+
+  update_pivtol!(workspace)
+  return true
+end
+
 function solve_system!(
   workspace::PenaltyMA57Workspace{WP,K2},
   u::V,
 ) where {V<:AbstractVector,WP,K2}
   workspace.status = :success
-
-  # Ma57 icntl(7): Controls the pivotting strategy.
-  # Ma57 icntl(7): A value of 3 performs no pivoting: for a sufficiently large value of σ and a positive value of α,
-  # The matrix is strongly factorizable, so we don't need pivoting.
-  workspace.M.control.icntl[7] = 3
-
-  if !workspace.factorized
-    try
-      ma57_factorize!(workspace.M)
-    catch e
-      !(e isa HSL.Ma57Exception) && rethrow(e)
-    end
-    workspace._n_fact += 1
-  end
-
-  # Ma57 info(1): a negative value is an error in the factorization.
-  # Ma57 info(1): a value of 4 indicates that the matrix is singular.
-  if workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4
-    workspace.status = :failed
-    return
-  else
-    workspace.factorized = true
-  end
-
-  # Ma57 icntl(9): Controls the max number of iterative refinement steps.
-  workspace.M.control.icntl[9] = 10
-
-  # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
-  # then the iterative refinement stops.
-  workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
-  try
-    ma57_solve!(workspace.M, u, workspace.x, workspace.dx, workspace.work, 10)
-  catch e
-    !(e isa HSL.Ma57Exception) && rethrow(e)
-  end
-  if any(isnan, workspace.x) || workspace.M.info.info[1] < 0
-    workspace.status = :failed
-    return
-  end
+  factorize_workspace!(workspace) || return
+  solve_with_refinement!(workspace, u, workspace.x)
+  return
 end
 
 function solve_system!(
@@ -243,48 +293,12 @@ function solve_system!(
   # [σI+ξI  Aᵀ]
   # [A     -αI]
 
-  # Ma57 icntl(7): Controls the pivotting strategy.
-  # Ma57 icntl(7): A value of 3 performs no pivoting: for a sufficiently large value of σ and a positive value of α,
-  # The matrix is strongly factorizable, so we don't need pivoting.
-  workspace.M.control.icntl[7] = 3
-
-  if !workspace.factorized
-    try
-      ma57_factorize!(workspace.M)
-    catch e
-      !(e isa HSL.Ma57Exception) && rethrow(e)
-    end
-    workspace._n_fact += 1
-  end
-
-  # Ma57 info(1): a negative value is an error in the factorization.
-  # Ma57 info(1): a value of 4 indicates that the matrix is singular.
-  if workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4
-    workspace.status = :failed
-    return
-  else
-    workspace.factorized = true
-  end
+  factorize_workspace!(workspace) || return
 
   # Step 2: Compute
   # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
   # [x₁] = [A     -αI]  [u]
-
-  # Ma57 icntl(9): Controls the max number of iterative refinement steps.
-  workspace.M.control.icntl[9] = 10
-
-  # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
-  # then the iterative refinement stops.
-  workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
-  try
-    ma57_solve!(workspace.M, u, x1, workspace.dx, workspace.work, 10)
-  catch e
-    !(e isa HSL.Ma57Exception) && rethrow(e)
-  end
-  if any(isnan, x1) || workspace.M.info.info[1] < 0
-    workspace.status = :failed
-    return
-  end
+  solve_with_refinement!(workspace, u, x1) || return
 
   if p > 0
 
@@ -367,15 +381,7 @@ function solve_system!(
     # Step 7: Solve
     # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
     # [x₃] = [A     -αI]  [x₂]
-    try
-      ma57_solve!(workspace.M, x2, x3, workspace.dx, workspace.work, 10)
-    catch e
-      !(e isa HSL.Ma57Exception) && rethrow(e)
-    end
-    if any(isnan, x3) || workspace.M.info.info[1] < 0
-      workspace.status = :failed
-      return
-    end
+    solve_with_refinement!(workspace, x2, x3) || return
 
     # Step 8:
     # [B  Aᵀ]⁻¹[u] = x₁ - x₃ 
@@ -408,4 +414,33 @@ function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
   npos = n + m - nzero - nneg
 
   return npos, nzero, nneg
+end
+
+function relative_error!(workspace::PenaltyMA57Workspace)
+  rinfo = workspace.M.info.rinfo
+  return max(rinfo[6], rinfo[7], rinfo[10])
+end
+
+function increase_pivtol!(workspace::PenaltyMA57Workspace)
+  control = workspace.M.control
+  control.cntl[1] = PIVTOL_ROBUST
+  control.icntl[9] = N_ITREF
+  control.cntl[3] = MA57_ITREF_STAGNATION_ROBUST
+end
+
+function decrease_pivtol!(workspace::PenaltyMA57Workspace)
+  control = workspace.M.control
+  control.cntl[1] =
+    max(control.cntl[1] / PIVTOL_DECREASE_FACTOR, pivtol_min(eltype(workspace.x)))
+  control.icntl[9] = N_ITREF
+  control.cntl[3] = MA57_ITREF_STAGNATION
+end
+
+function reset!(workspace::PenaltyMA57Workspace)
+  set_n_fact!(workspace, 0)
+  workspace._n_precise = 0
+  control = workspace.M.control
+  control.cntl[1] = pivtol_min(eltype(workspace.x))
+  control.icntl[9] = N_ITREF
+  control.cntl[3] = MA57_ITREF_STAGNATION
 end
