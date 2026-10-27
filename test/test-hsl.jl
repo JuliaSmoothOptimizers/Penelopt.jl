@@ -22,8 +22,14 @@ if !LIBHSL_isfunctional()
 else
   @testset "MoreSorensenSolver (MA57)" begin
     for (n, m, alpha) in ((10, 2, 0.5), (10, 2, 0.0), (100, 20, 0.5), (100, 20, 0.0))
-      instance, solution =
-        generate_instance(n, m, alpha, Hessian_modifier = x -> sparse(tril(x)))
+      # Like MUMPS, the MA57 workspace builds K2 in COO format and expects a
+      # SparseMatrixCOO Hessian (the CSC Hessians of test-subsolvers.jl are for LDLT).
+      instance, solution = generate_instance(
+        n,
+        m,
+        alpha,
+        Hessian_modifier = x -> SparseMatrixCOO(sparse(tril(x))),
+      )
       solver = MoreSorensenSolver(instance; solver = :ma57)
       stats = GenericExecutionStats(
         instance.model;

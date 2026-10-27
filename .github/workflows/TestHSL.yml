@@ -55,6 +55,8 @@ jobs:
           echo "SDK: $SDK"
           echo "SDKROOT=$SDK" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$SDK/usr/lib" >> "$GITHUB_ENV"
+          # Silence "clang: warning: overriding deployment version" from Homebrew's GCC.
+          echo "MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f1).0" >> "$GITHUB_ENV"
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
