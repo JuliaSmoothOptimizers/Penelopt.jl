@@ -51,6 +51,10 @@ jobs:
         run: |
           echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
           /opt/homebrew/bin/gfortran -dumpmachine
+          SDK="$(xcrun --sdk macosx --show-sdk-path)"
+          echo "SDK: $SDK"
+          echo "SDKROOT=$SDK" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$SDK/usr/lib" >> "$GITHUB_ENV"
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
