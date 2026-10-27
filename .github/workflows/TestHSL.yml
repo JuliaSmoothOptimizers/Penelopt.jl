@@ -55,6 +55,29 @@ jobs:
           path_HSL_jll = joinpath(homedir(), ".local", "HSL_jll", "HSL_jll.jl.v" * ENV["HSL_VERSION"])
           isdir(path_HSL_jll) || error("HSL_jll not found at $path_HSL_jll")
           Pkg.develop(path = path_HSL_jll)
+      # CUTEst.jl compiles SIF problems with the gfortran found in PATH, so it
+      # must be a native arm64 compiler to link against the aarch64 CUTEst_jll.
+      - name: Use a native arm64 gfortran
+        run: |
+          echo "gfortran compilers found in PATH:"
+          for f in $(which -a gfortran); do echo "  $f -> $("$f" -dumpmachine)"; done
+
+          GFORTRAN=""
+          for f in /opt/homebrew/bin/gfortran $(which -a gfortran); do
+            if [ -x "$f" ] && "$f" -dumpmachine | grep -qE '^(aarch64|arm64)-apple-darwin'; then
+              GFORTRAN="$f"
+              break
+            fi
+          done
+
+          if [ -z "$GFORTRAN" ]; then
+            echo "::error::No native arm64 gfortran on this runner. Install GCC with arm64 Homebrew (/opt/homebrew) so CUTEst can build SIF problems."
+            exit 1
+          fi
+
+          echo "Using $GFORTRAN ($("$GFORTRAN" -dumpmachine))"
+          dirname "$GFORTRAN" >> "$GITHUB_PATH"
+          echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
       - name: Test Penelopt.jl with HSL
         shell: julia --color=yes --project=. {0}
         run: |
