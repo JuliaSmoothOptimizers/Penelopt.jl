@@ -24,7 +24,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Envelopt = { url = "https://github.com/MaxenceGollier/Envelopt.jl", rev = "penelopt-branch" }
 NCL = {rev = "main", url = "https://github.com/JuliaSmoothOptimizers/NCL.jl"}
 Penelopt = { path = ".." }
-RegularizedProblems = { url = "https://github.com/JuliaSmoothOptimizers/RegularizedProblems.jl", rev = "penelopt-branch" }
+RegularizedProblems = { url = "https://github.com/JuliaSmoothOptimizers/RegularizedProblems.jl", rev = "default-regularized-nlp" }
 
 [compat]
 ADNLPModels = "0.8.13"

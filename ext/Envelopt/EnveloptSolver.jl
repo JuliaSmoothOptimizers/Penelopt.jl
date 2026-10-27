@@ -49,7 +49,7 @@ function Penelopt.L2PenaltySolver(
     regularized_subproblem;
   )
 
-  return L2PenaltySolver(
+  return Penelopt.L2PenaltySolver(
     x,
     xn,
     y,
