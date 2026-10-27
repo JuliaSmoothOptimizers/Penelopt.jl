@@ -52,7 +52,9 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
-          Pkg.develop(path="$HOME/.local/HSL_jll/HSL_jll.jl.v2026.8.4")
+          path_HSL_jll = joinpath(homedir(), ".local", "HSL_jll", "HSL_jll.jl.v" * ENV["HSL_VERSION"])
+          isdir(path_HSL_jll) || error("HSL_jll not found at $path_HSL_jll")
+          Pkg.develop(path = path_HSL_jll)
       - name: Test Penelopt.jl with HSL
         shell: julia --color=yes --project=. {0}
         run: |
