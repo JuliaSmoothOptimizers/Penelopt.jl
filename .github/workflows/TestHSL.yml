@@ -1,0 +1,83 @@
+name: Test HSL
+
+on:
+  push:
+    branches:
+      - main
+    tags: ["*"]
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "ext/**"
+      - "test/**"
+      - "*.toml"
+      - ".github/workflows/TestHSL.yml"
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# The self-hosted runner is shared across the organization: do not queue
+# outdated runs of the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-hsl:
+    name: Julia ${{ matrix.version }} - HSL_jll ${{ matrix.hsl-version }} - ${{ github.event_name }}
+    # Never run code from forks on the self-hosted runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macstadium
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "lts"
+          - "1"
+        hsl-version:
+          - "2026.8.4"
+    env:
+      HSL_VERSION: ${{ matrix.hsl-version }}
+      # Make test/test-hsl.jl fail if MA57 is not functional on this runner.
+      PENELOPT_TEST_HSL: "true"
+    steps:
+      - uses: actions/checkout@v4
+      # CUTEst.jl compiles SIF problems with the gfortran found in PATH, which must
+      # be the native arm64 one from Homebrew. This must come BEFORE setup-julia so
+      # that the Julia installed by setup-julia takes precedence over the juliaup
+      # launcher that also lives in /opt/homebrew/bin.
+      - name: Use native arm64 Homebrew tools
+        run: |
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+          /opt/homebrew/bin/gfortran -dumpmachine
+          SDK="$(xcrun --sdk macosx --show-sdk-path)"
+          echo "SDK: $SDK"
+          echo "SDKROOT=$SDK" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$SDK/usr/lib" >> "$GITHUB_ENV"
+          # Silence "clang: warning: overriding deployment version" from Homebrew's GCC.
+          echo "MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f1).0" >> "$GITHUB_ENV"
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: aarch64
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Install licensed HSL_jll.jl
+        shell: julia --color=yes --project=. {0}
+        run: |
+          using Pkg
+          path_HSL_jll = joinpath(homedir(), ".local", "HSL_jll", "HSL_jll.jl.v" * ENV["HSL_VERSION"])
+          isdir(path_HSL_jll) || error("HSL_jll not found at $path_HSL_jll")
+          Pkg.develop(path = path_HSL_jll)
+      - name: Test Penelopt.jl with HSL
+        shell: julia --color=yes --project=. {0}
+        run: |
+          using Pkg
+          println("Julia: ", Sys.BINDIR, " (", VERSION, ")")
+          Pkg.test("Penelopt"; coverage = true)
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v4
+        with:
+          file: lcov.info
+          flags: hsl
+          token: ${{ secrets.CODECOV_TOKEN }}

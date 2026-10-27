@@ -43,12 +43,12 @@ function construct_ma57_workspace(
   return PenaltyMA57Workspace(
     S,
     H,
-    similar(u1),
-    similar(u1, 4*length(u1)),
-    similar(u1, 0),
-    similar(u1),
-    nothing,
-    Ref{BlasInt}(0),
+    similar(u1),                # x
+    similar(u1, 4*length(u1)),  # work
+    similar(u1, 0),             # _qn_work
+    nothing,                    # _ipiv
+    Ref{BlasInt}(0),            # _info
+    similar(u1),                # dx
     zero(T),
     n,
     m,
@@ -77,12 +77,12 @@ function construct_ma57_workspace(
   return PenaltyMA57Workspace(
     S,
     H,
-    similar(u1),
-    similar(u1, 4*length(u1)),
-    similar(u1, 2*length(u1)*H.B._mem),
-    similar(u1),
-    Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),
-    Ref{BlasInt}(0),
+    similar(u1),                                         # x
+    similar(u1, 4*length(u1)),                           # work
+    similar(u1, 2*length(u1)*H.B._mem),                  # _qn_work
+    Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),  # _ipiv
+    Ref{BlasInt}(0),                                     # _info
+    similar(u1),                                         # dx
     zero(T),
     n,
     m,
