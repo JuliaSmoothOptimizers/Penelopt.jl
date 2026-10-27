@@ -13,6 +13,11 @@ using Envelopt:
   envelopt
 using RegularizedProblems: AbstractRegularizedNLPModel, RegularizedNLPModel
 
+using ProximalCore
+
+Penelopt.AbstractPenalizedProblem{T, V} <: AbstractRegularizedNLPModel{T, V} where {T, V}
+
+include("Envelopt/EnveloptFModel.jl")
 include("Envelopt/EnveloptSolver.jl")
 
 end
