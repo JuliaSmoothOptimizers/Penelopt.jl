@@ -45,7 +45,7 @@ n×n block of the K2 matrix stored in `H`) on its own. `idx` are the fixed
 indices into `H.vals` for the entries of that block (its sparsity pattern
 does not change across calls, only the values do), and `a` is the
 preallocated values buffer `S` is associated with -- refresh it in place
-(e.g. `a .= H.vals[idx]`) before each `factorize!(S)` call.
+(e.g. `a .= H.vals[idx]`) before each `factorize_mumps!(S)` call.
 """
 function build_up_lb_check(H::SparseMatrixCOO{T}, n) where {T}
   idx = findall(k -> H.rows[k] <= n && H.cols[k] <= n, eachindex(H.vals))
@@ -72,6 +72,20 @@ function build_up_lb_check(H::SparseMatrixCOO{T}, n) where {T}
   S._a_gc_haven = a
 
   return S, idx, a
+end
+
+# Factorize the matrix associated with `mumps`. Its sparsity pattern does not change, so the
+# analysis is only performed on the first call and after a failure.
+function factorize_mumps!(mumps::Mumps)
+  analyze = mumps.job == MUMPS.INITIALIZE
+  MUMPS.set_job!(mumps, analyze ? MUMPS.ANALYZE_FACTOR : MUMPS.FACTOR)
+  MUMPS.invoke_mumps!(mumps)
+
+  # MUMPS infog(1) = -9: the factorization workspace is too small, the analysis is valid.
+  if mumps.infog[1] < 0 && mumps.infog[1] != -9
+    MUMPS.set_job!(mumps, MUMPS.INITIALIZE)
+  end
+  return mumps
 end
 
 function construct_mumps_workspace(
@@ -319,9 +333,7 @@ function solve_system!(
   mumps, H = workspace.M, workspace.H
 
   if !workspace.factorized
-    job = mumps.job
-    mumps.job = MUMPS.INITIALIZE
-    factorize!(mumps)
+    factorize_mumps!(mumps)
     workspace._n_fact += 1
 
     k, max_iter = 0, 5
@@ -333,8 +345,7 @@ function solve_system!(
     # 2) again, except if LWK USER is provided LWK USER should be increased.
     while mumps.infog[1] == -9 && k < max_iter
       MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
-      mumps.job = MUMPS.FACTOR
-      factorize!(mumps)
+      factorize_mumps!(mumps)
       workspace._n_fact += 1
       k = k + 1
     end
@@ -389,9 +400,7 @@ function solve_system!(
   # [A     -αI]
 
   if !workspace.factorized
-    job = mumps.job
-    mumps.job = MUMPS.INITIALIZE
-    factorize!(mumps)
+    factorize_mumps!(mumps)
     workspace._n_fact += 1
 
     k, max_iter = 0, 5
@@ -403,8 +412,7 @@ function solve_system!(
     # 2) again, except if LWK USER is provided LWK USER should be increased.
     while mumps.infog[1] == -9 && k < max_iter
       MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
-      mumps.job = MUMPS.FACTOR
-      factorize!(mumps)
+      factorize_mumps!(mumps)
       workspace._n_fact += 1
       k = k + 1
     end
@@ -570,6 +578,9 @@ function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
 
   MUMPS.set_cntl!(mumps, 1, params.pivtol_robust)
   MUMPS.set_icntl!(mumps, 10, -params.n_itref)
+
+  # Refresh the ordering and scaling at the next factorization.
+  MUMPS.set_job!(mumps, MUMPS.INITIALIZE)
 end
 
 function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
@@ -589,6 +600,11 @@ function init_pivtol!(workspace::PenaltyMUMPSWorkspace)
   workspace._n_precise = 0
   MUMPS.set_icntl!(mumps, 10, params.n_itref)
   MUMPS.set_cntl!(mumps, 1, params.pivtol_min)
+
+  # Perform the analysis again at the next factorization.
+  MUMPS.set_job!(mumps, MUMPS.INITIALIZE)
+  S = workspace._Hcheck
+  isnothing(S) || MUMPS.set_job!(S, MUMPS.INITIALIZE)
 end
 
 function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, ::Symmetric)
@@ -625,8 +641,7 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
   end
 
   S = workspace._Hcheck
-  S.job = MUMPS.INITIALIZE
-  factorize!(S)
+  factorize_mumps!(S)
 
   is_pos_def = if S.infog[1] < 0
     false
