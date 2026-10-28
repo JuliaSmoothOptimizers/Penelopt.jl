@@ -46,23 +46,6 @@ function SolverCore.reset!(workspace::PenaltyWorkspace)
   set_n_fact!(workspace, 0)
 end
 
-# up_lb_is_pos_def: whether the H + σI of
-# the augmented K2 system is positive definite. `H` is the current Hessian
-# (of the Lagrangian) approximation stored in `workspace` and σ is the
-# associated primal regularization parameter.
-up_lb_is_pos_def(workspace::PenaltyWorkspace) = up_lb_is_pos_def(workspace, workspace.H)
-
-up_lb_is_pos_def(::PenaltyWorkspace, ::CompactBFGSK2) = true
-
-# Direct-solver K2 systems where H is stored as a concrete (sparse) matrix:
-# try simple necessary/sufficient conditions. #TODO: implement a necessary and 
-# sufficient condition (Cholesky facto).
-function up_lb_is_pos_def(workspace::PenaltyWorkspace, ::Symmetric)
-  npos, nzero, nneg = get_inertia(workspace)
-  (npos == workspace.n && nneg == workspace.m) || return false
-  d, _ = primal_diagonal_and_row_sums(workspace)
-  return all(>(0), d)
-end
 
 """
     primal_diagonal_and_row_sums(workspace) -> (d, s)

@@ -600,6 +600,8 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
 end
 
 function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, A)
+
+  (typeof(workspace.H) <: CompactBFGSK2) && return true
   n, m = workspace.n, workspace.m
 
   # Step 1: check inertia
