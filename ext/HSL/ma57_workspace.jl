@@ -39,7 +39,7 @@ function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:Comp
   return solver_workspace.H.H.data
 end
 
-function mumps_like_ma57_control(params::PenaltyLSParameters{T}) where {T}
+function ma57_control(params::PenaltyLSParameters{T}) where {T}
   # Deactivate Logging
   control = Ma57_Control{T}(print_level = -1)
   icntl, cntl = control.icntl, control.cntl
@@ -76,7 +76,7 @@ function construct_ma57_workspace(
     H.data.rows,
     H.data.cols,
     H.data.vals,
-    mumps_like_ma57_control(params),
+    ma57_control(params),
     Ma57_Info{T}(),
   )
   return PenaltyMA57Workspace(
@@ -113,7 +113,7 @@ function construct_ma57_workspace(
     H.H.data.rows,
     H.H.data.cols,
     H.H.data.vals,
-    mumps_like_ma57_control(params),
+    ma57_control(params),
     Ma57_Info{T}(),
   )
   return PenaltyMA57Workspace(
