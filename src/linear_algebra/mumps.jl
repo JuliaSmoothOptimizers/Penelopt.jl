@@ -599,7 +599,7 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   workspace._n_precise = 0
 end
 
-function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, A)
+function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
 
   (typeof(workspace.H) <: CompactBFGSK2) && return true
   n, m = workspace.n, workspace.m
@@ -612,11 +612,22 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, A)
   # Step 2 & 3: cheap sufficient/necessary conditions:
   # 1. Check if the diagonal has a negative entry,
   # 2. Check if the matrix is diagonally dominant.
-  d, s = primal_diagonal_and_row_sums(workspace)
+  d, s = workspace._primal_diag, workspace._primal_row_sum
+  s.= 0
+  nnz_B = length(B.vals)
+  for i = 1:nnz_B
+    row, col, val = B.rows[i], B.cols[i], B.vals[i]
+    if row == col
+      d[row] = val + workspace.σ
+      d[row] < 0 && return false
+    else
+      s[row] += abs(val)
+    end
+  end
+
   is_diagonally_dominant = true
   for i = 1:n
-    d[i] <= 0 && return false
-    is_diagonally_dominant &= d[i] >= s[i]
+    is_diagonally_dominant &= d[i] > s[i]
   end
   is_diagonally_dominant && return true
 
@@ -644,12 +655,9 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace, A)
   set_dual_inertia!(workspace, previous_inertia)
 
   # Step 3: Check the ineria
-  is_pos_def = if mumps.infog[1] < 0
-    false
-  else
-    npos, nzero, nneg = get_inertia(workspace)
-    npos == workspace.n
-  end
+  status = get_status(workspace)
+  npos, nzero, nneg = get_inertia(workspace)
+  is_pos_def = (npos == workspace.n && status == :success)
 
   return is_pos_def
 end

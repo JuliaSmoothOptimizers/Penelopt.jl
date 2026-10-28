@@ -243,7 +243,7 @@ function SolverCore.solve!(
   end
 
   # Check that H + σI is positive definite.
-  is_pos_def = up_lb_is_pos_def(solver_workspace, reg_nlp.h.A)
+  is_pos_def = up_lb_is_pos_def(solver_workspace, reg_nlp.model.data.H, reg_nlp.h.A)
   set_solver_specific!(stats, :is_pos_def, is_pos_def)
 
   converged = (is_descent && accept_descent) || norm_x1 <= Δ
