@@ -23,7 +23,7 @@ mutable struct PenaltyLDLTWorkspace{
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
   _Hcheck::WPC # Preallocated, reused LDL factorization for up_lb_is_pos_def_exact!
   _Hcheck_mat::KC # Preallocated H + σI block for _Hcheck, values refreshed on each call
-  _ls_params::LinearSolverParams{T} # Unused: LDLFactorizations does not pivot
+  _ls_params::PenaltyLSParameters{T} # Unused: LDLFactorizations does not pivot
 end
 
 function get_H(
@@ -87,7 +87,7 @@ function construct_ldlt_workspace(
     zeros(T, n),
     Scheck,
     Hp,
-    LinearSolverParams{T}(),
+    PenaltyLSParameters{T}(),
   )
 end
 
@@ -115,7 +115,7 @@ function construct_ldlt_workspace(
     zeros(T, 0),
     nothing,
     nothing,
-    LinearSolverParams{T}(),
+    PenaltyLSParameters{T}(),
   )
 end
 

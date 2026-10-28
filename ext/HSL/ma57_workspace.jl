@@ -22,7 +22,7 @@ mutable struct PenaltyMA57Workspace{
   _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
   _n_precise::Int # Counter for how many times the relative error has been below threshold
-  _ls_params::LinearSolverParams{T}
+  _ls_params::PenaltyLSParameters{T}
 end
 
 # Ma57 cntl(3): stop iterative refinement if the error does not decrease by cntl(3).
@@ -39,7 +39,7 @@ function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:Comp
   return solver_workspace.H.H.data
 end
 
-function mumps_like_ma57_control(params::LinearSolverParams{T}) where {T}
+function mumps_like_ma57_control(params::PenaltyLSParameters{T}) where {T}
   # Deactivate Logging
   control = Ma57_Control{T}(print_level = -1)
   icntl, cntl = control.icntl, control.cntl
@@ -70,7 +70,7 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  params = LinearSolverParams{T}()
+  params = PenaltyLSParameters{T}()
   S = ma57_coord(
     n + m,
     H.data.rows,
@@ -107,7 +107,7 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
-  params = LinearSolverParams{T}()
+  params = PenaltyLSParameters{T}()
   S = ma57_coord(
     n + m,
     H.H.data.rows,

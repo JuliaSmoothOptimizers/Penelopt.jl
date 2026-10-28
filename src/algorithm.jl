@@ -278,15 +278,13 @@ function SolverCore.solve!(
 
   set_ls_params!(
     solver.subsolver.subsolver.workspace,
-    LinearSolverParams{T}(
-      pivtol_min = ls_pivtol_min,
-      pivtol_robust = ls_pivtol_robust,
-      pivtol_decrease_factor = ls_pivtol_decrease_factor,
-      pivtol_increase_threshold = ls_pivtol_increase_threshold,
-      pivtol_decrease_threshold = ls_pivtol_decrease_threshold,
-      n_itref = ls_n_itref,
-      n_precise_solves = ls_n_precise_solves,
-    ),
+    pivtol_min = ls_pivtol_min,
+    pivtol_robust = ls_pivtol_robust,
+    pivtol_decrease_factor = ls_pivtol_decrease_factor,
+    pivtol_increase_threshold = ls_pivtol_increase_threshold,
+    pivtol_decrease_threshold = ls_pivtol_decrease_threshold,
+    n_itref = ls_n_itref,
+    n_precise_solves = ls_n_precise_solves,
   )
 
   x = solver.x .= x

@@ -23,7 +23,7 @@ mutable struct PenaltyMUMPSWorkspace{
   _Hcheck_idx::Vector{Int} # Fixed indices into H.data.vals for the H + σI block
   _Hcheck_a::V # Preallocated values buffer for _Hcheck, refreshed on each call
   _n_precise::Int # Counter for how many times the relative error has been below threshold
-  _ls_params::LinearSolverParams{T}
+  _ls_params::PenaltyLSParameters{T}
 end
 
 function get_H(
@@ -81,7 +81,7 @@ function construct_mumps_workspace(
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric}
   # Set params : TODO
-  params = LinearSolverParams{T}()
+  params = PenaltyLSParameters{T}()
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -165,7 +165,7 @@ function construct_mumps_workspace(
   m,
 ) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
   # Set params : TODO
-  params = LinearSolverParams{T}()
+  params = PenaltyLSParameters{T}()
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 

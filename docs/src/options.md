@@ -255,6 +255,35 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > * ldlt: Load [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
     > * ma57: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
 
+The `mumps` and `ma57` linear solvers adapt their pivot threshold and their iterative refinement during the solve.
+They start with the pivot threshold `ls_pivtol_min` and at most `ls_n_itref` steps of iterative refinement.
+After each solve of a linear system, the error of the solution (the largest of its scaled residual and backward errors) is measured:
+* if it is larger than `ls_pivtol_increase_threshold`, the solve is considered failed and the pivot threshold is set to `ls_pivtol_robust`;
+* if it is smaller than `ls_pivtol_decrease_threshold` for more than `ls_n_precise_solves` consecutive solves, the pivot threshold is divided by `ls_pivtol_decrease_factor`.
+
+These options are ignored when `linear_solver = "ldlt"`.
+
+ * `ls_pivtol_min::T = eps(T)` (*advanced*): initial and minimum relative pivot threshold.
+    > Each call to `solve!` starts with this pivot threshold, which is also its lower bound when it is decreased (see `ls_pivtol_decrease_factor`). A larger pivot threshold increases fill-in but leads to a more accurate factorization. When `T == Float64`, the default value is $\approx 10^{-16}$.
+
+ * `ls_pivtol_robust::T = T(1e-2)` (*advanced*): pivot threshold after an inaccurate solve.
+    > When the error of a solve is larger than `ls_pivtol_increase_threshold`, the next factorizations use the pivot threshold `ls_pivtol_robust`.
+
+ * `ls_pivtol_decrease_factor::T = T(10)` (*advanced*): pivot threshold decrease factor.
+    > After more than `ls_n_precise_solves` consecutive accurate solves, the pivot threshold is divided by `ls_pivtol_decrease_factor`, without going below `ls_pivtol_min`.
+
+ * `ls_pivtol_increase_threshold::T = sqrt(eps(T))` (*advanced*): error above which a solve is inaccurate.
+    > Such a solve is considered failed, and the pivot threshold is set to `ls_pivtol_robust`. When `T == Float64`, the default value is $\approx 10^{-8}$.
+
+ * `ls_pivtol_decrease_threshold::T = eps(T) * 100` (*advanced*): error below which a solve is accurate.
+    > See `ls_n_precise_solves`. When `T == Float64`, the default value is $\approx 10^{-14}$.
+
+ * `ls_n_itref::Int = 5` (*advanced*): maximum number of iterative refinement steps.
+    > Iterative refinement stops early when it converges or when the error decreases slowly. After an inaccurate solve (see `ls_pivtol_increase_threshold`), it no longer stops when the error decreases slowly, until the pivot threshold is decreased again. With `ma57`, at least 2 steps are performed.
+
+ * `ls_n_precise_solves::Int = 20` (*advanced*): number of consecutive accurate solves before decreasing the pivot threshold.
+    > A solve is accurate when its error is smaller than `ls_pivtol_decrease_threshold`. After more than `ls_n_precise_solves` consecutive accurate solves, the pivot threshold is divided by `ls_pivtol_decrease_factor`.
+
 ## Scaling
 
 Scaling replaces the original NLP

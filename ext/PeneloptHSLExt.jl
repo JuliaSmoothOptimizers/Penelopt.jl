@@ -16,7 +16,7 @@ import Penelopt: getrf!, getrs!
 import Penelopt: CompactBFGS, CompactBFGSK2
 import Penelopt: set_dual_inertia!, set_primal_inertia!
 import Penelopt: relative_error!, increase_pivtol!, decrease_pivtol!, init_pivtol!
-using Penelopt: update_pivtol!, LinearSolverParams, get_ls_params
+using Penelopt: update_pivtol!, PenaltyLSParameters, get_ls_params
 
 function __init__()
   Penelopt._set_hsl_available(HSL.LIBHSL_isfunctional())

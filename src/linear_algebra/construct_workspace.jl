@@ -43,7 +43,7 @@ function set_n_fact!(workspace::PenaltyDirectWorkspace, n::Int)
 end
 
 # Hyperparameters of the dynamic pivoting strategy of the direct solvers.
-struct LinearSolverParams{T}
+mutable struct PenaltyLSParameters{T}
   pivtol_min::T
   pivtol_robust::T
   pivtol_decrease_factor::T
@@ -53,7 +53,7 @@ struct LinearSolverParams{T}
   n_precise_solves::Int
 end
 
-function LinearSolverParams{T}(;
+function PenaltyLSParameters{T}(;
   pivtol_min::T = eps(T),
   pivtol_robust::T = T(1e-2),
   pivtol_decrease_factor::T = T(10),
@@ -62,7 +62,7 @@ function LinearSolverParams{T}(;
   n_itref::Int = 5,
   n_precise_solves::Int = 20,
 ) where {T}
-  return LinearSolverParams{T}(
+  return PenaltyLSParameters{T}(
     pivtol_min,
     pivtol_robust,
     pivtol_decrease_factor,
@@ -75,8 +75,24 @@ end
 
 get_ls_params(workspace::PenaltyDirectWorkspace) = workspace._ls_params
 
-function set_ls_params!(workspace::PenaltyDirectWorkspace, params::LinearSolverParams)
-  workspace._ls_params = params
+function set_ls_params!(
+  workspace::PenaltyDirectWorkspace;
+  pivtol_min,
+  pivtol_robust,
+  pivtol_decrease_factor,
+  pivtol_increase_threshold,
+  pivtol_decrease_threshold,
+  n_itref,
+  n_precise_solves,
+)
+  params = get_ls_params(workspace)
+  params.pivtol_min = pivtol_min
+  params.pivtol_robust = pivtol_robust
+  params.pivtol_decrease_factor = pivtol_decrease_factor
+  params.pivtol_increase_threshold = pivtol_increase_threshold
+  params.pivtol_decrease_threshold = pivtol_decrease_threshold
+  params.n_itref = n_itref
+  params.n_precise_solves = n_precise_solves
   init_pivtol!(workspace)
 end
 

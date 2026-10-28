@@ -88,6 +88,32 @@ stats = L2Penalty(nlp, callback = stop_early, print_level = 1)
 finalize(nlp) # hide
 ```
  
+### Example 3 : Tune the Linear Solver
+
+The hyperparameters of the linear solver (see the [`ls` options](options.md#Linear-Solver)) are stored in a mutable `PenaltyLSParameters` structure, which the callback can modify.
+A modification is used the next time the linear solver needs the modified value, and lasts until the end of the current `solve!`: each call to `solve!` starts again from the `ls` options.
+
+```@example cb-3
+using CUTEst, Penelopt
+
+# Define the nonlinear program
+nlp = CUTEstModel("HS26")
+
+# Define the callback
+# From the 10th iteration on, we use a more conservative pivot threshold after inaccurate solves.
+function tune_linear_solver(nlp, solver, stats)
+  ls_params = Penelopt.get_ls_params(solver.subsolver.subsolver.workspace)
+  if stats.iter == 10
+    ls_params.pivtol_robust = 0.1
+  end
+end
+
+# Solve the problem
+stats = L2Penalty(nlp, callback = tune_linear_solver)
+
+finalize(nlp) # hide
+```
+
 ## What Can You Access
  
 All the information relevant to the current state of the algorithm is
