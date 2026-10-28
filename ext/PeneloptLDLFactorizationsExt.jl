@@ -15,7 +15,8 @@ import Penelopt: get_H, get_inertia, get_solution!, get_status
 import Penelopt: getrf!, getrs!
 import Penelopt: CompactBFGS, CompactBFGSK2
 import Penelopt: set_dual_inertia!, set_primal_inertia!
-import Penelopt: primal_diagonal_and_row_sums, up_lb_is_pos_def
+import Penelopt: set_hessian!, set_jacobian!
+import Penelopt: up_lb_is_pos_def
 
 include("LDLFactorizations/ldlt.jl")
 

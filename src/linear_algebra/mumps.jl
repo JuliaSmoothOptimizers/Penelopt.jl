@@ -17,7 +17,6 @@ mutable struct PenaltyMUMPSWorkspace{
   status::Symbol
   factorized::Bool
   _n_fact::Int
-  _nnz_A::Int     # nnz of the Jacobian A
   _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
   _n_precise::Int # Counter for how many times the relative error has been below threshold
@@ -105,7 +104,6 @@ function construct_mumps_workspace(
     :uninitialized,
     false,
     0,
-    0,
     zeros(T, n),
     zeros(T, n),
     0,
@@ -182,7 +180,6 @@ function construct_mumps_workspace(
     m,
     :uninitialized,
     false,
-    0,
     0,
     zeros(T, 0),
     zeros(T, 0),
