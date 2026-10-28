@@ -593,20 +593,22 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
   # 1. Check if the diagonal has a negative entry,
   # 2. Check if the matrix is diagonally dominant.
   d, s = workspace._primal_diag, workspace._primal_row_sum
-  s.= 0
+  s .= 0
+  d .= 0
   nnz_B = length(B.vals)
   for i = 1:nnz_B
     row, col, val = B.rows[i], B.cols[i], B.vals[i]
     if row == col
-      d[row] = val + workspace.σ
-      d[row] < 0 && return false
+      d[row] += val + workspace.σ
     else
       s[row] += abs(val)
+      s[col] += abs(val)
     end
   end
 
   is_diagonally_dominant = true
   for i = 1:n
+    d[i] < 0 && return false
     is_diagonally_dominant &= d[i] > s[i]
   end
   is_diagonally_dominant && return true
