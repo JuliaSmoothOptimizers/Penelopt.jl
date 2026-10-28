@@ -12,16 +12,15 @@ mutable struct PenaltyMUMPSWorkspace{
   _ipiv::VI # For CompactBFGS LU factorization
   _info::Base.RefValue{BlasInt}  # For CompactBFGS LU factorization
   σ::T
+  α::T
   n::Int
   m::Int
   status::Symbol
   factorized::Bool
   _n_fact::Int
+  _nnz_A::Int     # nnz of the Jacobian A
   _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
-  _Hcheck::WPC # Preallocated, reused MUMPS instance for up_lb_is_pos_def_exact!
-  _Hcheck_idx::Vector{Int} # Fixed indices into H.data.vals for the H + σI block
-  _Hcheck_a::V # Preallocated values buffer for _Hcheck, refreshed on each call
   _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
 
@@ -33,44 +32,6 @@ end
 
 function get_H(solver_workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2<:CompactBFGSK2}
   return solver_workspace.H.H.data
-end
-
-"""
-    build_up_lb_check(H::SparseMatrixCOO{T}, n) -> (S, idx, a)
-
-Preallocate a MUMPS instance `S`, sized n×n, dedicated to the exact check
-performed by `up_lb_is_pos_def_exact!`: factorizing H + σI (the leading
-n×n block of the K2 matrix stored in `H`) on its own. `idx` are the fixed
-indices into `H.vals` for the entries of that block (its sparsity pattern
-does not change across calls, only the values do), and `a` is the
-preallocated values buffer `S` is associated with -- refresh it in place
-(e.g. `a .= H.vals[idx]`) before each `factorize!(S)` call.
-"""
-function build_up_lb_check(H::SparseMatrixCOO{T}, n) where {T}
-  idx = findall(k -> H.rows[k] <= n && H.cols[k] <= n, eachindex(H.vals))
-  irn = Int32.(H.rows[idx])
-  jcn = Int32.(H.cols[idx])
-  a = Vector{T}(undef, length(idx))
-
-  cntl = T == Float64 ? default_cntl64 : default_cntl32
-  icntl = default_icntl
-  cntl[1] = eps(T)
-  icntl[2], icntl[3], icntl[4] = 0, 0, 0
-  # CNTL(13) controls the parallelism of the root node; needed to get a
-  # reliable inertia from INFOG(12) (see construct_mumps_workspace).
-  icntl[13] = 1
-  # ICNTL(24): null pivot row detection.
-  icntl[24] = 1
-
-  S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
-  S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
-  S.n = n
-  S.nnz = length(idx)
-  S._irn_gc_haven = irn
-  S._jcn_gc_haven = jcn
-  S._a_gc_haven = a
-
-  return S, idx, a
 end
 
 function construct_mumps_workspace(
@@ -132,8 +93,6 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  Scheck, idx, a_check = build_up_lb_check(H.data, n)
-
   return PenaltyMUMPSWorkspace(
     S,
     H,
@@ -141,16 +100,15 @@ function construct_mumps_workspace(
     nothing,
     Ref{BlasInt}(0),
     zero(T),
+    zero(T),
     n,
     m,
     :uninitialized,
     false,
     0,
+    0,
     zeros(T, n),
     zeros(T, n),
-    Scheck,
-    idx,
-    a_check,
     0,
   )
 end
@@ -220,29 +178,64 @@ function construct_mumps_workspace(
     Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),
     Ref{BlasInt}(0),
     zero(T),
+    zero(T),
     n,
     m,
     :uninitialized,
     false,
     0,
+    0,
     zeros(T, 0),
-    zeros(T, 0),
-    nothing,
-    Int[],
     zeros(T, 0),
     0,
   )
 end
 
+# [B + σI  A ] -> [B + σI  0  ]
+# [Aᵀ     -αI] -> [0       -αI]
+function set_zero_jacobian!(
+  solver_workspace::PenaltyMUMPSWorkspace,
+)
+  n, m = solver_workspace.n, solver_workspace.m
+  nnz_A = solver_workspace._nnz_A
+  nnz_B = length(H.vals) - nnz_A - n - m
+
+  H = get_H(solver_workspace)
+
+  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= 0
+
+  solver_workspace.factorized = false
+end
+
+# [B + σI  0  ] -> [B + σI  A ]
+# [0       -αI] -> [Aᵀ     -αI]
+function set_jacobian!(
+  solver_workspace::PenaltyMUMPSWorkspace,
+  A::SparseMatrixCOO
+)
+  n, m = solver_workspace.n, solver_workspace.m
+  nnz_A = solver_workspace._nnz_A
+  nnz_B = length(H.vals) - nnz_A - n - m
+
+  H = get_H(solver_workspace)
+
+  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
+
+  solver_workspace.factorized = false
+end
+
+# [B + σI  A ]
+# [Aᵀ     -αI]
 function update_workspace!(
   solver_workspace::PenaltyMUMPSWorkspace,
   B::M,
   A,
-  σ,
-  α,
-) where {M<:SparseMatrixCOO}
+  σ::T,
+  α::T,
+) where {T, M<:SparseMatrixCOO{T}}
   n, m = solver_workspace.n, solver_workspace.m
   nnz_B, nnz_A = length(B.vals), length(A.vals)
+  solver_workspace._nnz_A = nnz_A
 
   H = get_H(solver_workspace)
 
@@ -252,13 +245,17 @@ function update_workspace!(
   H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
 
   solver_workspace.σ = σ
+  solver_workspace.α = α
   solver_workspace.factorized = false
 end
 
-function update_workspace!(solver_workspace::PenaltyMUMPSWorkspace, A, σ, α)
+# [σI   A ]
+# [Aᵀ  -αI]
+function update_workspace!(solver_workspace::PenaltyMUMPSWorkspace, A, σ::T, α::T) where{T}
   # Warning: Considers tht B is a zero matrix.
   n, m = solver_workspace.n, solver_workspace.m
   nnz_A = length(A.vals)
+  solver_workspace._nnz_A = nnz_A
   H = get_H(solver_workspace)
   nnz_B = length(H.vals) - nnz_A - n - m
 
@@ -268,6 +265,7 @@ function update_workspace!(solver_workspace::PenaltyMUMPSWorkspace, A, σ, α)
   H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
 
   solver_workspace.σ = σ
+  solver_workspace.α = α
   solver_workspace.factorized = false
 end
 
@@ -275,11 +273,12 @@ function update_workspace!(
   solver_workspace::PenaltyMUMPSWorkspace,
   B::M,
   A,
-  σ,
-  α,
-) where {M<:CompactBFGS}
+  σ::T,
+  α::T,
+) where {T, M<:CompactBFGS{T}}
   n, m = solver_workspace.n, solver_workspace.m
   nnz_A = length(A.vals)
+  solver_workspace._nnz_A = nnz_A
 
   H = get_H(solver_workspace)
 
@@ -288,6 +287,7 @@ function update_workspace!(
   H.vals[(nnz_A+n+1):(nnz_A+n+m)] .= -α
 
   solver_workspace.σ = σ
+  solver_workspace.α = α
   solver_workspace.factorized = false
 end
 
@@ -295,6 +295,7 @@ function set_dual_inertia!(solver_workspace::PenaltyMUMPSWorkspace, α)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
   H.vals[(end-m+1):end] .= -α
+  solver_workspace.α = α
   solver_workspace.factorized = false
 end
 
@@ -596,6 +597,7 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   set_n_fact!(workspace, 0)
   MUMPS.set_icntl!(workspace.M, 10, 5)
   MUMPS.set_cntl!(workspace.M, 1, eps(eltype(workspace.x)))
+  workspace._n_precise = 0
 end
 
 function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, ::Symmetric)
@@ -622,24 +624,24 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, ::Symmetric)
 end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.
-function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
-  n = workspace.n
-  H = get_H(workspace)
-  idx = workspace._Hcheck_idx
-  a = workspace._Hcheck_a
-  @inbounds for k in eachindex(idx)
-    a[k] = H.vals[idx[k]]
-  end
+function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace, A)
+  
+  # Step 1: Factorize
+  # [B + σI  0]
+  # [0      -I]
+  previous_inertia = solver_workspace.α
+  set_zero_jacobian!(workspace)
+  set_dual_inertia!(workspace, one(previous_inertia))
 
-  S = workspace._Hcheck
-  S.job = MUMPS.INITIALIZE
-  factorize!(S)
+  mumps = workspace.M
+  mumps.job = MUMPS.INI
+  factorize!(mumps)
 
-  is_pos_def = if S.infog[1] < 0
+  is_pos_def = if mumps.infog[1] < 0
     false
   else
-    nneg = S.infog[12]
-    rank = n - S.infog[28]
+    nneg = mumps.infog[12]
+    rank = n - mumps.infog[28]
     npos = rank - nneg
     npos == n
   end
