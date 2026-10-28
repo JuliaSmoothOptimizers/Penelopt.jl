@@ -10,6 +10,10 @@ function get_linear_solver(
     # LDLFactorizations.jl is loaded through the PeneloptLDLFactorizationsExt extension.
     ext = Base.get_extension(@__MODULE__, :PeneloptLDLFactorizationsExt)
     return "LDLFactorizations.jl v$(pkgversion(ext.LDLFactorizations))"
+  elseif WP <: AbstractHSLWorkspace
+    ext = Base.get_extension(@__MODULE__, :PeneloptHSLExt)
+    (WP <: ext.PenaltyMA57Workspace) && return "HSL MA57 v$(pkgversion(ext.HSL.HSL_jll))"
+    return ""
   else
     return ""
   end
