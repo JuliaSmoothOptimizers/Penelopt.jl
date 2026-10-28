@@ -4,7 +4,6 @@ mutable struct PenaltyMUMPSWorkspace{
   V<:AbstractVector,
   VI<:Union{Nothing,AbstractVector},
   T<:Real,
-  WPC<:Union{Nothing,Mumps},
 } <: AbstractMUMPSWorkspace
   M::WP
   H::K2
@@ -198,9 +197,9 @@ function set_zero_jacobian!(
 )
   n, m = solver_workspace.n, solver_workspace.m
   nnz_A = solver_workspace._nnz_A
+  H = get_H(solver_workspace)
   nnz_B = length(H.vals) - nnz_A - n - m
 
-  H = get_H(solver_workspace)
 
   H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= 0
 
@@ -215,9 +214,9 @@ function set_jacobian!(
 )
   n, m = solver_workspace.n, solver_workspace.m
   nnz_A = solver_workspace._nnz_A
+  H = get_H(solver_workspace)
   nnz_B = length(H.vals) - nnz_A - n - m
 
-  H = get_H(solver_workspace)
 
   H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
 
@@ -600,7 +599,7 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   workspace._n_precise = 0
 end
 
-function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, ::Symmetric)
+function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, A)
   n, m = workspace.n, workspace.m
 
   # Step 1: check inertia
@@ -620,7 +619,7 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, ::Symmetric)
   is_diagonally_dominant && return true
 
   # Step 4: fallback to Cholesky factorization.
-  return up_lb_is_pos_def_exact!(workspace)
+  return up_lb_is_pos_def_exact!(workspace, A)
 end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.
@@ -629,21 +628,25 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace, A)
   # Step 1: Factorize
   # [B + σI  0]
   # [0      -I]
-  previous_inertia = solver_workspace.α
+  previous_inertia = workspace.α
   set_zero_jacobian!(workspace)
   set_dual_inertia!(workspace, one(previous_inertia))
 
   mumps = workspace.M
-  mumps.job = MUMPS.INI
+  mumps.job = MUMPS.FACTOR
   factorize!(mumps)
+  workspace._n_fact += 1
 
+  # Step 2: Revert values of H to original values
+  set_jacobian!(workspace, A)
+  set_dual_inertia!(workspace, previous_inertia)
+
+  # Step 3: Check the ineria
   is_pos_def = if mumps.infog[1] < 0
     false
   else
-    nneg = mumps.infog[12]
-    rank = n - mumps.infog[28]
-    npos = rank - nneg
-    npos == n
+    npos, nzero, nneg = get_inertia(workspace)
+    npos == workspace.n
   end
 
   return is_pos_def
