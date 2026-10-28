@@ -190,82 +190,39 @@ function construct_mumps_workspace(
   )
 end
 
-# [B + σI  A ] -> [B + σI  0  ]
-# [Aᵀ     -αI] -> [0       -αI]
-function set_zero_jacobian!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-)
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = solver_workspace._nnz_A
-  H = get_H(solver_workspace)
-  nnz_B = length(H.vals) - nnz_A - n - m
-
-
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= 0
-
-  solver_workspace.factorized = false
-end
-
-# [B + σI  0  ] -> [B + σI  A ]
-# [0       -αI] -> [Aᵀ     -αI]
-function set_jacobian!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-  A::SparseMatrixCOO
-)
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = solver_workspace._nnz_A
-  H = get_H(solver_workspace)
-  nnz_B = length(H.vals) - nnz_A - n - m
-
-
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-
-  solver_workspace.factorized = false
-end
-
 # [B + σI  A ]
 # [Aᵀ     -αI]
 function update_workspace!(
   solver_workspace::PenaltyMUMPSWorkspace,
-  B::M,
-  A,
+  B::M1,
+  A::M2,
   σ::T,
-  α::T,
-) where {T, M<:SparseMatrixCOO{T}}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_B, nnz_A = length(B.vals), length(A.vals)
-  solver_workspace._nnz_A = nnz_A
-
-  H = get_H(solver_workspace)
-
-  H.vals[1:nnz_B] .= B.vals
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
-  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
-
-  solver_workspace.σ = σ
-  solver_workspace.α = α
-  solver_workspace.factorized = false
+  α::T;
+  A_value::Union{Nothing, T} = nothing,
+  B_value::Union{Nothing, T} = nothing,
+) where {T, M1<:SparseMatrixCOO{T}, M2<:SparseMatrixCOO{T}}
+  set_hessian!(solver_workspace, B, value = B_value)
+  set_jacobian!(solver_workspace, A, value = A_value)
+  set_primal_inertia!(solver_workspace, σ)
+  set_dual_inertia!(solver_workspace, α)
 end
 
-# [σI   A ]
-# [Aᵀ  -αI]
-function update_workspace!(solver_workspace::PenaltyMUMPSWorkspace, A, σ::T, α::T) where{T}
-  # Warning: Considers tht B is a zero matrix.
+function update_workspace!(
+  solver_workspace::PenaltyMUMPSWorkspace,
+  A::M,
+  σ::T,
+  α::T;
+  A_value::Union{Nothing, T} = nothing,
+) where {T, M<:SparseMatrixCOO{T}}
   n, m = solver_workspace.n, solver_workspace.m
   nnz_A = length(A.vals)
-  solver_workspace._nnz_A = nnz_A
   H = get_H(solver_workspace)
   nnz_B = length(H.vals) - nnz_A - n - m
 
-  H.vals .= 0
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
-  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
-
-  solver_workspace.σ = σ
-  solver_workspace.α = α
-  solver_workspace.factorized = false
+  H.vals[1:nnz_B] .= 0
+  set_jacobian!(solver_workspace, A, value = A_value)
+  set_primal_inertia!(solver_workspace, σ)
+  set_dual_inertia!(solver_workspace, α)
 end
 
 function update_workspace!(
@@ -273,20 +230,43 @@ function update_workspace!(
   B::M,
   A,
   σ::T,
-  α::T,
+  α::T;
+  A_value::Union{Nothing, T} = nothing,
 ) where {T, M<:CompactBFGS{T}}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-  solver_workspace._nnz_A = nnz_A
+  set_jacobian!(solver_workspace, A; value = A_value)
+  set_primal_inertia!(solver_workspace, σ + B.ξ)
+  set_dual_inertia!(solver_workspace, α)
+end
 
+function set_hessian!(
+  solver_workspace::PenaltyMUMPSWorkspace,
+  B::SparseMatrixCOO{T};
+  value::Union{Nothing, T} = nothing
+) where{T}
+  nnz_B = length(B.vals)
   H = get_H(solver_workspace)
 
-  H.vals[1:nnz_A] .= A.vals
-  H.vals[(nnz_A+1):(nnz_A+n)] .= σ + B.ξ
-  H.vals[(nnz_A+n+1):(nnz_A+n+m)] .= -α
+  H.vals[1:nnz_B] .= B.vals
+end
 
-  solver_workspace.σ = σ
-  solver_workspace.α = α
+# [B + σI  A ] -> [B + σI  0  ]
+# [Aᵀ     -αI] -> [0       -αI]
+function set_jacobian!(
+  solver_workspace::PenaltyMUMPSWorkspace,
+  A::SparseMatrixCOO{T};
+  value::Union{Nothing, T} = nothing
+) where{T}
+  n, m = solver_workspace.n, solver_workspace.m
+  nnz_A = length(A.vals)
+  H = get_H(solver_workspace)
+  nnz_B = length(H.vals) - nnz_A - n - m
+
+  if value == nothing
+    H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
+  else
+    H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= value
+  end
+
   solver_workspace.factorized = false
 end
 
@@ -642,7 +622,7 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace, A)
   # [B + σI  0]
   # [0      -I]
   previous_inertia = workspace.α
-  set_zero_jacobian!(workspace)
+  set_jacobian!(workspace, A, value = zero(previous_inertia))
   set_dual_inertia!(workspace, one(previous_inertia))
 
   mumps = workspace.M
