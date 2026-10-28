@@ -23,6 +23,7 @@ mutable struct PenaltyMUMPSWorkspace{
   _Hcheck_idx::Vector{Int} # Fixed indices into H.data.vals for the H + σI block
   _Hcheck_a::V # Preallocated values buffer for _Hcheck, refreshed on each call
   _n_precise::Int # Counter for how many times the relative error has been below threshold
+  _ls_params::LinearSolverParams{T}
 end
 
 function get_H(
@@ -80,6 +81,7 @@ function construct_mumps_workspace(
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric}
   # Set params : TODO
+  params = LinearSolverParams{T}()
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -89,7 +91,7 @@ function construct_mumps_workspace(
   # Remarks: It forms a trade-off between preserving sparsity and ensuring numerical stability during
   # the factorization. In general, a larger value of CNTL(1) increases fill-in but leads to a more accurate
   # factorization.
-  cntl[1] = pivtol_min(T)
+  cntl[1] = params.pivtol_min
 
   cntl[2] = eps(T) # Tolerance for iterative refinement
 
@@ -97,7 +99,7 @@ function construct_mumps_workspace(
   icntl[2], icntl[3], icntl[4] = 0, 0, 0
 
   # Max number of iterative refinement steps
-  icntl[10] = N_ITREF
+  icntl[10] = params.n_itref
 
   # ICNTL(11): error analysis
   # 2: Main statistics (recommended)
@@ -152,6 +154,7 @@ function construct_mumps_workspace(
     idx,
     a_check,
     0,
+    params,
   )
 end
 
@@ -162,6 +165,7 @@ function construct_mumps_workspace(
   m,
 ) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
   # Set params : TODO
+  params = LinearSolverParams{T}()
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -170,7 +174,7 @@ function construct_mumps_workspace(
   # Remarks: It forms a trade-off between preserving sparsity and ensuring numerical stability during
   # the factorization. In general, a larger value of CNTL(1) increases fill-in but leads to a more accurate
   # factorization.
-  cntl[1] = pivtol_min(T)
+  cntl[1] = params.pivtol_min
 
   cntl[2] = eps(T) # Tolerance for iterative refinement
 
@@ -178,7 +182,7 @@ function construct_mumps_workspace(
   icntl[2], icntl[3], icntl[4] = 0, 0, 0
 
   # Max number of iterative refinement steps
-  icntl[10] = N_ITREF
+  icntl[10] = params.n_itref
 
   # ICNTL(11): error analysis
   # 2: Main statistics (recommended)
@@ -231,6 +235,7 @@ function construct_mumps_workspace(
     Int[],
     zeros(T, 0),
     0,
+    params,
   )
 end
 
@@ -561,28 +566,29 @@ function relative_error!(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
 end
 
 function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
-  mumps = workspace.M
+  mumps, params = workspace.M, get_ls_params(workspace)
 
-  MUMPS.set_cntl!(mumps, 1, PIVTOL_ROBUST)
-  MUMPS.set_icntl!(mumps, 10, -N_ITREF)
+  MUMPS.set_cntl!(mumps, 1, params.pivtol_robust)
+  MUMPS.set_icntl!(mumps, 10, -params.n_itref)
 end
 
 function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
-  mumps = workspace.M
+  mumps, params = workspace.M, get_ls_params(workspace)
 
   MUMPS.set_cntl!(
     mumps,
     1,
-    max(mumps.cntl[1] / PIVTOL_DECREASE_FACTOR, pivtol_min(eltype(workspace.x))),
+    max(mumps.cntl[1] / params.pivtol_decrease_factor, params.pivtol_min),
   )
-  MUMPS.set_icntl!(mumps, 10, N_ITREF)
+  MUMPS.set_icntl!(mumps, 10, params.n_itref)
 end
 
-function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
-  set_n_fact!(workspace, 0)
+function init_pivtol!(workspace::PenaltyMUMPSWorkspace)
+  mumps, params = workspace.M, get_ls_params(workspace)
+
   workspace._n_precise = 0
-  MUMPS.set_icntl!(workspace.M, 10, N_ITREF)
-  MUMPS.set_cntl!(workspace.M, 1, pivtol_min(eltype(workspace.x)))
+  MUMPS.set_icntl!(mumps, 10, params.n_itref)
+  MUMPS.set_cntl!(mumps, 1, params.pivtol_min)
 end
 
 function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, ::Symmetric)

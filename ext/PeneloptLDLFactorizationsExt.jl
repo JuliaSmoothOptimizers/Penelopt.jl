@@ -16,6 +16,7 @@ import Penelopt: getrf!, getrs!
 import Penelopt: CompactBFGS, CompactBFGSK2
 import Penelopt: set_dual_inertia!, set_primal_inertia!
 import Penelopt: primal_diagonal_and_row_sums, up_lb_is_pos_def
+using Penelopt: LinearSolverParams
 
 include("LDLFactorizations/ldlt.jl")
 

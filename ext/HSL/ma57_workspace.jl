@@ -22,6 +22,7 @@ mutable struct PenaltyMA57Workspace{
   _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
   _n_precise::Int # Counter for how many times the relative error has been below threshold
+  _ls_params::LinearSolverParams{T}
 end
 
 # Ma57 cntl(3): stop iterative refinement if the error does not decrease by cntl(3).
@@ -38,14 +39,14 @@ function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:Comp
   return solver_workspace.H.H.data
 end
 
-function mumps_like_ma57_control(::Type{T}) where {T}
+function mumps_like_ma57_control(params::LinearSolverParams{T}) where {T}
   # Deactivate Logging
   control = Ma57_Control{T}(print_level = -1)
   icntl, cntl = control.icntl, control.cntl
 
   # Ma57 icntl(7): 1 performs threshold partial pivoting with relative threshold cntl(1).
   icntl[7] = 1
-  cntl[1] = pivtol_min(T)
+  cntl[1] = params.pivtol_min
 
   # Ma57 icntl(6): 5 chooses the ordering automatically.
   icntl[6] = 5
@@ -53,8 +54,8 @@ function mumps_like_ma57_control(::Type{T}) where {T}
   # Ma57 icntl(15): 1 scales the matrix with MC64.
   icntl[15] = 1
 
-  # Max number of iterative refinement steps
-  icntl[9] = N_ITREF
+  # Max number of iterative refinement steps (at least 2 for the error analysis)
+  icntl[9] = max(params.n_itref, 2)
   cntl[3] = MA57_ITREF_STAGNATION
 
   # Ma57 icntl(10): 0 skips the condition number estimates in the error analysis.
@@ -69,12 +70,13 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
+  params = LinearSolverParams{T}()
   S = ma57_coord(
     n + m,
     H.data.rows,
     H.data.cols,
     H.data.vals,
-    mumps_like_ma57_control(T),
+    mumps_like_ma57_control(params),
     Ma57_Info{T}(),
   )
   return PenaltyMA57Workspace(
@@ -95,6 +97,7 @@ function construct_ma57_workspace(
     zeros(T, n),
     zeros(T, n),
     0,                          # _n_precise
+    params,                     # _ls_params
   )
 end
 
@@ -104,12 +107,13 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
+  params = LinearSolverParams{T}()
   S = ma57_coord(
     n + m,
     H.H.data.rows,
     H.H.data.cols,
     H.H.data.vals,
-    mumps_like_ma57_control(T),
+    mumps_like_ma57_control(params),
     Ma57_Info{T}(),
   )
   return PenaltyMA57Workspace(
@@ -130,6 +134,7 @@ function construct_ma57_workspace(
     zeros(T, 0),
     zeros(T, 0),
     0,                                                   # _n_precise
+    params,                                              # _ls_params
   )
 end
 
@@ -422,25 +427,21 @@ function relative_error!(workspace::PenaltyMA57Workspace)
 end
 
 function increase_pivtol!(workspace::PenaltyMA57Workspace)
-  control = workspace.M.control
-  control.cntl[1] = PIVTOL_ROBUST
-  control.icntl[9] = N_ITREF
+  control, params = workspace.M.control, get_ls_params(workspace)
+  control.cntl[1] = params.pivtol_robust
   control.cntl[3] = MA57_ITREF_STAGNATION_ROBUST
 end
 
 function decrease_pivtol!(workspace::PenaltyMA57Workspace)
-  control = workspace.M.control
-  control.cntl[1] =
-    max(control.cntl[1] / PIVTOL_DECREASE_FACTOR, pivtol_min(eltype(workspace.x)))
-  control.icntl[9] = N_ITREF
+  control, params = workspace.M.control, get_ls_params(workspace)
+  control.cntl[1] = max(control.cntl[1] / params.pivtol_decrease_factor, params.pivtol_min)
   control.cntl[3] = MA57_ITREF_STAGNATION
 end
 
-function reset!(workspace::PenaltyMA57Workspace)
-  set_n_fact!(workspace, 0)
+function init_pivtol!(workspace::PenaltyMA57Workspace)
+  control, params = workspace.M.control, get_ls_params(workspace)
   workspace._n_precise = 0
-  control = workspace.M.control
-  control.cntl[1] = pivtol_min(eltype(workspace.x))
-  control.icntl[9] = N_ITREF
+  control.cntl[1] = params.pivtol_min
+  control.icntl[9] = max(params.n_itref, 2)
   control.cntl[3] = MA57_ITREF_STAGNATION
 end

@@ -42,27 +42,62 @@ function set_n_fact!(workspace::PenaltyDirectWorkspace, n::Int)
   workspace._n_fact = n
 end
 
-function SolverCore.reset!(workspace::PenaltyWorkspace)
-  set_n_fact!(workspace, 0)
+# Hyperparameters of the dynamic pivoting strategy of the direct solvers.
+struct LinearSolverParams{T}
+  pivtol_min::T
+  pivtol_robust::T
+  pivtol_decrease_factor::T
+  pivtol_increase_threshold::T
+  pivtol_decrease_threshold::T
+  n_itref::Int
+  n_precise_solves::Int
 end
 
-# Hyperparameters of the dynamic pivoting strategy, shared by MUMPS and MA57.
-pivtol_min(::Type{T}) where {T} = eps(T)
-const PIVTOL_ROBUST = 1e-2
-const PIVTOL_DECREASE_FACTOR = 10
-const N_ITREF = 5 # MA57 requires at least 2 steps for its error analysis.
-const N_PRECISE_SOLVES = 20
+function LinearSolverParams{T}(;
+  pivtol_min::T = eps(T),
+  pivtol_robust::T = T(1e-2),
+  pivtol_decrease_factor::T = T(10),
+  pivtol_increase_threshold::T = sqrt(eps(T)),
+  pivtol_decrease_threshold::T = eps(T) * 100,
+  n_itref::Int = 5,
+  n_precise_solves::Int = 20,
+) where {T}
+  return LinearSolverParams{T}(
+    pivtol_min,
+    pivtol_robust,
+    pivtol_decrease_factor,
+    pivtol_increase_threshold,
+    pivtol_decrease_threshold,
+    n_itref,
+    n_precise_solves,
+  )
+end
+
+get_ls_params(workspace::PenaltyDirectWorkspace) = workspace._ls_params
+
+function set_ls_params!(workspace::PenaltyDirectWorkspace, params::LinearSolverParams)
+  workspace._ls_params = params
+  init_pivtol!(workspace)
+end
+
+# Set the pivot threshold and iterative refinement of the solver to their initial values.
+init_pivtol!(::PenaltyWorkspace) = nothing
+
+function SolverCore.reset!(workspace::PenaltyWorkspace)
+  set_n_fact!(workspace, 0)
+  init_pivtol!(workspace)
+end
 
 function update_pivtol!(workspace::PenaltyDirectWorkspace)
-  T = eltype(workspace.x)
+  params = get_ls_params(workspace)
   relative_error = relative_error!(workspace)
-  if relative_error > sqrt(eps(T))
+  if relative_error > params.pivtol_increase_threshold
     increase_pivtol!(workspace)
     workspace.status = :failed
     workspace._n_precise = 0
-  elseif relative_error < eps(T) * 100
+  elseif relative_error < params.pivtol_decrease_threshold
     workspace._n_precise += 1
-    if workspace._n_precise > N_PRECISE_SOLVES
+    if workspace._n_precise > params.n_precise_solves
       decrease_pivtol!(workspace)
     end
   else

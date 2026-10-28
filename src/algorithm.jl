@@ -245,6 +245,15 @@ function SolverCore.solve!(
   ms_αmin2::T = eps(T)^(0.6),
   ms_ηC::T = eps(T),
 
+  ## LS Specific arguments
+  ls_pivtol_min::T = eps(T),
+  ls_pivtol_robust::T = T(1e-2),
+  ls_pivtol_decrease_factor::T = T(10),
+  ls_pivtol_increase_threshold::T = sqrt(eps(T)),
+  ls_pivtol_decrease_threshold::T = eps(T) * 100,
+  ls_n_itref::Int = 5,
+  ls_n_precise_solves::Int = 20,
+
   ## Scaling arguments
   nlp_scaling_method::String = isa(nlp, QuasiNewtonModel) ? "gradient-based" : "none",
   gmax::T = T(100),
@@ -266,6 +275,19 @@ function SolverCore.solve!(
   penalty_pb = solver.subpb # f(x) + τ‖c(x)‖₂
   mk = solver.subsolver.subpb
   φ, ψ = mk.model, mk.h
+
+  set_ls_params!(
+    solver.subsolver.subsolver.workspace,
+    LinearSolverParams{T}(
+      pivtol_min = ls_pivtol_min,
+      pivtol_robust = ls_pivtol_robust,
+      pivtol_decrease_factor = ls_pivtol_decrease_factor,
+      pivtol_increase_threshold = ls_pivtol_increase_threshold,
+      pivtol_decrease_threshold = ls_pivtol_decrease_threshold,
+      n_itref = ls_n_itref,
+      n_precise_solves = ls_n_precise_solves,
+    ),
+  )
 
   x = solver.x .= x
   y = solver.y
