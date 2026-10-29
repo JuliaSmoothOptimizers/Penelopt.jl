@@ -27,8 +27,8 @@ mutable struct K2Matrix{
   nnz_B::Int
 end
 
-# CompactBFGSK2 is a 2x2 block KKT matrix with a compact BFGS approximation for the (1,1) block.
-mutable struct CompactBFGSK2{
+# CompactBFGSK2Matrix is a 2x2 block KKT matrix with a compact BFGS approximation for the (1,1) block.
+mutable struct CompactBFGSK2Matrix{
   T<:Real,
   M1<:CompactBFGS,
   M2<:AbstractMatrix{T},
@@ -150,7 +150,7 @@ function K2(
   # Step 4: Construct the sparse matrix
   H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
-  return CompactBFGSK2(
+  return CompactBFGSK2Matrix(
     B,
     A,
     Symmetric(H),
