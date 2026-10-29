@@ -265,6 +265,7 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyLDLTWorkspace)
 
   ldl_factorize!(workspace.H.H, workspace.M)
   workspace._n_fact += 1
+  success = factorized(workspace.M)
 
   # Step 2: Revert values of H to original values
   set_jacobian!(workspace.H, workspace.H.A)
@@ -272,7 +273,7 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyLDLTWorkspace)
 
   # Step 3: Check the ineria
   npos, nzero, nneg = get_inertia(workspace)
-  is_pos_def = (npos == get_n(workspace) && factorized(workspace.M))
+  is_pos_def = (npos == get_n(workspace) && success)
 
   return is_pos_def
 end
