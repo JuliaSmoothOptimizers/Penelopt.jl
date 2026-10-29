@@ -231,8 +231,10 @@ function update_workspace!(
   A_value::Union{Nothing, T} = nothing,
 ) where {T, M<:CompactBFGS{T}}
   set_jacobian!(solver_workspace, A; value = A_value)
-  set_primal_inertia!(solver_workspace, σ + B.ξ)
   set_dual_inertia!(solver_workspace, α)
+
+  set_primal_inertia!(solver_workspace, σ + B.ξ)
+  solver_workspace.σ = σ
 end
 
 function set_hessian!(
