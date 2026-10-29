@@ -1,8 +1,5 @@
-mutable struct PenaltyMUMPSWorkspace{
-  WP<:Mumps,
-  K2<:AbstractK2Matrix,
-  V<:AbstractVector,
-} <: AbstractMUMPSWorkspace
+mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractVector} <:
+               AbstractMUMPSWorkspace
   M::WP
   H::K2
   x::V
@@ -13,11 +10,11 @@ mutable struct PenaltyMUMPSWorkspace{
 end
 
 function construct_mumps_workspace(
-  K::AbstractK2Matrix{T, M1, M2, M3},
+  K::AbstractK2Matrix{T,M1,M2,M3},
   u1,
   n,
   m,
-) where {T, M1, M2, M3 <:SparseSymmetricCOO{T}}
+) where {T,M1,M2,M3<:SparseSymmetricCOO{T}}
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -71,15 +68,7 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(
-    S,
-    K,
-    x,
-    :uninitialized,
-    false,
-    0,
-    0,
-  )
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0)
 end
 
 function solve_system!(
@@ -252,8 +241,14 @@ function solve_system!(
     # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
-    @views info_f =
-      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace.H.ipiv, workspace.H.info)
+    @views info_f = getrf!(
+      BlasInt(2p),
+      BlasInt(2p),
+      Z2,
+      stride(Z2, 2),
+      workspace.H.ipiv,
+      workspace.H.info,
+    )
     if info_f != 0
       workspace.status = :failed
       return
@@ -369,7 +364,7 @@ end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.
 function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
-  
+
   # Step 1: Factorize
   # [B + σI  0]
   # [0      -I]

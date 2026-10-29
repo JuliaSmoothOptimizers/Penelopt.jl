@@ -1,8 +1,5 @@
-mutable struct PenaltyMA57Workspace{
-  WP<:Ma57,
-  K2<:AbstractK2Matrix,
-  V<:AbstractVector,
-} <: AbstractHSLWorkspace
+mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVector} <:
+               AbstractHSLWorkspace
   M::WP
   H::K2
   x::V
@@ -15,14 +12,21 @@ mutable struct PenaltyMA57Workspace{
 end
 
 function construct_ma57_workspace(
-  H::AbstractK2Matrix{T, M1, M2, M3},
+  H::AbstractK2Matrix{T,M1,M2,M3},
   u1,
   n,
   m,
 ) where {T,M1,M2,M3<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  S = ma57_coord(n + m, H.H.data.rows, H.H.data.cols, H.H.data.vals, sqd = true, print_level = -1)
+  S = ma57_coord(
+    n + m,
+    H.H.data.rows,
+    H.H.data.cols,
+    H.H.data.vals,
+    sqd = true,
+    print_level = -1,
+  )
   _qn_work = M1 <: CompactBFGS ? similar(u1, 2*length(u1)*H.B._mem) : similar(u1, 0)
-  
+
   return PenaltyMA57Workspace(
     S,
     H,
@@ -195,8 +199,14 @@ function solve_system!(
     # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
-    @views info_f =
-      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace.H.ipiv, workspace.H.info)
+    @views info_f = getrf!(
+      BlasInt(2p),
+      BlasInt(2p),
+      Z2,
+      stride(Z2, 2),
+      workspace.H.ipiv,
+      workspace.H.info,
+    )
     if info_f != 0
       workspace.status = :failed
       return
@@ -265,7 +275,7 @@ end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.
 function up_lb_is_pos_def_exact!(workspace::PenaltyMA57Workspace)
-  
+
   # Step 1: Factorize
   # [B + σI  0]
   # [0      -I]
@@ -286,7 +296,10 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMA57Workspace)
 
   # Step 3: Check the ineria
   npos, nzero, nneg = get_inertia(workspace)
-  is_pos_def = (npos == get_n(workspace) && !(workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4))
+  is_pos_def = (
+    npos == get_n(workspace) &&
+    !(workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4)
+  )
 
   return is_pos_def
 end

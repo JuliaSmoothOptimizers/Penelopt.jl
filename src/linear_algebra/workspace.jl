@@ -21,7 +21,7 @@ function update_workspace!(
   A::M2,
   σ::T,
   α::T;
-) where {T, M1, M2}
+) where {T,M1,M2}
   K = workspace.H
   initialize_primal_regularization!(K, σ)
   set_dual_regularization!(K, α)
@@ -30,12 +30,7 @@ function update_workspace!(
   invalidate_factorization!(workspace)
 end
 
-function update_workspace!(
-  workspace::PenaltyDirectWorkspace,
-  A::M,
-  σ::T,
-  α::T;
-) where {T, M}
+function update_workspace!(workspace::PenaltyDirectWorkspace, A::M, σ::T, α::T;) where {T,M}
   K = workspace.H
   reset_hessian!(K)
   set_jacobian!(K, A)
@@ -50,7 +45,7 @@ function update_workspace!(
   A::M2,
   σ::T,
   α::T;
-) where {T, M1<:CompactBFGS{T}, M2}
+) where {T,M1<:CompactBFGS{T},M2}
   K = workspace.H
   initialize_primal_regularization!(K, σ + B.ξ)
   set_jacobian!(K, A)
@@ -69,9 +64,7 @@ function set_dual_regularization!(workspace::PenaltyDirectWorkspace, α::T) wher
   invalidate_factorization!(workspace)
 end
 
-function invalidate_factorization!(
-  workspace::PenaltyDirectWorkspace
-)
+function invalidate_factorization!(workspace::PenaltyDirectWorkspace)
   workspace.factorized = false
 end
 
@@ -83,10 +76,7 @@ function get_m(workspace::PenaltyDirectWorkspace)
   return workspace.H.m
 end
 
-function get_solution!(
-  x::V,
-  workspace::PenaltyDirectWorkspace,
-) where {V<:AbstractVector}
+function get_solution!(x::V, workspace::PenaltyDirectWorkspace) where {V<:AbstractVector}
   x .= workspace.x
 end
 

@@ -80,7 +80,19 @@ function K2(
   # Step 4: Construct the sparse matrix
   H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
-  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B), zeros(T, n), zeros(T, n))
+  return K2Matrix(
+    B,
+    A,
+    Symmetric(H),
+    α_temp,
+    σ_temp,
+    n,
+    m,
+    nnz(A),
+    nnz(B),
+    zeros(T, n),
+    zeros(T, n),
+  )
 end
 
 # CompactBFGSK2Matrix is a 2x2 block KKT matrix with a compact BFGS approximation for the (1,1) block.
@@ -322,5 +334,4 @@ end
 
 function reset_hessian!(
   K::AbstractK2Matrix{T,M1,M2,M3},
-) where {T,M1<:CompactBFGS,M2,M3<:SparseSymmetricCSC{T}}
-end
+) where {T,M1<:CompactBFGS,M2,M3<:SparseSymmetricCSC{T}} end

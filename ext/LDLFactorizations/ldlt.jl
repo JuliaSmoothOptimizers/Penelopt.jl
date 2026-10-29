@@ -13,11 +13,11 @@ mutable struct PenaltyLDLTWorkspace{
 end
 
 function construct_ldlt_workspace(
-  K::AbstractK2Matrix{T, M1, M2, M3},
+  K::AbstractK2Matrix{T,M1,M2,M3},
   u1,
   n,
   m,
-) where {T, M1, M2, M3 <:SparseSymmetricCSC{T}}
+) where {T,M1,M2,M3<:SparseSymmetricCSC{T}}
   S = ldl_analyze(K.H)
   return PenaltyLDLTWorkspace(
     S,
@@ -30,9 +30,7 @@ function construct_ldlt_workspace(
   )
 end
 
-function invalidate_factorization!(
-  workspace::PenaltyLDLTWorkspace
-)
+function invalidate_factorization!(workspace::PenaltyLDLTWorkspace)
   workspace.M.__factorized = false
 end
 
@@ -181,8 +179,14 @@ function solve_system!(
     # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
-    @views info_f =
-      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace.H.ipiv, workspace.H.info)
+    @views info_f = getrf!(
+      BlasInt(2p),
+      BlasInt(2p),
+      Z2,
+      stride(Z2, 2),
+      workspace.H.ipiv,
+      workspace.H.info,
+    )
     if info_f != 0
       workspace.status = :failed
       return
@@ -255,7 +259,7 @@ end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.
 function up_lb_is_pos_def_exact!(workspace::PenaltyLDLTWorkspace)
-  
+
   # Step 1: Factorize
   # [B + σI  0]
   # [0      -I]
