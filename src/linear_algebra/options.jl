@@ -89,30 +89,11 @@ function decrease_pivtol!(workspace::PenaltyDirectWorkspace)
   set_pivtol!(workspace, max(opt.min_pivtol, get_pivtol(workspace) * opt.decrease_pivtol_factor))
 end
 
-function set_pivtol!(workspace::PenaltyDirectWorkspace, pivtol)
-  return
-end
-
-function get_pivtol(workspace::PenaltyDirectWorkspace)
-  return 0.0
-end
-
-function relative_error!(workspace::PenaltyDirectWorkspace)
-  return 0.0
-end
-
-function force_iterative_refinement!(workspace::PenaltyDirectWorkspace)
-  return
-end
-
-function relax_iterative_refinement!(workspace::PenaltyDirectWorkspace)
-  return
-end
-
-function set_n_precise_solve!(workspace::PenaltyDirectWorkspace, n::Int)
-  return
-end
-
-function get_n_precise_solve(workspace::PenaltyDirectWorkspace)
-  return
-end
+# Backend interface for `update_pivtol!`: workspaces that call it must implement these.
+function set_pivtol! end
+function get_pivtol end
+function relative_error! end
+function force_iterative_refinement! end
+function relax_iterative_refinement! end
+function set_n_precise_solve! end
+function get_n_precise_solve end
