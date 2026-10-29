@@ -27,7 +27,7 @@ function update_workspace!(
   set_dual_regularization!(K, α)
   set_jacobian!(K, A)
   set_hessian!(K, B)
-  workspace.factorized = false
+  invalidate_factorization!(workspace)
 end
 
 function update_workspace!(
@@ -41,7 +41,7 @@ function update_workspace!(
   set_jacobian!(K, A)
   set_primal_regularization!(K, σ)
   set_dual_regularization!(K, α)
-  workspace.factorized = false
+  invalidate_factorization!(workspace)
 end
 
 function update_workspace!(
@@ -56,17 +56,31 @@ function update_workspace!(
   set_jacobian!(K, A)
   set_dual_regularization!(K, α)
   K.σ = σ
-  workspace.factorized = false
+  invalidate_factorization!(workspace)
 end
 
 function set_primal_regularization!(workspace::PenaltyDirectWorkspace, σ::T) where {T}
   set_primal_regularization!(workspace.H, σ)
-  workspace.factorized = false
+  invalidate_factorization!(workspace)
 end
 
 function set_dual_regularization!(workspace::PenaltyDirectWorkspace, α::T) where {T}
   set_dual_regularization!(workspace.H, α)
+  invalidate_factorization!(workspace)
+end
+
+function invalidate_factorization!(
+  workspace::PenaltyDirectWorkspace
+)
   workspace.factorized = false
+end
+
+function get_n(workspace::PenaltyDirectWorkspace)
+  return workspace.H.n
+end
+
+function get_m(workspace::PenaltyDirectWorkspace)
+  return workspace.H.m
 end
 
 function up_lb_is_pos_def(workspace::PenaltyDirectWorkspace)

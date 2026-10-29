@@ -98,7 +98,7 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
     solve_system!(ls_workspace, u1)
     get_solution!(x1, ls_workspace)
 
-    if isa(ls_workspace.H, CompactBFGSK2)
+    if isa(ls_workspace.H, CompactBFGSK2Matrix)
       # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
       # ( J           -αI )( y ) = - ( c )
       x1 .= ls_workspace.H.x1
@@ -112,7 +112,7 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
     solve_system!(ls_workspace, u1)
     get_solution!(x1, ls_workspace)
 
-    if isa(ls_workspace.H, CompactBFGSK2)
+    if isa(ls_workspace.H, CompactBFGSK2Matrix)
       # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
       # ( J           -αI )( y ) = - ( c )
       x1 .= ls_workspace.H.x1

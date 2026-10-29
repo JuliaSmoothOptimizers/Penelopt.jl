@@ -1,240 +1,41 @@
 mutable struct PenaltyLDLTWorkspace{
   WP<:LDLFactorization,
-  K2<:AbstractMatrix,
+  K2<:AbstractK2Matrix,
   V<:AbstractVector,
-  VI<:Union{Nothing,AbstractVector},
-  T<:Real,
-  WPC<:Union{Nothing,LDLFactorization},
-  KC<:Union{Nothing,Symmetric},
 } <: AbstractLDLTWorkspace
   M::WP
   H::K2
   x::V
   dx::V
   r::V
-  _ipiv::VI # For CompactBFGS LU factorization
-  _info::Base.RefValue{BlasInt} # For CompactBFGS LU factorization
-  σ::T
-  n::Int
-  m::Int
   status::Symbol
   _n_fact::Int
-  _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
-  _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
-  _Hcheck::WPC # Preallocated, reused LDL factorization for up_lb_is_pos_def_exact!
-  _Hcheck_mat::KC # Preallocated H + σI block for _Hcheck, values refreshed on each call
-end
-
-"""
-    build_up_lb_check(H::SparseMatrixCSC{T}, n) -> (S, Hp)
-
-Preallocate an LDL factorization `S`, sized n×n, dedicated to the exact check
-performed by `up_lb_is_pos_def_exact!`: factorizing H + σI (the leading
-n×n block of the K2 matrix stored in `H`) on its own. Since `H` stores the
-upper triangle of the K2 matrix in CSC format, the leading n×n block consists
-exactly of the first `H.colptr[n+1] - 1` stored entries of `H`. `Hp` is the
-preallocated `Symmetric` n×n matrix `S` is associated with -- refresh its values
-in place (e.g. `Hp.data.nzval .= H.nzval[1:nnz(Hp.data)]`) before each
-`ldl_factorize!(Hp, S)` call.
-"""
-function build_up_lb_check(H::SparseMatrixCSC{T,Ti}, n) where {T,Ti}
-  nnz_primal = H.colptr[n+1] - 1
-  Hp = SparseMatrixCSC{T,Ti}(
-    n,
-    n,
-    H.colptr[1:(n+1)],
-    H.rowval[1:nnz_primal],
-    H.nzval[1:nnz_primal],
-  )
-  Hp = Symmetric(Hp, :U)
-  S = ldl_analyze(Hp)
-  return S, Hp
 end
 
 function construct_ldlt_workspace(
-  H::M,
-  u1::V,
+  K::AbstractK2Matrix{T, M1, M2, M3},
+  u1,
   n,
   m,
-) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCSC{T,Int}}}
-  S = ldl_analyze(H)
-  Scheck, Hp = build_up_lb_check(H.data, n)
+) where {T, M1, M2, M3 <:SparseSymmetricCSC{T}}
+  S = ldl_analyze(K.H)
   return PenaltyLDLTWorkspace(
     S,
-    H,
+    K,
     similar(u1),
     similar(u1),
     similar(u1),
-    nothing,
-    Ref{BlasInt}(0),
-    zero(T),
-    n,
-    m,
     :uninitialized,
     0,
-    zeros(T, n),
-    zeros(T, n),
-    Scheck,
-    Hp,
   )
 end
 
-function construct_ldlt_workspace(
-  H::M,
-  u1::V,
-  n,
-  m,
-) where {T,V<:AbstractVector{T},M<:CompactBFGSK2Matrix}
-  S = ldl_analyze(H.H)
-  return PenaltyLDLTWorkspace(
-    S,
-    H,
-    similar(u1),
-    similar(u1),
-    similar(u1),
-    Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),
-    Ref{BlasInt}(0),
-    zero(T),
-    n,
-    m,
-    :uninitialized,
-    0,
-    zeros(T, 0),
-    zeros(T, 0),
-    nothing,
-    nothing,
-  )
+function invalidate_factorization!(
+  workspace::PenaltyLDLTWorkspace
+)
+  workspace.M.__factorized = false
 end
 
-function update_workspace!(
-  solver_workspace::PenaltyLDLTWorkspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:SparseMatrixCSC}
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-
-  @views H[1:n, 1:n] .= B'
-
-  @inbounds for i = 1:n
-    H[i, i] += σ
-  end
-
-  @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n+A.rows[i]] = A.vals[i]
-  end
-
-  @inbounds for i = 1:m
-    H[n+i, n+i] -= α
-  end
-
-  solver_workspace.σ = σ
-  solver_workspace.M.__factorized = false
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyLDLTWorkspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:SparseMatrixCOO}
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-
-  @inbounds for i = 1:n
-    H[i, i] = σ
-  end
-
-  @inbounds for i = 1:length(B.vals)
-    if B.cols[i] == B.rows[i]
-      H[B.cols[i], B.rows[i]] += B.vals[i]
-    else
-      H[B.cols[i], B.rows[i]] = B.vals[i]
-    end
-  end
-
-  @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n+A.rows[i]] = A.vals[i]
-  end
-
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
-
-  solver_workspace.σ = σ
-  solver_workspace.M.__factorized = false
-end
-
-function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, A, σ, α)
-  # Warning: Considers tht B is a zero matrix.
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-
-  H.nzval .= 0
-
-  @inbounds for i = 1:n
-    H[i, i] = σ
-  end
-
-  @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n+A.rows[i]] = A.vals[i]
-  end
-
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
-
-  solver_workspace.σ = σ
-  solver_workspace.M.__factorized = false
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyLDLTWorkspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:CompactBFGS}
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-
-  @inbounds for i = 1:n
-    H[i, i] = σ + B.ξ
-  end
-
-  @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n+A.rows[i]] = A.vals[i]
-  end
-
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
-  solver_workspace.σ = σ
-  solver_workspace.M.__factorized = false
-end
-
-function set_dual_regularization!(solver_workspace::PenaltyLDLTWorkspace, α)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
-  solver_workspace.M.__factorized = false
-end
-
-function set_primal_regularization!(solver_workspace::PenaltyLDLTWorkspace, σ)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  σ_prev = solver_workspace.σ
-  @inbounds for i = 1:n
-    H[i, i] += σ - σ_prev
-  end
-  solver_workspace.σ = σ
-  solver_workspace.M.__factorized = false
-end
 
 # Given Ax ≈ b, refine the solution by solving AΔx = b - Ax and updating x += Δx
 function refine!(
@@ -245,8 +46,8 @@ function refine!(
 ) where {T,V<:AbstractVector{T}}
 
   # Compute the residual r = u - H*x
-  r, H, x = workspace.r, workspace.H, workspace.x
-  n, m = workspace.n, workspace.m
+  r, H, x = workspace.r, workspace.H.H, workspace.x
+  n, m = get_n(workspace), get_m(workspace)
   dx = workspace.dx
   solved = false
   k = 0
@@ -275,7 +76,7 @@ function solve_system!(
   workspace.status = :success
 
   if !factorized(workspace.M)
-    ldl_factorize!(workspace.H, workspace.M)
+    ldl_factorize!(workspace.H.H, workspace.M)
     workspace._n_fact += 1
   end
   if !factorized(workspace.M)
@@ -458,29 +259,6 @@ function get_inertia(workspace::PenaltyLDLTWorkspace)
   end
 
   return npos, nzero, nneg
-end
-
-function up_lb_is_pos_def(workspace::PenaltyLDLTWorkspace, ::Symmetric)
-  n, m = workspace.n, workspace.m
-
-  # Step 1: check inertia
-  npos, nzero, nneg = get_inertia(workspace)
-  status = get_status(workspace)
-  (status == :failed || npos != n || nneg != m) && return false
-
-  # Step 2 & 3: cheap sufficient/necessary conditions:
-  # 1. Check if the diagonal has a negative entry,
-  # 2. Check if the matrix is diagonally dominant.
-  d, s = primal_diagonal_and_row_sums(workspace)
-  is_diagonally_dominant = true
-  for i = 1:n
-    d[i] <= 0 && return false
-    is_diagonally_dominant &= d[i] >= s[i]
-  end
-  is_diagonally_dominant && return true
-
-  # Step 4: fallback to Cholesky factorization.
-  return up_lb_is_pos_def_exact!(workspace)
 end
 
 # Perform LDLᵀ facto of H + σI to check positive definiteness.
