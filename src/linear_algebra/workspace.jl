@@ -83,6 +83,17 @@ function get_m(workspace::PenaltyDirectWorkspace)
   return workspace.H.m
 end
 
+function get_solution!(
+  x::V,
+  workspace::PenaltyDirectWorkspace,
+) where {V<:AbstractVector}
+  x .= workspace.x
+end
+
+function get_status(workspace::PenaltyDirectWorkspace)
+  return workspace.status
+end
+
 function up_lb_is_pos_def(workspace::PenaltyDirectWorkspace)
 
   (typeof(workspace.H) <: CompactBFGSK2Matrix) && return true

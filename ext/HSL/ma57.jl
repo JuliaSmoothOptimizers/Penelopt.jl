@@ -1,175 +1,39 @@
 mutable struct PenaltyMA57Workspace{
   WP<:Ma57,
-  K2<:AbstractMatrix,
+  K2<:AbstractK2Matrix,
   V<:AbstractVector,
-  VI<:Union{Nothing,AbstractVector},
-  T<:Real,
 } <: AbstractHSLWorkspace
   M::WP
   H::K2
   x::V
   work::V
   _qn_work::V
-  _ipiv::VI # For CompactBFGS LU factorization
-  _info::Base.RefValue{BlasInt}  # For CompactBFGS LU factorization
   dx::V
-  σ::T
-  n::Int
-  m::Int
   status::Symbol
   factorized::Bool
   _n_fact::Int
-  _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
-  _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
-end
-
-function get_H(
-  solver_workspace::PenaltyMA57Workspace{WP,K2},
-) where {T,WP,K2<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  return solver_workspace.H.data
-end
-
-function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:CompactBFGSK2}
-  return solver_workspace.H.H.data
 end
 
 function construct_ma57_workspace(
-  H::M,
-  u1::V,
+  H::AbstractK2Matrix{T, M1, M2, M3},
+  u1,
   n,
   m,
-) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
+) where {T,M1,M2,M3<:Symmetric{T,SparseMatrixCOO{T,Int}}}
   S = ma57_coord(n + m, H.data.rows, H.data.cols, H.data.vals, sqd = true, print_level = -1)
+  _qn_work = isa(M1, CompactBFGS) ? similar(u1, 2*length(u1)*H.B._mem) : similar(u1, 0)
+  
   return PenaltyMA57Workspace(
     S,
     H,
     similar(u1),                # x
     similar(u1, 4*length(u1)),  # work
-    similar(u1, 0),             # _qn_work
-    nothing,                    # _ipiv
-    Ref{BlasInt}(0),            # _info
+    _qn_work,                   # _qn_work
     similar(u1),                # dx
-    zero(T),
-    n,
-    m,
     :uninitialized,
     false,
     0,
-    zeros(T, n),
-    zeros(T, n),
   )
-end
-
-function construct_ma57_workspace(
-  H::M,
-  u1::V,
-  n,
-  m,
-) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
-  S = ma57_coord(
-    n + m,
-    H.H.data.rows,
-    H.H.data.cols,
-    H.H.data.vals,
-    sqd = true,
-    print_level = -1,
-  )
-  return PenaltyMA57Workspace(
-    S,
-    H,
-    similar(u1),                                         # x
-    similar(u1, 4*length(u1)),                           # work
-    similar(u1, 2*length(u1)*H.B._mem),                  # _qn_work
-    Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),  # _ipiv
-    Ref{BlasInt}(0),                                     # _info
-    similar(u1),                                         # dx
-    zero(T),
-    n,
-    m,
-    :uninitialized,
-    false,
-    0,
-    zeros(T, 0),
-    zeros(T, 0),
-  )
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyMA57Workspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:SparseMatrixCOO}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_B, nnz_A = length(B.vals), length(A.vals)
-
-  H = get_H(solver_workspace)
-
-  H.vals[1:nnz_B] .= B.vals
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
-  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
-
-  solver_workspace.M.vals .= H.vals
-
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
-end
-
-function update_workspace!(solver_workspace::PenaltyMA57Workspace, A, σ, α)
-  # Warning: Considers tht B is a zero matrix.
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-  H = get_H(solver_workspace)
-  nnz_B = length(H.vals) - nnz_A - n - m
-
-  H.vals .= 0
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
-  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
-
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyMA57Workspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:CompactBFGS}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-
-  H = get_H(solver_workspace)
-
-  H.vals[1:nnz_A] .= A.vals
-  H.vals[(nnz_A+1):(nnz_A+n)] .= σ + B.ξ
-  H.vals[(nnz_A+n+1):(nnz_A+n+m)] .= -α
-
-  solver_workspace.M.vals .= H.vals
-
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
-end
-
-function set_dual_inertia!(solver_workspace::PenaltyMA57Workspace, α)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  H.vals[(end-m+1):end] .= -α
-  solver_workspace.M.vals[(end-m+1):end] .= -α
-  solver_workspace.factorized = false
-end
-
-function set_primal_inertia!(solver_workspace::PenaltyMA57Workspace, σ)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  H.vals[(end-m-n+1):(end-m)] .= σ
-  solver_workspace.M.vals[(end-m-n+1):(end-m)] .= σ
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
 end
 
 function solve_system!(
@@ -384,17 +248,6 @@ function solve_system!(
   else
     workspace.x .= x1
   end
-end
-
-function get_solution!(
-  x::V,
-  workspace::PenaltyMA57Workspace{WP,K2},
-) where {V<:AbstractVector,WP,K2}
-  x .= workspace.x
-end
-
-function get_status(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
-  return workspace.status
 end
 
 function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}

@@ -232,14 +232,6 @@ function solve_system!(
   end
 end
 
-function get_solution!(x::V, workspace::PenaltyLDLTWorkspace) where {V<:AbstractVector}
-  x .= workspace.x
-end
-
-function get_status(workspace::PenaltyLDLTWorkspace)
-  return workspace.status
-end
-
 function get_inertia(workspace::PenaltyLDLTWorkspace)
   LDL = workspace.M
 

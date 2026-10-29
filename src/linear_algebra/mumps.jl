@@ -309,14 +309,6 @@ function solve_system!(
   end
 end
 
-function get_solution!(x::V, workspace::PenaltyMUMPSWorkspace) where {V<:AbstractVector}
-  x .= workspace.x
-end
-
-function get_status(workspace::PenaltyMUMPSWorkspace)
-  return workspace.status
-end
-
 function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
 
   n, m = get_n(workspace), get_m(workspace)
