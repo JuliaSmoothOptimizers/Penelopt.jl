@@ -68,6 +68,8 @@ function invalidate_factorization!(workspace::PenaltyDirectWorkspace)
   workspace.factorized = false
 end
 
+factorized(workspace::PenaltyDirectWorkspace) = workspace.factorized
+
 function get_n(workspace::PenaltyDirectWorkspace)
   return workspace.H.n
 end
