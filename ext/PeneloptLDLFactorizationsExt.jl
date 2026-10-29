@@ -16,6 +16,9 @@ import Penelopt: invalidate_factorization!, construct_ldlt_workspace, solve_syst
 import Penelopt: get_inertia, up_lb_is_pos_def_exact!
 import Penelopt: reset_jacobian!, set_jacobian!, set_dual_regularization!
 import Penelopt: PenaltyLinearSolverOptions
+import Penelopt: set_pivtol!, get_pivtol, relative_error!
+import Penelopt: force_iterative_refinement!, relax_iterative_refinement!
+import Penelopt: set_n_precise_solve!, get_n_precise_solve
 
 include("LDLFactorizations/ldlt.jl")
 

@@ -38,6 +38,16 @@ function invalidate_factorization!(workspace::PenaltyLDLTWorkspace)
   workspace.M.__factorized = false
 end
 
+# Linear solver options interface: LDLFactorizations has no pivot tolerance and
+# iterative refinement is handled by `refine!`, so these are ignored.
+set_pivtol!(workspace::PenaltyLDLTWorkspace, pivtol) = nothing
+get_pivtol(workspace::PenaltyLDLTWorkspace) = zero(eltype(workspace.x))
+relative_error!(workspace::PenaltyLDLTWorkspace) = zero(eltype(workspace.x))
+force_iterative_refinement!(workspace::PenaltyLDLTWorkspace) = nothing
+relax_iterative_refinement!(workspace::PenaltyLDLTWorkspace) = nothing
+set_n_precise_solve!(workspace::PenaltyLDLTWorkspace, n::Int) = nothing
+get_n_precise_solve(workspace::PenaltyLDLTWorkspace) = 0
+
 
 # Given Ax ≈ b, refine the solution by solving AΔx = b - Ax and updating x += Δx
 function refine!(
