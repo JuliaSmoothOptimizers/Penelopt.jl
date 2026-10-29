@@ -56,14 +56,17 @@ function update_workspace!(
   set_jacobian!(K, A)
   set_dual_regularization!(K, α)
   K.σ = σ
+  workspace.factorized = false
 end
 
 function set_primal_regularization!(workspace::PenaltyDirectWorkspace, σ::T) where {T}
   set_primal_regularization!(workspace.H, σ)
+  workspace.factorized = false
 end
 
 function set_dual_regularization!(workspace::PenaltyDirectWorkspace, α::T) where {T}
   set_dual_regularization!(workspace.H, α)
+  workspace.factorized = false
 end
 
 # HSL Misc.: Checks whether the user has the license in the extension.

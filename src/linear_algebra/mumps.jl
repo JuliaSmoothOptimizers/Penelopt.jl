@@ -465,7 +465,7 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   workspace._n_precise = 0
 end
 
-function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
+function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace)
 
   (typeof(workspace.H) <: CompactBFGSK2Matrix) && return true
   n, m = get_n(workspace), get_m(workspace)
@@ -479,6 +479,7 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
   # 1. Check if the diagonal has a negative entry,
   # 2. Check if the matrix is diagonally dominant.
   d, s = workspace._primal_diag, workspace._primal_row_sum
+  B = workspace.H.B
   s .= 0
   d .= 0
   nnz_B = length(B.vals)
@@ -500,18 +501,18 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
   is_diagonally_dominant && return true
 
   # Step 4: fallback to Cholesky factorization.
-  return up_lb_is_pos_def_exact!(workspace, A)
+  return up_lb_is_pos_def_exact!(workspace)
 end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.
-function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace, A)
+function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
   
   # Step 1: Factorize
   # [B + σI  0]
   # [0      -I]
-  previous_inertia = workspace.α
-  set_jacobian!(workspace, A, value = zero(previous_inertia))
-  set_dual_inertia!(workspace, one(previous_inertia))
+  previous_inertia = workspace.H.α
+  reset_jacobian!(workspace.H)
+  set_dual_regularization!(workspace, one(previous_inertia))
 
   mumps = workspace.M
   mumps.job = MUMPS.FACTOR
@@ -519,13 +520,13 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace, A)
   workspace._n_fact += 1
 
   # Step 2: Revert values of H to original values
-  set_jacobian!(workspace, A)
-  set_dual_inertia!(workspace, previous_inertia)
+  set_jacobian!(workspace.H, workspace.H.A)
+  set_dual_regularization!(workspace, previous_inertia)
 
   # Step 3: Check the ineria
   status = get_status(workspace)
   npos, nzero, nneg = get_inertia(workspace)
-  is_pos_def = (npos == workspace.n && status == :success)
+  is_pos_def = (npos == get_n(workspace) && status == :success)
 
   return is_pos_def
 end
