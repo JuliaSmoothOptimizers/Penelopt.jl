@@ -201,9 +201,9 @@ function set_primal_regularization!(
   K::AbstractK2Matrix{T,M1,M2,M3},
   σ::T,
 ) where {T,M1,M2,M3<:SparseSymmetricCOO{T}}
-  K.σ = σ
   H = get_H(K)
-  H.vals[(end-K.m-K.n+1):(end-K.m)] .= σ
+  H.vals[(end-K.m-K.n+1):(end-K.m)] .+= σ - K.σ
+  K.σ = σ
 end
 
 function set_primal_regularization!(
@@ -221,7 +221,9 @@ function initialize_primal_regularization!(
   K::AbstractK2Matrix{T,M1,M2,M3},
   σ::T,
 ) where {T,M1,M2,M3<:SparseSymmetricCOO{T}}
-  set_primal_regularization!(K, σ)
+  K.σ = σ
+  H = get_H(K)
+  H.vals[(end-K.m-K.n+1):(end-K.m)] .= σ
 end
 
 function initialize_primal_regularization!(
