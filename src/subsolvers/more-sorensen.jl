@@ -173,7 +173,7 @@ function SolverCore.solve!(
   u1, u2, x1, x2 = solver.u1, solver.u2, solver.x1, solver.x2
   solver_workspace = solver.workspace
 
-  set_params!(solver_workspace;
+  !_restart && set_params!(solver_workspace;
     n_itref = ls_n_itref,
     n_precise = ls_n_precise_solves,
     increase_pivtol_threshold = ls_increase_pivtol_threshold,
