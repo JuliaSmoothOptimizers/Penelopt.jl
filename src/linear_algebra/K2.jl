@@ -377,3 +377,8 @@ function reset_hessian!(
     H[B.cols[i], B.rows[i]] = zero(T)
   end
 end
+
+function reset_hessian!(
+  K::AbstractK2Matrix{T,M1,M2,M3},
+) where {T,M1<:CompactBFGS,M2,M3<:SparseSymmetricCSC{T}}
+end
