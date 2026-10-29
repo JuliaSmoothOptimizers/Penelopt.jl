@@ -19,6 +19,6 @@ function __init__()
   Penelopt._set_hsl_available(HSL.LIBHSL_isfunctional())
 end
 
-include("HSL/ma57jl")
+include("HSL/ma57.jl")
 
 end
