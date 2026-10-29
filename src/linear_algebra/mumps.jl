@@ -13,11 +13,11 @@ mutable struct PenaltyMUMPSWorkspace{
 end
 
 function construct_mumps_workspace(
-  K::AbstractK2Matrix{T, <:SparseSymmetricCOO{T}},
+  K::AbstractK2Matrix{T, M1, M2, M3},
   u1,
   n,
   m,
-) where {T}
+) where {T, M1, M2, M3 <:SparseSymmetricCOO{T}}
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -140,7 +140,7 @@ function solve_system!(
   H = workspace.H
   B = workspace.H.B
   mumps = workspace.M
-  n, m = workspace.n, workspace.m
+  n, m = get_n(workspace), get_m(workspace)
   p = min(B._insert - 1, B._mem)
   x1, x2, x3, y1 = H.x1, H.x2, H.x3, H.y1
   Z1, Z2 = H.Z1, H.Z2
@@ -253,7 +253,7 @@ function solve_system!(
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
     @views info_f =
-      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace._ipiv, workspace._info)
+      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace.H.ipiv, workspace.H.info)
     if info_f != 0
       workspace.status = :failed
       return
@@ -265,10 +265,10 @@ function solve_system!(
       BlasInt(1),
       Z2[1:(2p), 1:(2p)],
       stride(Z2, 2),
-      workspace._ipiv,
+      workspace.H.ipiv,
       y1[1:(2p)],
       BlasInt(2p),
-      workspace._info,
+      workspace.H.info,
     )
     if info_s != 0
       workspace.status = :failed
