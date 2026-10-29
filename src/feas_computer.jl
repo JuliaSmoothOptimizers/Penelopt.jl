@@ -18,8 +18,8 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   @. u1[1:n] = 0
   @. u1[(n+1):(n+m)] = - ψ.b
 
-  σ, α = one(T), one(T)
-  update_workspace!(ls_workspace, ψ.A, σ, α)
+  α = one(T)
+  update_workspace!(ls_workspace, ψ.A, one(T), α)
 
   solve_system!(ls_workspace, u1)
   get_solution!(x1, ls_workspace)
@@ -28,19 +28,18 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   # x1 is the preallocated space for the solution of the linear system with a block identity.
   # Refer to the CompactBFGSK2 code.
   if isa(ls_workspace.H, CompactBFGSK2Matrix)
-    # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
-    # ( J           -αI )( y ) = - ( c )
+    # ( I     Jᵀ )( s ) = - ( 0 )
+    # ( J    -αI )( y ) = - ( c )
     x1 .= ls_workspace.H.x1
-    σ = (1 + ls_workspace.H.B.ξ)
   end
 
   s, y = view(x1, 1:n), view(x1, (n+1):(n+m))
 
-  # Step 2: Compute θ = σ * (ψ(0; x) - ψ(s; x)) / (τ * ‖y‖₂)
+  # Step 2: Compute θ = (ψ(0; x) - ψ(s; x)) / (τ * ‖y‖₂)
   norm_y = norm(y, 2)
   iszero(norm_y) && return zero(T)
 
-  θ = σ * (ψ(solver.s0) - ψ(s)) / (τ * norm_y)
+  θ = (ψ(solver.s0) - ψ(s)) / (τ * norm_y)
 
   set_solver_specific!(r2n_stats, :n_fact, get_n_fact(ls_workspace))
 
@@ -74,8 +73,8 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   @. u1[(n+1):(n+m)] = 0
   iszero(norm_∇f) && (@. u1[(n+1):(n+m)] = - ψ.b)
 
-  σ, α = one(T), eps(T)
-  update_workspace!(ls_workspace, ψ.A, σ, α)
+  α = eps(T)
+  update_workspace!(ls_workspace, ψ.A, one(T), α)
 
   solve_system!(ls_workspace, u1)
   get_solution!(x1, ls_workspace)
@@ -84,23 +83,22 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   # x1 is the preallocated space for the solution of the linear system with a block identity.
   # Refer to the CompactBFGSK2 code.
   if isa(ls_workspace.H, CompactBFGSK2Matrix)
-    # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
-    # ( J           -αI )( y ) = - ( c )
+    # ( I     Jᵀ )( s ) = - ( 0 )
+    # ( J    -αI )( y ) = - ( c )
     x1 .= ls_workspace.H.x1
-    σ = (1 + ls_workspace.H.B.ξ)
   end
 
   # Step 2: Check Jacobian full row rank and recompute if necessary
   status = get_status(ls_workspace)
   if status != :success
     α = eps(T)^(0.8)
-    update_workspace!(ls_workspace, ψ.A, σ, α)
+    update_workspace!(ls_workspace, ψ.A, one(T), α)
     solve_system!(ls_workspace, u1)
     get_solution!(x1, ls_workspace)
 
     if isa(ls_workspace.H, CompactBFGSK2Matrix)
-      # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
-      # ( J           -αI )( y ) = - ( c )
+      # ( I     Jᵀ )( s ) = - ( 0 )
+      # ( J    -αI )( y ) = - ( c )
       x1 .= ls_workspace.H.x1
     end
   end
@@ -108,13 +106,13 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   status = get_status(ls_workspace)
   if status != :success
     α = eps(T)^(0.6)
-    update_workspace!(ls_workspace, ψ.A, σ, α)
+    update_workspace!(ls_workspace, ψ.A, one(T), α)
     solve_system!(ls_workspace, u1)
     get_solution!(x1, ls_workspace)
 
     if isa(ls_workspace.H, CompactBFGSK2Matrix)
-      # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
-      # ( J           -αI )( y ) = - ( c )
+      # ( I     Jᵀ )( s ) = - ( 0 )
+      # ( J    -αI )( y ) = - ( c )
       x1 .= ls_workspace.H.x1
     end
   end
