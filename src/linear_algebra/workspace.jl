@@ -39,7 +39,7 @@ function update_workspace!(
   K = workspace.H
   reset_hessian!(K)
   set_jacobian!(K, A)
-  set_primal_regularization!(K, σ)
+  initialize_primal_regularization!(K, σ)
   set_dual_regularization!(K, α)
   invalidate_factorization!(workspace)
 end
@@ -110,12 +110,12 @@ function up_lb_is_pos_def(workspace::PenaltyDirectWorkspace)
   d, s = workspace.H._primal_diag, workspace.H._primal_row_sum
   B = workspace.H.B
   s .= 0
-  d .= 0
+  d .= workspace.H.σ
   nnz_B = length(B.vals)
   for i = 1:nnz_B
     row, col, val = B.rows[i], B.cols[i], B.vals[i]
     if row == col
-      d[row] += val + workspace.H.σ
+      d[row] += val
     else
       s[row] += abs(val)
       s[col] += abs(val)
@@ -124,7 +124,7 @@ function up_lb_is_pos_def(workspace::PenaltyDirectWorkspace)
 
   is_diagonally_dominant = true
   for i = 1:n
-    d[i] < 0 && return false
+    d[i] <= 0 && return false
     is_diagonally_dominant &= d[i] > s[i]
   end
   is_diagonally_dominant && return true

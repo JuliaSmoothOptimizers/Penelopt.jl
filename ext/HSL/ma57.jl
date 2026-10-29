@@ -20,8 +20,8 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,M1,M2,M3<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  S = ma57_coord(n + m, H.data.rows, H.data.cols, H.data.vals, sqd = true, print_level = -1)
-  _qn_work = isa(M1, CompactBFGS) ? similar(u1, 2*length(u1)*H.B._mem) : similar(u1, 0)
+  S = ma57_coord(n + m, H.H.data.rows, H.H.data.cols, H.H.data.vals, sqd = true, print_level = -1)
+  _qn_work = M1 <: CompactBFGS ? similar(u1, 2*length(u1)*H.B._mem) : similar(u1, 0)
   
   return PenaltyMA57Workspace(
     S,
@@ -285,9 +285,8 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMA57Workspace)
   set_dual_regularization!(workspace, previous_inertia)
 
   # Step 3: Check the ineria
-  status = get_status(workspace)
   npos, nzero, nneg = get_inertia(workspace)
-  is_pos_def = (npos == get_n(workspace) && status == :success)
+  is_pos_def = (npos == get_n(workspace) && !(workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4))
 
   return is_pos_def
 end

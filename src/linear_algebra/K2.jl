@@ -30,6 +30,59 @@ mutable struct K2Matrix{
   _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
 end
 
+function K2(
+  n::Int,
+  m::Int,
+  α::T,
+  σ::T,
+  A::M1,
+  B::M2;
+  format::Symbol = :coo,
+  int_type::Type = Int64,
+) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCOO}
+
+  I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
+
+  # Step 1: Add the transpose of B to the K2 matrix.
+  # Produces
+  # [ Bᵀ 0 ]
+  # [ 0  0 ]
+  #
+  # Note: LDLFactorizations requires an upper triangular view;
+  # Meanwhile, NLPModels produces a lower triangular view...
+  append!(I, B.cols)
+  append!(J, B.rows)
+  append!(V, B.vals)
+
+  # Step 2: Add the transpose of A to the K2 matrix.
+  # Produces 
+  # [ Bᵀ Aᵀ ]
+  # [ 0  0  ]
+  #
+  for k = 1:nnz(A)
+    push!(I, A.cols[k])          # transpose: row becomes column
+    push!(J, A.rows[k] + n)
+    push!(V, A.vals[k])
+  end
+
+  # Step 3: Initialize inertia corrections
+  # Produces 
+  # [ Bᵀ+σI Aᵀ ]
+  # [ 0    -αI ]
+  α_temp = iszero(α) ? eps(T) : α
+  σ_temp = iszero(σ) ? eps(T) : σ
+
+  append!(I, 1:(n+m))
+  append!(J, 1:(n+m))
+  append!(V, fill(σ_temp, n))
+  append!(V, fill(-α_temp, m))
+
+  # Step 4: Construct the sparse matrix
+  H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
+
+  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B), zeros(T, n), zeros(T, n))
+end
+
 # CompactBFGSK2Matrix is a 2x2 block KKT matrix with a compact BFGS approximation for the (1,1) block.
 mutable struct CompactBFGSK2Matrix{
   T<:Real,
@@ -59,64 +112,6 @@ mutable struct CompactBFGSK2Matrix{
   y1::V   # Extra storage for the Sherman–Morrison–Woodbury formula
   ipiv::VI # For LAPACK LU factorization of the compact BFGS matrix
   info::Base.RefValue{BlasInt}  # For LAPACK LU factorization of the compact BFGS matrix
-end
-
-function K2(
-  n::Int,
-  m::Int,
-  α::T,
-  σ::T,
-  A::M1,
-  B::M2;
-  format::Symbol = :coo,
-  int_type::Type = Int64,
-) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCSC}
-
-  I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
-
-  # Step 1: Add the transpose of B to the K2 matrix.
-  # Produces
-  # [ Bᵀ 0 ]
-  # [ 0  0 ]
-  #
-  # Note: LDLFactorizations requires an upper triangular view;
-  # Meanwhile, NLPModels produces a lower triangular view...
-  for j = 1:n
-    for k = B.colptr[j]:(B.colptr[j+1]-1)
-      i = B.rowval[k]
-      push!(I, j)
-      push!(J, i)
-      push!(V, B.nzval[k])
-    end
-  end
-
-  # Step 2: Add the transpose of A to the K2 matrix.
-  # Produces 
-  # [ Bᵀ Aᵀ ]
-  # [ 0  0  ]
-  #
-  for k = 1:nnz(A)
-    push!(I, A.cols[k])          # transpose: row becomes column
-    push!(J, A.rows[k] + n)
-    push!(V, A.vals[k])
-  end
-
-  # Step 3: Initialize inertia corrections
-  # Produces 
-  # [ Bᵀ+σI Aᵀ ]
-  # [ 0    -αI ]
-  α_temp = iszero(α) ? eps(T) : α
-  σ_temp = iszero(σ) ? eps(T) : σ
-
-  append!(I, 1:(n+m))
-  append!(J, 1:(n+m))
-  append!(V, fill(σ_temp, n))
-  append!(V, fill(-α_temp, m))
-
-  # Step 4: Construct the sparse matrix
-  H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
-
-  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B), zeros(T, n), zeros(T, n))
 end
 
 function K2(
@@ -179,59 +174,6 @@ function K2(
     Vector{LinearAlgebra.BlasInt}(undef, 2 * B._mem),
     Ref{BlasInt}(0),
   )
-end
-
-function K2(
-  n::Int,
-  m::Int,
-  α::T,
-  σ::T,
-  A::M1,
-  B::M2;
-  format::Symbol = :coo,
-  int_type::Type = Int64,
-) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCOO}
-
-  I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
-
-  # Step 1: Add the transpose of B to the K2 matrix.
-  # Produces
-  # [ Bᵀ 0 ]
-  # [ 0  0 ]
-  #
-  # Note: LDLFactorizations requires an upper triangular view;
-  # Meanwhile, NLPModels produces a lower triangular view...
-  append!(I, B.cols)
-  append!(J, B.rows)
-  append!(V, B.vals)
-
-  # Step 2: Add the transpose of A to the K2 matrix.
-  # Produces 
-  # [ Bᵀ Aᵀ ]
-  # [ 0  0  ]
-  #
-  for k = 1:nnz(A)
-    push!(I, A.cols[k])          # transpose: row becomes column
-    push!(J, A.rows[k] + n)
-    push!(V, A.vals[k])
-  end
-
-  # Step 3: Initialize inertia corrections
-  # Produces 
-  # [ Bᵀ+σI Aᵀ ]
-  # [ 0    -αI ]
-  α_temp = iszero(α) ? eps(T) : α
-  σ_temp = iszero(σ) ? eps(T) : σ
-
-  append!(I, 1:(n+m))
-  append!(J, 1:(n+m))
-  append!(V, fill(σ_temp, n))
-  append!(V, fill(-α_temp, m))
-
-  # Step 4: Construct the sparse matrix
-  H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
-
-  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B), zeros(T, n), zeros(T, n))
 end
 
 # K2 utils API

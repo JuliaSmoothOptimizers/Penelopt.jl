@@ -387,9 +387,8 @@ function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
   set_dual_regularization!(workspace, previous_inertia)
 
   # Step 3: Check the ineria
-  status = get_status(workspace)
   npos, nzero, nneg = get_inertia(workspace)
-  is_pos_def = (npos == get_n(workspace) && status == :success)
+  is_pos_def = (npos == get_n(workspace) && mumps.infog[1] >= 0)
 
   return is_pos_def
 end
