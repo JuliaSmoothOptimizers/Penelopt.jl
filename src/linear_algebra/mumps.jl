@@ -16,6 +16,7 @@ function construct_mumps_workspace(
   n,
   m;
   min_pivtol::T = eps(T),
+  initial_pivtol::T = eps(T),
   max_pivtol::T = T(1e-2),
   decrease_pivtol_factor::T = T(0.1),
   kwargs...
@@ -29,7 +30,7 @@ function construct_mumps_workspace(
   # Remarks: It forms a trade-off between preserving sparsity and ensuring numerical stability during
   # the factorization. In general, a larger value of CNTL(1) increases fill-in but leads to a more accurate
   # factorization.
-  cntl[1] = min_pivtol
+  cntl[1] = initial_pivtol
 
   cntl[2] = eps(T) # Tolerance for iterative refinement
 
@@ -73,7 +74,7 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0, PenaltyLinearSolverOptions(; min_pivtol, max_pivtol, decrease_pivtol_factor, kwargs...))
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0, PenaltyLinearSolverOptions(; min_pivtol, initial_pivtol, max_pivtol, decrease_pivtol_factor, kwargs...))
 end
 
 function solve_system!(
@@ -355,7 +356,7 @@ end
 function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   set_n_fact!(workspace, 0)
   relax_iterative_refinement!(workspace)
-  set_pivtol!(workspace, workspace.options.min_pivtol)
+  set_pivtol!(workspace, workspace.options.initial_pivtol)
   set_n_precise_solve!(workspace, 0)
 end
 

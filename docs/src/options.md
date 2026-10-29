@@ -261,7 +261,10 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
  * `ls_max_pivtol::T = 0.01` (*advanced*): maximum pivot tolerance.
     > When the linear solver returns a backward relative error larger than `ls_increase_pivtol_threshold`, the pivot tolerance is set to `ls_max_pivtol` and exactly `ls_n_itref` iterative refinement steps are performed. This parameter is ignored when `linear_solver == "ldlt"`.
 
- * `ls_min_pivtol::T = eps(T)` (*advanced*): minimum and initial pivot tolerance.
+ * `ls_min_pivtol::T = eps(T)` (*advanced*): minimum pivot tolerance.
+    > The pivot tolerance is never decreased below `ls_min_pivtol`. This parameter is ignored when `linear_solver == "ldlt"`. When `T == Float64`, the default value is $\approx 10^{-16}$.
+
+ * `ls_initial_pivtol::T = eps(T)` (*advanced*): initial pivot tolerance.
     > This parameter is ignored when `linear_solver == "ldlt"`. When `T == Float64`, the default value is $\approx 10^{-16}$.
 
  * `ls_n_precise_solves::Int = 20` (*advanced*): number of linear systems solves before the pivot tolerance is decreased.

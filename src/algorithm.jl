@@ -252,6 +252,7 @@ function SolverCore.solve!(
   ls_decrease_pivtol_threshold::T = 100 * eps(T), 
   ls_max_pivtol::T = T(1e-2), 
   ls_min_pivtol::T = eps(T), 
+  ls_initial_pivtol::T = eps(T), 
   ls_decrease_pivtol_factor::T = T(0.1),
 
   ## Scaling arguments
@@ -413,6 +414,7 @@ function SolverCore.solve!(
       ls_decrease_pivtol_threshold = ls_decrease_pivtol_threshold, 
       ls_max_pivtol = ls_max_pivtol, 
       ls_min_pivtol = ls_min_pivtol, 
+      ls_initial_pivtol = ls_initial_pivtol, 
       ls_decrease_pivtol_factor = ls_decrease_pivtol_factor,
     )
 

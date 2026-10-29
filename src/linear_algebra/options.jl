@@ -5,6 +5,7 @@ mutable struct PenaltyLinearSolverOptions{T1<:Real,T2<:Real}
   decrease_pivtol_threshold::T1
   max_pivtol::T2
   min_pivtol::T2
+  initial_pivtol::T2
   decrease_pivtol_factor::T2
 end
 
@@ -15,6 +16,7 @@ function PenaltyLinearSolverOptions(;
   decrease_pivtol_threshold::T1 = 100 * eps(Float64), 
   max_pivtol::T2 = 1e-2, 
   min_pivtol::T2 = eps(Float64), 
+  initial_pivtol::T2 = eps(Float64), 
   decrease_pivtol_factor::T2 = 0.1
 ) where {T1<:Real, T2<:Real}
   return PenaltyLinearSolverOptions{T1,T2}(
@@ -24,6 +26,7 @@ function PenaltyLinearSolverOptions(;
     decrease_pivtol_threshold, 
     max_pivtol, 
     min_pivtol, 
+    initial_pivtol, 
     decrease_pivtol_factor
   )
 end 
@@ -35,6 +38,7 @@ function set_params!(workspace::PenaltyDirectWorkspace;
   decrease_pivtol_threshold::T1 = 100 * eps(Float64), 
   max_pivtol::T2 = 1e-2, 
   min_pivtol::T2 = eps(Float64), 
+  initial_pivtol::T2 = eps(Float64), 
   decrease_pivtol_factor::T2 = 0.1
 ) where {T1<:Real, T2<:Real}
   workspace.options.n_itref = n_itref
@@ -43,6 +47,10 @@ function set_params!(workspace::PenaltyDirectWorkspace;
   workspace.options.decrease_pivtol_threshold = decrease_pivtol_threshold
   workspace.options.max_pivtol = max_pivtol
   workspace.options.min_pivtol = min_pivtol
+  if initial_pivtol != workspace.options.initial_pivtol
+    workspace.options.initial_pivtol = initial_pivtol
+    set_pivtol!(workspace, initial_pivtol)
+  end
   workspace.options.decrease_pivtol_factor = decrease_pivtol_factor
 end
 
