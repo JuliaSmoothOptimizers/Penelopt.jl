@@ -383,45 +383,6 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   workspace._n_precise = 0
 end
 
-function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace)
-
-  (typeof(workspace.H) <: CompactBFGSK2Matrix) && return true
-  n, m = get_n(workspace), get_m(workspace)
-
-  # Step 1: check inertia
-  npos, nzero, nneg = get_inertia(workspace)
-  status = get_status(workspace)
-  (status == :failed || npos != n || nneg != m) && return false
-
-  # Step 2 & 3: cheap sufficient/necessary conditions:
-  # 1. Check if the diagonal has a negative entry,
-  # 2. Check if the matrix is diagonally dominant.
-  d, s = workspace.H._primal_diag, workspace.H._primal_row_sum
-  B = workspace.H.B
-  s .= 0
-  d .= 0
-  nnz_B = length(B.vals)
-  for i = 1:nnz_B
-    row, col, val = B.rows[i], B.cols[i], B.vals[i]
-    if row == col
-      d[row] += val + workspace.H.σ
-    else
-      s[row] += abs(val)
-      s[col] += abs(val)
-    end
-  end
-
-  is_diagonally_dominant = true
-  for i = 1:n
-    d[i] < 0 && return false
-    is_diagonally_dominant &= d[i] > s[i]
-  end
-  is_diagonally_dominant && return true
-
-  # Step 4: fallback to Cholesky factorization.
-  return up_lb_is_pos_def_exact!(workspace)
-end
-
 # Perform Cholesky facto of H + σI to check positive definiteness.
 function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
   
