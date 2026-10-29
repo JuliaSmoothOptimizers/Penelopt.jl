@@ -7,8 +7,6 @@ mutable struct PenaltyMUMPSWorkspace{
   M::WP
   H::K2
   x::V
-  _ipiv::VI # For CompactBFGS LU factorization
-  _info::Base.RefValue{BlasInt}  # For CompactBFGS LU factorization
   status::Symbol
   factorized::Bool
   _n_fact::Int
@@ -18,7 +16,7 @@ mutable struct PenaltyMUMPSWorkspace{
 end
 
 function construct_mumps_workspace(
-  K::K2Matrix{T, <:SparseSymmetricCOO{T}},
+  K::AbstractK2Matrix{T, <:SparseSymmetricCOO{T}},
   u1,
   n,
   m,
@@ -80,86 +78,11 @@ function construct_mumps_workspace(
     S,
     K,
     x,
-    nothing,
-    Ref{BlasInt}(0),
     :uninitialized,
     false,
     0,
     zeros(T, n),
     zeros(T, n),
-    0,
-  )
-end
-
-function construct_mumps_workspace(
-  H::CompactBFGSK2Matrix{T, <:SparseSymmetricCOO{T}},
-  u1,
-  n,
-  m,
-) where {T}
-  cntl = T == Float64 ? default_cntl64 : default_cntl32
-  icntl = default_icntl
-
-  ## Set Parameters
-  # CNTL(1) is the relative threshold for numerical pivoting.
-  # Remarks: It forms a trade-off between preserving sparsity and ensuring numerical stability during
-  # the factorization. In general, a larger value of CNTL(1) increases fill-in but leads to a more accurate
-  # factorization.
-  cntl[1] = eps(T)
-
-  cntl[2] = eps(T) # Tolerance for iterative refinement
-
-  # Deactivate Logging
-  icntl[2], icntl[3], icntl[4] = 0, 0, 0
-
-  # Max number of iterative refinement steps
-  icntl[10] = 5
-
-  # ICNTL(11): error analysis
-  # 2: Main statistics (recommended)
-  icntl[11] = 2
-
-  # CNTL(13) controls the parallelism of the root node
-  # Remarks: Processing the root sequentially (ICNTL(13) > 0) can be useful when the user is
-  # interested in the inertia of the matrix (see INFO(12) and INFOG(12)), or when the user wants
-  # to detect null pivots (see Subsection 5.13) or to activate BLR compression (Subsection 5.20) on the
-  # root node.
-  icntl[13] = 1
-
-  # ICNTL(24) controls the detection of “null pivot rows”.
-  # 1: Null pivot row detection.
-  icntl[24] = 1
-
-  S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
-
-  H = get_H(K)
-  # Associate the row, cols and vals of the mumps structure with those of H.
-  irn, jcn, a = H.rows, H.cols, H.vals
-  S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
-  S.n = m+n
-  S.nnz = length(irn)
-  S._irn_gc_haven = irn
-  S._jcn_gc_haven = jcn
-  S._a_gc_haven = a
-
-  # Associate the size and number of the right hand side
-  x = similar(u1)
-  S.lrhs = n + m
-  S.nrhs = 1
-  S.rhs = pointer(x)
-  S._y_gc_haven = x
-
-  return PenaltyMUMPSWorkspace(
-    S,
-    K,
-    x,
-    Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),
-    Ref{BlasInt}(0),
-    :uninitialized,
-    false,
-    0,
-    zeros(T, 0),
-    zeros(T, 0),
     0,
   )
 end

@@ -35,6 +35,7 @@ mutable struct CompactBFGSK2Matrix{
   M3<:AbstractMatrix{T},
   M4<:AbstractMatrix{T},
   V<:AbstractVector{T},
+  VI<:AbstractVector{BlasInt},
 } <: AbstractK2Matrix{T,M1,M2,M3}
   B::M1
   A::M2
@@ -51,6 +52,8 @@ mutable struct CompactBFGSK2Matrix{
   x2::V   # Extra storage for the Sherman–Morrison–Woodbury formula
   x3::V   # Extra storage for the Sherman–Morrison–Woodbury formula
   y1::V   # Extra storage for the Sherman–Morrison–Woodbury formula
+  ipiv::VI # For LAPACK LU factorization of the compact BFGS matrix
+  info::Base.RefValue{BlasInt}  # For LAPACK LU factorization of the compact BFGS matrix
 end
 
 function K2(
@@ -166,6 +169,8 @@ function K2(
     zeros(T, n+m),
     zeros(T, n+m),
     zeros(T, 2*B._mem),
+    Vector{LinearAlgebra.BlasInt}(undef, 2 * B._mem),
+    Ref{BlasInt}(0),
   )
 end
 
