@@ -330,6 +330,10 @@ function set_pivtol!(workspace::PenaltyMUMPSWorkspace, pivtol)
   MUMPS.set_cntl!(workspace.M, 1, pivtol)
 end
 
+function get_pivtol(workspace::PenaltyMUMPSWorkspace)
+  return workspace.M.cntl[1]
+end
+
 function force_iterative_refinement!(workspace::PenaltyMUMPSWorkspace)
   MUMPS.set_icntl!(workspace.M, 10, -workspace.options.n_itref)
 end
