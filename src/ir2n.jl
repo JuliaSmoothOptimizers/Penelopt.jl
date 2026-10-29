@@ -102,6 +102,15 @@ function SolverCore.solve!(
   ms_αmin1::T = eps(T)^(0.8),
   ms_αmin2::T = eps(T)^(0.6),
   ms_ηC::T = eps(T),
+
+  ## LS Specific arguments
+  ls_n_itref::Int = 5, 
+  ls_n_precise_solves::Int = 20, 
+  ls_increase_pivtol_threshold::T = sqrt(eps(T)), 
+  ls_decrease_pivtol_threshold::T = 100 * eps(T), 
+  ls_max_pivtol::T = T(1e-2), 
+  ls_min_pivtol::T = eps(T), 
+  ls_decrease_pivtol_factor::T = T(0.1),
 ) where {T,V}
   reset!(stats)
 
@@ -231,6 +240,15 @@ function SolverCore.solve!(
       αmin1 = ms_αmin1,
       αmin2 = ms_αmin2,
       ηC = ms_ηC,
+
+      ## LS Specific arguments
+      ls_n_itref = ls_n_itref, 
+      ls_n_precise_solves = ls_n_precise_solves, 
+      ls_increase_pivtol_threshold = ls_increase_pivtol_threshold, 
+      ls_decrease_pivtol_threshold = ls_decrease_pivtol_threshold, 
+      ls_max_pivtol = ls_max_pivtol, 
+      ls_min_pivtol = ls_min_pivtol, 
+      ls_decrease_pivtol_factor = ls_decrease_pivtol_factor,
     )
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ

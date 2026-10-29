@@ -127,6 +127,15 @@ function SolverCore.solve!(
   accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
   ηC::T = eps(T), # Cauchy decrease acceptance constant, see up_lb_is_pos_def fallback below.
   _restart::Bool = false, # Internal flag only: true when this call is a recursive continuation.
+
+  ## LS Specific arguments
+  ls_n_itref::Int = 5,
+  ls_n_precise_solves::Int = 20, 
+  ls_increase_pivtol_threshold::T = sqrt(eps(T)), 
+  ls_decrease_pivtol_threshold::T = 100 * eps(T), 
+  ls_max_pivtol::T = T(1e-2), 
+  ls_min_pivtol::T = eps(T), 
+  ls_decrease_pivtol_factor::T = T(0.1),
 ) where {T,V,M,H,P}
   if !_restart
     set_time!(stats, 0.0)
@@ -163,6 +172,16 @@ function SolverCore.solve!(
 
   u1, u2, x1, x2 = solver.u1, solver.u2, solver.x1, solver.x2
   solver_workspace = solver.workspace
+
+  set_params!(solver_workspace;
+    n_itref = ls_n_itref,
+    n_precise = ls_n_precise_solves,
+    increase_pivtol_threshold = ls_increase_pivtol_threshold,
+    decrease_pivtol_threshold = ls_decrease_pivtol_threshold,
+    max_pivtol = ls_max_pivtol,
+    min_pivtol = ls_min_pivtol,
+    decrease_pivtol_factor = ls_decrease_pivtol_factor,
+  )
 
   # Create problem
   @. u1[1:n] = -reg_nlp.model.data.c

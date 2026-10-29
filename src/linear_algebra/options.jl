@@ -27,6 +27,25 @@ function PenaltyLinearSolverOptions(;
     decrease_pivtol_factor
   )
 end 
+
+function set_params!(workspace::PenaltyDirectWorkspace; 
+  n_itref::Int = 5, 
+  n_precise::Int = 20, 
+  increase_pivtol_threshold::T1 = sqrt(eps(Float64)), 
+  decrease_pivtol_threshold::T1 = 100 * eps(Float64), 
+  max_pivtol::T2 = 1e-2, 
+  min_pivtol::T2 = eps(Float64), 
+  decrease_pivtol_factor::T2 = 0.1
+) where {T1<:Real, T2<:Real}
+  workspace.options.n_itref = n_itref
+  workspace.options.n_precise = n_precise
+  workspace.options.increase_pivtol_threshold = increase_pivtol_threshold
+  workspace.options.decrease_pivtol_threshold = decrease_pivtol_threshold
+  workspace.options.max_pivtol = max_pivtol
+  workspace.options.min_pivtol = min_pivtol
+  workspace.options.decrease_pivtol_factor = decrease_pivtol_factor
+end
+
 function update_pivtol!(workspace::PenaltyDirectWorkspace)
 
   !factorized(workspace) && return
@@ -62,7 +81,7 @@ function decrease_pivtol!(workspace::PenaltyDirectWorkspace)
   set_pivtol!(workspace, max(opt.min_pivtol, get_pivtol(workspace) * opt.decrease_pivtol_factor))
 end
 
-function set_pivtol!(workspace::PenaltyDirectWorkspace, new_pivtol::Real)
+function set_pivtol!(workspace::PenaltyDirectWorkspace, pivtol)
   return
 end
 

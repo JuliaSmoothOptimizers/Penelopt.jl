@@ -326,43 +326,31 @@ function relative_error!(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
   return max(mumps.rinfog[6], mumps.rinfog[7], mumps.rinfog[8])
 end
 
-function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
-  mumps = workspace.M
-
-  MUMPS.set_cntl!(mumps, 1, 1e-2)
-  MUMPS.set_icntl!(mumps, 10, -5)
+function set_pivtol!(workspace::PenaltyMUMPSWorkspace, pivtol)
+  MUMPS.set_cntl!(workspace.M, 1, pivtol)
 end
 
-function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
-  mumps = workspace.M
-
-  MUMPS.set_cntl!(mumps, 1, max(mumps.cntl[1] / 10, eps(eltype(workspace.x))))
-  MUMPS.set_icntl!(mumps, 10, 5)
+function force_iterative_refinement!(workspace::PenaltyMUMPSWorkspace)
+  MUMPS.set_icntl!(workspace.M, 10, -workspace.options.n_itref)
 end
 
-function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
-  mumps = workspace.M
+function relax_iterative_refinement!(workspace::PenaltyMUMPSWorkspace)
+  MUMPS.set_icntl!(workspace.M, 10, workspace.options.n_itref)
+end
 
-  relative_error = relative_error!(workspace)
-  if relative_error > sqrt(eps(eltype(workspace.x)))
-    increase_pivtol!(workspace)
-    workspace.status = :failed
-    workspace._n_precise = 0
-  elseif relative_error < eps(eltype(workspace.x)) * 100
-    workspace._n_precise += 1
-    if workspace._n_precise > 20
-      decrease_pivtol!(workspace)
-    end
-  else
-    workspace._n_precise = 0
-  end
+function set_n_precise_solve!(workspace::PenaltyMUMPSWorkspace, n_precise::Int)
+  workspace._n_precise = n_precise
+end
+
+function get_n_precise_solve(workspace::PenaltyMUMPSWorkspace)
+  return workspace._n_precise
 end
 
 function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   set_n_fact!(workspace, 0)
-  MUMPS.set_icntl!(workspace.M, 10, 5)
-  MUMPS.set_cntl!(workspace.M, 1, eps(eltype(workspace.x)))
-  workspace._n_precise = 0
+  relax_iterative_refinement!(workspace)
+  set_pivtol!(workspace, workspace.options.min_pivtol)
+  set_n_precise_solve!(workspace, 0)
 end
 
 # Perform Cholesky facto of H + σI to check positive definiteness.

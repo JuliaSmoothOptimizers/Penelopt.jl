@@ -16,6 +16,7 @@ import Penelopt:
   up_lb_is_pos_def_exact!, reset_jacobian!, set_jacobian!, set_dual_regularization!
 import Penelopt: getrf!, getrs!
 import Penelopt: CompactBFGS, CompactBFGSK2Matrix
+import Penelopt: PenaltyLinearSolverOptions
 
 function __init__()
   Penelopt._set_hsl_available(HSL.LIBHSL_isfunctional())
