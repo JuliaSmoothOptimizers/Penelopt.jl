@@ -25,16 +25,6 @@ mutable struct PenaltyLDLTWorkspace{
   _Hcheck_mat::KC # Preallocated H + σI block for _Hcheck, values refreshed on each call
 end
 
-function get_H(
-  solver_workspace::PenaltyLDLTWorkspace{WP,K2},
-) where {T,WP,K2<:Symmetric{T,SparseMatrixCSC{T,Int}}}
-  return solver_workspace.H.data
-end
-
-function get_H(solver_workspace::PenaltyLDLTWorkspace{WP,K2}) where {WP,K2<:CompactBFGSK2}
-  return solver_workspace.H.H.data
-end
-
 """
     build_up_lb_check(H::SparseMatrixCSC{T}, n) -> (S, Hp)
 
@@ -94,7 +84,7 @@ function construct_ldlt_workspace(
   u1::V,
   n,
   m,
-) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
+) where {T,V<:AbstractVector{T},M<:CompactBFGSK2Matrix}
   S = ldl_analyze(H.H)
   return PenaltyLDLTWorkspace(
     S,
@@ -226,7 +216,7 @@ function update_workspace!(
   solver_workspace.M.__factorized = false
 end
 
-function set_dual_inertia!(solver_workspace::PenaltyLDLTWorkspace, α)
+function set_dual_regularization!(solver_workspace::PenaltyLDLTWorkspace, α)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
   @inbounds for i = 1:m
@@ -235,7 +225,7 @@ function set_dual_inertia!(solver_workspace::PenaltyLDLTWorkspace, α)
   solver_workspace.M.__factorized = false
 end
 
-function set_primal_inertia!(solver_workspace::PenaltyLDLTWorkspace, σ)
+function set_primal_regularization!(solver_workspace::PenaltyLDLTWorkspace, σ)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
   σ_prev = solver_workspace.σ
@@ -310,7 +300,7 @@ end
 function solve_system!(
   workspace::PenaltyLDLTWorkspace{WP,K2},
   u::V,
-) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
+) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
   workspace.status = :success
   H = workspace.H
   B = workspace.H.B

@@ -2,7 +2,6 @@ mutable struct PenaltyMUMPSWorkspace{
   WP<:Mumps,
   K2<:AbstractK2Matrix,
   V<:AbstractVector,
-  VI<:Union{Nothing,AbstractVector},
 } <: AbstractMUMPSWorkspace
   M::WP
   H::K2
@@ -10,8 +9,6 @@ mutable struct PenaltyMUMPSWorkspace{
   status::Symbol
   factorized::Bool
   _n_fact::Int
-  _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
-  _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
   _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
 
@@ -81,8 +78,6 @@ function construct_mumps_workspace(
     :uninitialized,
     false,
     0,
-    zeros(T, n),
-    zeros(T, n),
     0,
   )
 end
@@ -401,7 +396,7 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace)
   # Step 2 & 3: cheap sufficient/necessary conditions:
   # 1. Check if the diagonal has a negative entry,
   # 2. Check if the matrix is diagonally dominant.
-  d, s = workspace._primal_diag, workspace._primal_row_sum
+  d, s = workspace.H._primal_diag, workspace.H._primal_row_sum
   B = workspace.H.B
   s .= 0
   d .= 0

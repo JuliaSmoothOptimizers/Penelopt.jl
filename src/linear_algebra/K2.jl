@@ -15,6 +15,7 @@ mutable struct K2Matrix{
   M1<:AbstractMatrix{T},
   M2<:AbstractMatrix{T},
   M3<:AbstractMatrix{T},
+  V<:AbstractVector{T},
 } <: AbstractK2Matrix{T,M1,M2,M3}
   B::M1
   A::M2
@@ -25,6 +26,8 @@ mutable struct K2Matrix{
   m::Int
   nnz_A::Int
   nnz_B::Int
+  _primal_diag::V    # Preallocated buffer for up_lb_is_pos_def
+  _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
 end
 
 # CompactBFGSK2Matrix is a 2x2 block KKT matrix with a compact BFGS approximation for the (1,1) block.
@@ -33,8 +36,8 @@ mutable struct CompactBFGSK2Matrix{
   M1<:CompactBFGS,
   M2<:AbstractMatrix{T},
   M3<:AbstractMatrix{T},
-  M4<:AbstractMatrix{T},
   V<:AbstractVector{T},
+  M4<:AbstractMatrix{T},
   VI<:AbstractVector{BlasInt},
 } <: AbstractK2Matrix{T,M1,M2,M3}
   B::M1
@@ -46,6 +49,8 @@ mutable struct CompactBFGSK2Matrix{
   m::Int
   nnz_A::Int
   nnz_B::Int
+  _primal_diag::V    # Preallocated buffer for up_lb_is_pos_def
+  _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
   Z1::M4  # Extra storage for the Sherman–Morrison–Woodbury formula
   Z2::M4  # Extra storage for the Sherman–Morrison–Woodbury formula
   x1::V   # Extra storage for the Sherman–Morrison–Woodbury formula
@@ -111,7 +116,7 @@ function K2(
   # Step 4: Construct the sparse matrix
   H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
-  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B))
+  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B), zeros(T, n), zeros(T, n))
 end
 
 function K2(
@@ -163,6 +168,8 @@ function K2(
     m,
     nnz(A),
     0,
+    zeros(T, 0),
+    zeros(T, 0),
     zeros(T, n + m, 2*B._mem),
     zeros(T, 2*B._mem, 2*B._mem),
     zeros(T, n+m),
@@ -224,7 +231,7 @@ function K2(
   # Step 4: Construct the sparse matrix
   H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
-  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B))
+  return K2Matrix(B, A, Symmetric(H), α_temp, σ_temp, n, m, nnz(A), nnz(B), zeros(T, n), zeros(T, n))
 end
 
 # K2 utils API
