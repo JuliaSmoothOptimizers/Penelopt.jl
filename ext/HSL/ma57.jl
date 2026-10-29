@@ -1,4 +1,4 @@
-mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVector} <:
+mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVector,Opt<:PenaltyLinearSolverOptions} <:
                AbstractHSLWorkspace
   M::WP
   H::K2
@@ -9,13 +9,15 @@ mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVec
   status::Symbol
   factorized::Bool
   _n_fact::Int
+  options::Opt
 end
 
 function construct_ma57_workspace(
   H::AbstractK2Matrix{T,M1,M2,M3},
   u1,
   n,
-  m,
+  m;
+  kwargs...
 ) where {T,M1,M2,M3<:Symmetric{T,SparseMatrixCOO{T,Int}}}
   S = ma57_coord(
     n + m,
@@ -37,6 +39,7 @@ function construct_ma57_workspace(
     :uninitialized,
     false,
     0,
+    PenaltyLinearSolverOptions(; kwargs...)
   )
 end
 

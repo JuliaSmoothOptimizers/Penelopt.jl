@@ -1,4 +1,4 @@
-mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractVector} <:
+mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractVector,Opt<:PenaltyLinearSolverOptions} <:
                AbstractMUMPSWorkspace
   M::WP
   H::K2
@@ -7,13 +7,16 @@ mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractV
   factorized::Bool
   _n_fact::Int
   _n_precise::Int # Counter for how many times the relative error has been below threshold
+  options::Opt
 end
 
 function construct_mumps_workspace(
   K::AbstractK2Matrix{T,M1,M2,M3},
   u1,
   n,
-  m,
+  m;
+  min_pivtol::T = eps(T),
+  kwargs...
 ) where {T,M1,M2,M3<:SparseSymmetricCOO{T}}
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
@@ -24,7 +27,7 @@ function construct_mumps_workspace(
   # Remarks: It forms a trade-off between preserving sparsity and ensuring numerical stability during
   # the factorization. In general, a larger value of CNTL(1) increases fill-in but leads to a more accurate
   # factorization.
-  cntl[1] = eps(T)
+  cntl[1] = min_pivtol
 
   cntl[2] = eps(T) # Tolerance for iterative refinement
 
@@ -68,7 +71,7 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0)
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0, PenaltyLinearSolverOptions(; min_pivtol = min_pivtol, kwargs...))
 end
 
 function solve_system!(

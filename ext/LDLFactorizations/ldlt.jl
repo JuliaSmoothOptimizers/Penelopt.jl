@@ -2,6 +2,7 @@ mutable struct PenaltyLDLTWorkspace{
   WP<:LDLFactorization,
   K2<:AbstractK2Matrix,
   V<:AbstractVector,
+  Opt<:PenaltyLinearSolverOptions
 } <: AbstractLDLTWorkspace
   M::WP
   H::K2
@@ -10,13 +11,15 @@ mutable struct PenaltyLDLTWorkspace{
   r::V
   status::Symbol
   _n_fact::Int
+  options::Opt
 end
 
 function construct_ldlt_workspace(
   K::AbstractK2Matrix{T,M1,M2,M3},
   u1,
   n,
-  m,
+  m;
+  kwargs...
 ) where {T,M1,M2,M3<:SparseSymmetricCSC{T}}
   S = ldl_analyze(K.H)
   return PenaltyLDLTWorkspace(
@@ -27,6 +30,7 @@ function construct_ldlt_workspace(
     similar(u1),
     :uninitialized,
     0,
+    PenaltyLinearSolverOptions(; kwargs...)
   )
 end
 
