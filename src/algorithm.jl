@@ -272,6 +272,19 @@ function SolverCore.solve!(
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
 
+  # Set linear solver parameters
+  set_ls_params!(
+    solver.subsolver;
+    n_itref = ls_n_itref,
+    n_precise = ls_n_precise_solves,
+    increase_pivtol_threshold = ls_increase_pivtol_threshold,
+    decrease_pivtol_threshold = ls_decrease_pivtol_threshold,
+    max_pivtol = ls_max_pivtol,
+    min_pivtol = ls_min_pivtol,
+    initial_pivtol = ls_initial_pivtol,
+    decrease_pivtol_factor = ls_decrease_pivtol_factor,
+  )
+
   # Retrieve workspace
   penalty_pb = solver.subpb # f(x) + τ‖c(x)‖₂
   mk = solver.subsolver.subpb
@@ -406,16 +419,6 @@ function SolverCore.solve!(
       ms_αmin1 = ms_αmin1,
       ms_αmin2 = ms_αmin2,
       ms_ηC = ms_ηC,
-
-      ## LS Specific arguments
-      ls_n_itref = ls_n_itref, 
-      ls_n_precise_solves = ls_n_precise_solves, 
-      ls_increase_pivtol_threshold = ls_increase_pivtol_threshold, 
-      ls_decrease_pivtol_threshold = ls_decrease_pivtol_threshold, 
-      ls_max_pivtol = ls_max_pivtol, 
-      ls_min_pivtol = ls_min_pivtol, 
-      ls_initial_pivtol = ls_initial_pivtol, 
-      ls_decrease_pivtol_factor = ls_decrease_pivtol_factor,
     )
 
     if solver.substats.status == :unbounded
