@@ -85,11 +85,11 @@ end
 function solve_system!(
   workspace::PenaltyMA57Workspace{WP,K2},
   u::V,
-) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
+) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
   workspace.status = :success
   H = workspace.H
   B = workspace.H.B
-  n, m = workspace.n, workspace.m
+  n, m = get_n(workspace), get_m(workspace)
   p = min(B._insert - 1, B._mem)
   x1, x2, x3, y1 = H.x1, H.x2, H.x3, H.y1
   Z1, Z2 = H.Z1, H.Z2
@@ -196,7 +196,7 @@ function solve_system!(
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
     @views info_f =
-      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace._ipiv, workspace._info)
+      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace.H.ipiv, workspace.H.info)
     if info_f != 0
       workspace.status = :failed
       return
@@ -208,10 +208,10 @@ function solve_system!(
       BlasInt(1),
       Z2[1:(2p), 1:(2p)],
       stride(Z2, 2),
-      workspace._ipiv,
+      workspace.H.ipiv,
       y1[1:(2p)],
       BlasInt(2p),
-      workspace._info,
+      workspace.H.info,
     )
     if info_s != 0
       workspace.status = :failed
@@ -252,7 +252,7 @@ end
 
 function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
 
-  n, m = workspace.n, workspace.m
+  n, m = get_n(workspace), get_m(workspace)
   (npos, nzero, nneg) = (0, 0, 0)
 
   nneg = workspace.M.info.info[24]
@@ -261,4 +261,33 @@ function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
   npos = n + m - nzero - nneg
 
   return npos, nzero, nneg
+end
+
+# Perform Cholesky facto of H + σI to check positive definiteness.
+function up_lb_is_pos_def_exact!(workspace::PenaltyMA57Workspace)
+  
+  # Step 1: Factorize
+  # [B + σI  0]
+  # [0      -I]
+  previous_inertia = workspace.H.α
+  reset_jacobian!(workspace.H)
+  set_dual_regularization!(workspace, one(previous_inertia))
+
+  try
+    ma57_factorize!(workspace.M)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+  workspace._n_fact += 1
+
+  # Step 2: Revert values of H to original values
+  set_jacobian!(workspace.H, workspace.H.A)
+  set_dual_regularization!(workspace, previous_inertia)
+
+  # Step 3: Check the ineria
+  status = get_status(workspace)
+  npos, nzero, nneg = get_inertia(workspace)
+  is_pos_def = (npos == get_n(workspace) && status == :success)
+
+  return is_pos_def
 end

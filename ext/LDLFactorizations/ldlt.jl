@@ -253,18 +253,27 @@ function get_inertia(workspace::PenaltyLDLTWorkspace)
   return npos, nzero, nneg
 end
 
-# Perform LDLᵀ facto of H + σI to check positive definiteness.
-# LDLFactorizations.jl does not pivot (and no dynamic regularization is set on
-# _Hcheck), so H + σI is positive definite iff the factorization succeeds with
-# all pivots positive.
+# Perform Cholesky facto of H + σI to check positive definiteness.
 function up_lb_is_pos_def_exact!(workspace::PenaltyLDLTWorkspace)
-  H = get_H(workspace)
-  Hp = workspace._Hcheck_mat
-  copyto!(Hp.data.nzval, 1, H.nzval, 1, length(Hp.data.nzval))
+  
+  # Step 1: Factorize
+  # [B + σI  0]
+  # [0      -I]
+  previous_inertia = workspace.H.α
+  reset_jacobian!(workspace.H)
+  set_dual_regularization!(workspace, one(previous_inertia))
 
-  S = workspace._Hcheck
-  ldl_factorize!(Hp, S)
+  ldl_factorize!(workspace.H.H, workspace.M)
+  workspace._n_fact += 1
 
-  factorized(S) || return false
-  return all(>(0), S.d)
+  # Step 2: Revert values of H to original values
+  set_jacobian!(workspace.H, workspace.H.A)
+  set_dual_regularization!(workspace, previous_inertia)
+
+  # Step 3: Check the ineria
+  status = get_status(workspace)
+  npos, nzero, nneg = get_inertia(workspace)
+  is_pos_def = (npos == get_n(workspace) && status == :success)
+
+  return is_pos_def
 end
