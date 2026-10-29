@@ -1,19 +1,14 @@
 mutable struct PenaltyMUMPSWorkspace{
   WP<:Mumps,
-  K2<:AbstractMatrix,
+  K2<:AbstractK2Matrix,
   V<:AbstractVector,
   VI<:Union{Nothing,AbstractVector},
-  T<:Real,
 } <: AbstractMUMPSWorkspace
   M::WP
   H::K2
   x::V
   _ipiv::VI # For CompactBFGS LU factorization
   _info::Base.RefValue{BlasInt}  # For CompactBFGS LU factorization
-  σ::T
-  α::T
-  n::Int
-  m::Int
   status::Symbol
   factorized::Bool
   _n_fact::Int
@@ -22,23 +17,12 @@ mutable struct PenaltyMUMPSWorkspace{
   _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
 
-function get_H(
-  solver_workspace::PenaltyMUMPSWorkspace{WP,K2},
-) where {T,M,WP,K2<:Symmetric{T,M}}
-  return solver_workspace.H.data
-end
-
-function get_H(solver_workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2<:CompactBFGSK2}
-  return solver_workspace.H.H.data
-end
-
 function construct_mumps_workspace(
-  H::M,
-  u1::V,
+  K::K2Matrix{T, <:SparseSymmetricCOO{T}},
+  u1,
   n,
   m,
-) where {T,V<:AbstractVector{T},M<:Symmetric}
-  # Set params : TODO
+) where {T}
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -75,8 +59,9 @@ function construct_mumps_workspace(
 
   S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
 
+  H = get_H(K)
   # Associate the row, cols and vals of the mumps structure with those of H.
-  irn, jcn, a = H.data.rows, H.data.cols, H.data.vals
+  irn, jcn, a = H.rows, H.cols, H.vals
   S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
   S.n = m+n
   S.nnz = length(irn)
@@ -93,14 +78,10 @@ function construct_mumps_workspace(
 
   return PenaltyMUMPSWorkspace(
     S,
-    H,
+    K,
     x,
     nothing,
     Ref{BlasInt}(0),
-    zero(T),
-    zero(T),
-    n,
-    m,
     :uninitialized,
     false,
     0,
@@ -111,12 +92,11 @@ function construct_mumps_workspace(
 end
 
 function construct_mumps_workspace(
-  H::M,
-  u1::V,
+  H::CompactBFGSK2Matrix{T, <:SparseSymmetricCOO{T}},
+  u1,
   n,
   m,
-) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
-  # Set params : TODO
+) where {T}
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
 
@@ -152,8 +132,9 @@ function construct_mumps_workspace(
 
   S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
 
+  H = get_H(K)
   # Associate the row, cols and vals of the mumps structure with those of H.
-  irn, jcn, a = H.H.data.rows, H.H.data.cols, H.H.data.vals
+  irn, jcn, a = H.rows, H.cols, H.vals
   S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
   S.n = m+n
   S.nnz = length(irn)
@@ -170,14 +151,10 @@ function construct_mumps_workspace(
 
   return PenaltyMUMPSWorkspace(
     S,
-    H,
+    K,
     x,
     Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),
     Ref{BlasInt}(0),
-    zero(T),
-    zero(T),
-    n,
-    m,
     :uninitialized,
     false,
     0,
@@ -185,104 +162,6 @@ function construct_mumps_workspace(
     zeros(T, 0),
     0,
   )
-end
-
-# [B + σI  A ]
-# [Aᵀ     -αI]
-function update_workspace!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-  B::M1,
-  A::M2,
-  σ::T,
-  α::T;
-  A_value::Union{Nothing, T} = nothing,
-  B_value::Union{Nothing, T} = nothing,
-) where {T, M1<:SparseMatrixCOO{T}, M2<:SparseMatrixCOO{T}}
-  set_hessian!(solver_workspace, B, value = B_value)
-  set_jacobian!(solver_workspace, A, value = A_value)
-  set_primal_inertia!(solver_workspace, σ)
-  set_dual_inertia!(solver_workspace, α)
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-  A::M,
-  σ::T,
-  α::T;
-  A_value::Union{Nothing, T} = nothing,
-) where {T, M<:SparseMatrixCOO{T}}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-  H = get_H(solver_workspace)
-  nnz_B = length(H.vals) - nnz_A - n - m
-
-  H.vals[1:nnz_B] .= 0
-  set_jacobian!(solver_workspace, A, value = A_value)
-  set_primal_inertia!(solver_workspace, σ)
-  set_dual_inertia!(solver_workspace, α)
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-  B::M,
-  A,
-  σ::T,
-  α::T;
-  A_value::Union{Nothing, T} = nothing,
-) where {T, M<:CompactBFGS{T}}
-  set_jacobian!(solver_workspace, A; value = A_value)
-  set_dual_inertia!(solver_workspace, α)
-
-  set_primal_inertia!(solver_workspace, σ + B.ξ)
-  solver_workspace.σ = σ
-end
-
-function set_hessian!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-  B::SparseMatrixCOO{T};
-  value::Union{Nothing, T} = nothing
-) where{T}
-  nnz_B = length(B.vals)
-  H = get_H(solver_workspace)
-
-  H.vals[1:nnz_B] .= B.vals
-end
-
-# [B + σI  A ] -> [B + σI  0  ]
-# [Aᵀ     -αI] -> [0       -αI]
-function set_jacobian!(
-  solver_workspace::PenaltyMUMPSWorkspace,
-  A::SparseMatrixCOO{T};
-  value::Union{Nothing, T} = nothing
-) where{T}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-  H = get_H(solver_workspace)
-  nnz_B = length(H.vals) - nnz_A - n - m
-
-  if value == nothing
-    H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  else
-    H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= value
-  end
-
-  solver_workspace.factorized = false
-end
-
-function set_dual_inertia!(solver_workspace::PenaltyMUMPSWorkspace, α)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  H.vals[(end-m+1):end] .= -α
-  solver_workspace.α = α
-  solver_workspace.factorized = false
-end
-
-function set_primal_inertia!(solver_workspace::PenaltyMUMPSWorkspace, σ)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  H.vals[(end-m-n+1):(end-m)] .= σ
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
 end
 
 function solve_system!(
@@ -338,7 +217,7 @@ end
 function solve_system!(
   workspace::PenaltyMUMPSWorkspace{WP,K2},
   u::V,
-) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
+) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
   workspace.status = :success
   H = workspace.H
   B = workspace.H.B

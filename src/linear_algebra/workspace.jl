@@ -15,6 +15,49 @@ function construct_workspace(H::M, u1::V, n::Int, m::Int; solver = :mumps) where
   end
 end
 
+function update_workspace!(
+  workspace::PenaltyDirectWorkspace,
+  B::M1,
+  A::M2,
+  σ::T,
+  α::T;
+) where {T, M1, M2}
+  K = workspace.H
+  initialize_primal_regularization!(K, σ)
+  set_dual_regularization!(K, α)
+  set_jacobian!(K, A)
+  set_hessian!(K, B)
+  workspace.factorized = false
+end
+
+function update_workspace!(
+  workspace::PenaltyDirectWorkspace,
+  A::M,
+  σ::T,
+  α::T;
+) where {T, M}
+  K = workspace.H
+  reset_hessian!(K)
+  set_jacobian!(K, A)
+  set_primal_regularization!(K, σ)
+  set_dual_regularization!(K, α)
+  workspace.factorized = false
+end
+
+function update_workspace!(
+  workspace::PenaltyDirectWorkspace,
+  B::M1,
+  A::M2,
+  σ::T,
+  α::T;
+) where {T, M1<:CompactBFGS{T}, M2}
+  K = workspace.H
+  initialize_primal_regularization!(K, σ + B.ξ)
+  set_jacobian!(K, A)
+  set_dual_regularization!(K, α)
+  K.σ = σ
+end
+
 # HSL Misc.: Checks whether the user has the license in the extension.
 const _HSL_AVAILABLE = Ref(false)
 hsl_functional() = _HSL_AVAILABLE[]

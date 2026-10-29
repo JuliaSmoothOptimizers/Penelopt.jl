@@ -51,8 +51,6 @@ function MoreSorensenSolver(
   H = K2(
     n,
     m,
-    n+m,
-    n+m,
     zero(T),
     reg_nlp.model.data.σ,
     reg_nlp.h.A,
