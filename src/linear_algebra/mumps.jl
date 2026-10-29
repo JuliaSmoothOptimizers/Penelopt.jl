@@ -323,35 +323,18 @@ function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
   return npos, nzero, nneg
 end
 
-function relative_error!(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
-  mumps = workspace.M
-
-  return max(mumps.rinfog[6], mumps.rinfog[7], mumps.rinfog[8])
-end
-
-function set_pivtol!(workspace::PenaltyMUMPSWorkspace, pivtol)
-  MUMPS.set_cntl!(workspace.M, 1, pivtol)
-end
-
-function get_pivtol(workspace::PenaltyMUMPSWorkspace)
-  return workspace.M.cntl[1]
-end
-
-function force_iterative_refinement!(workspace::PenaltyMUMPSWorkspace)
-  MUMPS.set_icntl!(workspace.M, 10, -workspace.options.n_itref)
-end
-
-function relax_iterative_refinement!(workspace::PenaltyMUMPSWorkspace)
-  MUMPS.set_icntl!(workspace.M, 10, workspace.options.n_itref)
-end
-
-function set_n_precise_solve!(workspace::PenaltyMUMPSWorkspace, n_precise::Int)
-  workspace._n_precise = n_precise
-end
-
-function get_n_precise_solve(workspace::PenaltyMUMPSWorkspace)
-  return workspace._n_precise
-end
+# Linear solver options interface.
+# MUMPS rinfog(6): scaled residual, rinfog(7), rinfog(8): backward errors.
+relative_error!(workspace::PenaltyMUMPSWorkspace) = max(workspace.M.rinfog[6], workspace.M.rinfog[7], workspace.M.rinfog[8])
+# MUMPS cntl(1): relative threshold for numerical pivoting.
+set_pivtol!(workspace::PenaltyMUMPSWorkspace, pivtol) = MUMPS.set_cntl!(workspace.M, 1, pivtol)
+get_pivtol(workspace::PenaltyMUMPSWorkspace) = workspace.M.cntl[1]
+# MUMPS icntl(10): a negative value performs exactly |icntl(10)| steps of iterative refinement,
+# a positive value is a maximum number of steps with a stopping criterion.
+force_iterative_refinement!(workspace::PenaltyMUMPSWorkspace) = MUMPS.set_icntl!(workspace.M, 10, -workspace.options.n_itref)
+relax_iterative_refinement!(workspace::PenaltyMUMPSWorkspace) = MUMPS.set_icntl!(workspace.M, 10, workspace.options.n_itref)
+set_n_precise_solve!(workspace::PenaltyMUMPSWorkspace, n::Int) = (workspace._n_precise = n; nothing)
+get_n_precise_solve(workspace::PenaltyMUMPSWorkspace) = workspace._n_precise
 
 function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   set_n_fact!(workspace, 0)

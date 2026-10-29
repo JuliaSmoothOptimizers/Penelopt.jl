@@ -56,9 +56,11 @@ set_pivtol!(workspace::PenaltyMA57Workspace, pivtol) = (workspace.M.control.cntl
 get_pivtol(workspace::PenaltyMA57Workspace) = workspace.M.control.cntl[1]
 # Ma57 rinfo(6), rinfo(7): backward errors, computed by ma57_solve! when iterative refinement is performed.
 relative_error!(workspace::PenaltyMA57Workspace) = max(workspace.M.info.rinfo[6], workspace.M.info.rinfo[7])
-# Ma57 icntl(9) is a maximum number of iterative refinement steps; Ma57 cannot force a fixed number, so these are ignored.
-force_iterative_refinement!(workspace::PenaltyMA57Workspace) = nothing
-relax_iterative_refinement!(workspace::PenaltyMA57Workspace) = nothing
+# Ma57 cntl(3): if the norm of the scaled residuals does not decrease by a factor of at least cntl(3),
+# iterative refinement stops with info(1) = -8. Forcing keeps refining as long as the residual decreases,
+# relaxing restores the Ma57 default of 0.5.
+force_iterative_refinement!(workspace::PenaltyMA57Workspace) = (workspace.M.control.cntl[3] = 1; nothing)
+relax_iterative_refinement!(workspace::PenaltyMA57Workspace) = (workspace.M.control.cntl[3] = 0.5; nothing)
 set_n_precise_solve!(workspace::PenaltyMA57Workspace, n::Int) = (workspace._n_precise = n; nothing)
 get_n_precise_solve(workspace::PenaltyMA57Workspace) = workspace._n_precise
 
@@ -101,9 +103,6 @@ function solve_system!(
   # Ma57 icntl(9): Controls the max number of iterative refinement steps.
   workspace.M.control.icntl[9] = workspace.options.n_itref
 
-  # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
-  # then the iterative refinement stops.
-  workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
   try
     ma57_solve!(workspace.M, u, workspace.x, workspace.dx, workspace.work, workspace.options.n_itref)
   catch e
@@ -172,9 +171,6 @@ function solve_system!(
   # Ma57 icntl(9): Controls the max number of iterative refinement steps.
   workspace.M.control.icntl[9] = workspace.options.n_itref
 
-  # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
-  # then the iterative refinement stops.
-  workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
   try
     ma57_solve!(workspace.M, u, x1, workspace.dx, workspace.work, workspace.options.n_itref)
   catch e
