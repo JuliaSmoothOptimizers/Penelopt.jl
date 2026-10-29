@@ -255,11 +255,11 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > * ldlt: Load [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
     > * ma57: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
 
- * `ls_n_itref::Int = 5` (*advanced*): number of iterative refinement steps.
-    > Number of iterative refinement steps performed by the linear solver.
+ * `ls_n_itref::Int = 5` (*advanced*): maximum number of iterative refinement steps.
+    > Maximum number of iterative refinement steps performed by the linear solver.
 
  * `ls_max_pivtol::T = 0.01` (*advanced*): maximum pivot tolerance.
-    > When the linear solver returns a backward relative error larger than `ls_increase_pivtol_threshold`, the pivot tolerance is set to `max_pivtol`. This parameter is ignored when `linear_solver == "ldlt"`.
+    > When the linear solver returns a backward relative error larger than `ls_increase_pivtol_threshold`, the pivot tolerance is set to `ls_max_pivtol` and exactly `ls_n_itref` iterative refinement steps are performed. This parameter is ignored when `linear_solver == "ldlt"`.
 
  * `ls_min_pivtol::T = eps(T)` (*advanced*): minimum and initial pivot tolerance.
     > This parameter is ignored when `linear_solver == "ldlt"`. When `T == Float64`, the default value is $\approx 10^{-16}$.
@@ -268,7 +268,7 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > When the linear solver returns a backward relative error smaller than `ls_decrease_pivtol_threshold` for `ls_n_precise_solves` consecutive solves, the pivot tolerance is decreased by a factor `ls_decrease_pivtol_factor`. This parameter is ignored when `linear_solver == "ldlt"`.
 
  * `ls_increase_pivtol_threshold::T = sqrt(eps(T))` (*advanced*): backward relative error threshold for increasing the pivot tolerance.
-    > When the linear solver returns a backward relative error larger than `ls_increase_pivtol_threshold`, the pivot tolerance is set to `max_pivtol`. This parameter is ignored when `linear_solver == "ldlt"`. When `T == Float64`, the default value is $\approx 10^{-8}$.
+    > When the linear solver returns a backward relative error larger than `ls_increase_pivtol_threshold`, the pivot tolerance is set to `ls_max_pivtol` and exactly `ls_n_itref` iterative refinement steps are performed. This parameter is ignored when `linear_solver == "ldlt"`. When `T == Float64`, the default value is $\approx 10^{-8}$.
  
  * `ls_decrease_pivtol_threshold::T = 100 * eps(T)` (*advanced*): backward relative error threshold for decreasing the pivot tolerance.
     > When the linear solver returns a backward relative error smaller than `ls_decrease_pivtol_threshold` for `ls_n_precise_solves` consecutive solves, the pivot tolerance is decreased by a factor `ls_decrease_pivtol_factor`. This parameter is ignored when `linear_solver == "ldlt"`. When `T == Float64`, the default value is $\approx 10^{-14}$.

@@ -61,7 +61,7 @@ function update_pivtol!(workspace::PenaltyDirectWorkspace)
 
   elseif relative_error < opt.decrease_pivtol_threshold
     set_n_precise_solve!(workspace, get_n_precise_solve(workspace) + 1)
-    if workspace._n_precise > opt.n_precise
+    if get_n_precise_solve(workspace) >= opt.n_precise
       decrease_pivtol!(workspace)
       relax_iterative_refinement!(workspace)
     end

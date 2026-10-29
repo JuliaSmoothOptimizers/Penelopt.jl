@@ -16,6 +16,8 @@ function construct_mumps_workspace(
   n,
   m;
   min_pivtol::T = eps(T),
+  max_pivtol::T = T(1e-2),
+  decrease_pivtol_factor::T = T(0.1),
   kwargs...
 ) where {T,M1,M2,M3<:SparseSymmetricCOO{T}}
   cntl = T == Float64 ? default_cntl64 : default_cntl32
@@ -71,7 +73,7 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0, PenaltyLinearSolverOptions(; min_pivtol = min_pivtol, kwargs...))
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0, PenaltyLinearSolverOptions(; min_pivtol, max_pivtol, decrease_pivtol_factor, kwargs...))
 end
 
 function solve_system!(
