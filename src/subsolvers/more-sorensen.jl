@@ -240,6 +240,12 @@ function SolverCore.solve!(
     )
   end
 
+  # [ H + σI Aᵀ][x'] = -[0]
+  # [   A    0 ][y'] = -[x] 
+  @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
+  solve_system!(solver_workspace, u2)
+  get_solution!(x2, solver_workspace)
+
   # Check that H + σI is positive definite.
   is_pos_def = up_lb_is_pos_def(solver_workspace)
   set_solver_specific!(stats, :is_pos_def, is_pos_def)
@@ -259,12 +265,6 @@ function SolverCore.solve!(
 
   # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
   !is_pos_def && (max_iter = min(max_iter, 5))
-
-  # [ H + σI Aᵀ][x'] = -[0]
-  # [   A    0 ][y'] = -[x] 
-  @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
-  solve_system!(solver_workspace, u2)
-  get_solution!(x2, solver_workspace)
 
   while abs(norm_x1 - Δ) > atol && stats.iter < max_iter && stats.elapsed_time < max_time
     # α = α + (‖y‖/Δ - 1)*‖y‖²/(yᵀy')
