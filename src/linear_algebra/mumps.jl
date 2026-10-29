@@ -399,9 +399,17 @@ function get_status(workspace::PenaltyMUMPSWorkspace)
   return workspace.status
 end
 
+function get_n(workspace::PenaltyMUMPSWorkspace)
+  return workspace.H.n
+end
+
+function get_m(workspace::PenaltyMUMPSWorkspace)
+  return workspace.H.m
+end
+
 function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
 
-  n, m = workspace.n, workspace.m
+  n, m = get_n(workspace), get_m(workspace)
   (npos, nzero, nneg) = (0, 0, 0)
 
   nneg = workspace.M.infog[12]
@@ -459,8 +467,8 @@ end
 
 function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
 
-  (typeof(workspace.H) <: CompactBFGSK2) && return true
-  n, m = workspace.n, workspace.m
+  (typeof(workspace.H) <: CompactBFGSK2Matrix) && return true
+  n, m = get_n(workspace), get_m(workspace)
 
   # Step 1: check inertia
   npos, nzero, nneg = get_inertia(workspace)
@@ -477,7 +485,7 @@ function up_lb_is_pos_def(workspace::PenaltyMUMPSWorkspace, B, A)
   for i = 1:nnz_B
     row, col, val = B.rows[i], B.cols[i], B.vals[i]
     if row == col
-      d[row] += val + workspace.σ
+      d[row] += val + workspace.H.σ
     else
       s[row] += abs(val)
       s[col] += abs(val)

@@ -187,20 +187,20 @@ function SolverCore.solve!(
   # If the factorization/solver failed, it in indicates we should add a minimal regularization too.
   if nneg < m || status == :failed
     α = αmin
-    set_dual_inertia!(solver_workspace, α)
+    set_dual_regularization!(solver_workspace, α)
     npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
 
     if nneg < m || status == :failed
       αmin = αmin2
       α = αmin
-      set_dual_inertia!(solver_workspace, α)
+      set_dual_regularization!(solver_workspace, α)
       npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
     end
   end
 
   while (npos < n || status == :failed) && reg_nlp.model.data.σ <= σmax
     reg_nlp.model.data.σ *= μσ
-    set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
+    set_primal_regularization!(solver_workspace, reg_nlp.model.data.σ)
 
     # [ H + σI Aᵀ][x] = -[∇f]
     # [   A    0 ][y] = -[c] 
@@ -271,7 +271,7 @@ function SolverCore.solve!(
     @views α₊ = α + norm_x1^2/dot(x1[(n+1):(n+m)], x2[(n+1):(n+m)])*(norm_x1/Δ - 1)
 
     α = α₊ ≤ 0 ? max(μα*α, αmin) : α₊
-    set_dual_inertia!(solver_workspace, α)
+    set_dual_regularization!(solver_workspace, α)
 
     # [ H + σI  Aᵀ ][x] = -[∇f]
     # [   A    -αI ][y] = -[c] 

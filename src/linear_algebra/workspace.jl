@@ -58,6 +58,14 @@ function update_workspace!(
   K.σ = σ
 end
 
+function set_primal_regularization!(workspace::PenaltyDirectWorkspace, σ::T) where {T}
+  set_primal_regularization!(workspace.H, σ)
+end
+
+function set_dual_regularization!(workspace::PenaltyDirectWorkspace, α::T) where {T}
+  set_dual_regularization!(workspace.H, α)
+end
+
 # HSL Misc.: Checks whether the user has the license in the extension.
 const _HSL_AVAILABLE = Ref(false)
 hsl_functional() = _HSL_AVAILABLE[]

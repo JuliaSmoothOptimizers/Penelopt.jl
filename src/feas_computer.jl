@@ -27,7 +27,7 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   # With a CompactBFGSK2, solve_system! automatically performs the Sherman-Morrison update.
   # x1 is the preallocated space for the solution of the linear system with a block identity.
   # Refer to the CompactBFGSK2 code.
-  if isa(ls_workspace.H, CompactBFGSK2)
+  if isa(ls_workspace.H, CompactBFGSK2Matrix)
     # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
     # ( J           -αI )( y ) = - ( c )
     x1 .= ls_workspace.H.x1
@@ -83,7 +83,7 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   # With a CompactBFGSK2, solve_system! automatically performs the Sherman-Morrison update.
   # x1 is the preallocated space for the solution of the linear system with a block identity.
   # Refer to the CompactBFGSK2 code.
-  if isa(ls_workspace.H, CompactBFGSK2)
+  if isa(ls_workspace.H, CompactBFGSK2Matrix)
     # ( (1 + ξ)I     Jᵀ )( s ) = - ( 0 )
     # ( J           -αI )( y ) = - ( c )
     x1 .= ls_workspace.H.x1
