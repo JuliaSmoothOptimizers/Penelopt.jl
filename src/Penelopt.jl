@@ -37,7 +37,7 @@ include("types/pre-processing/Scaling.jl")
 include("types/pre-processing/ShiftedConstraint.jl")
 
 include("linear_algebra/K2.jl")
-include("linear_algebra/construct_workspace.jl")
+include("linear_algebra/workspace.jl")
 include("linear_algebra/mumps.jl")
 include("linear_algebra/lapack.jl")
 

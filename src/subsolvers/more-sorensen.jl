@@ -51,8 +51,6 @@ function MoreSorensenSolver(
   H = K2(
     n,
     m,
-    n+m,
-    n+m,
     zero(T),
     reg_nlp.model.data.σ,
     reg_nlp.h.A,
@@ -189,20 +187,20 @@ function SolverCore.solve!(
   # If the factorization/solver failed, it in indicates we should add a minimal regularization too.
   if nneg < m || status == :failed
     α = αmin
-    set_dual_inertia!(solver_workspace, α)
+    set_dual_regularization!(solver_workspace, α)
     npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
 
     if nneg < m || status == :failed
       αmin = αmin2
       α = αmin
-      set_dual_inertia!(solver_workspace, α)
+      set_dual_regularization!(solver_workspace, α)
       npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
     end
   end
 
   while (npos < n || status == :failed) && reg_nlp.model.data.σ <= σmax
     reg_nlp.model.data.σ *= μσ
-    set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
+    set_primal_regularization!(solver_workspace, reg_nlp.model.data.σ)
 
     # [ H + σI Aᵀ][x] = -[∇f]
     # [   A    0 ][y] = -[c] 
@@ -242,6 +240,12 @@ function SolverCore.solve!(
     )
   end
 
+  # [ H + σI Aᵀ][x'] = -[0]
+  # [   A    0 ][y'] = -[x] 
+  @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
+  solve_system!(solver_workspace, u2)
+  get_solution!(x2, solver_workspace)
+
   # Check that H + σI is positive definite.
   is_pos_def = up_lb_is_pos_def(solver_workspace)
   set_solver_specific!(stats, :is_pos_def, is_pos_def)
@@ -262,18 +266,12 @@ function SolverCore.solve!(
   # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
   !is_pos_def && (max_iter = min(max_iter, 5))
 
-  # [ H + σI Aᵀ][x'] = -[0]
-  # [   A    0 ][y'] = -[x] 
-  @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
-  solve_system!(solver_workspace, u2)
-  get_solution!(x2, solver_workspace)
-
   while abs(norm_x1 - Δ) > atol && stats.iter < max_iter && stats.elapsed_time < max_time
     # α = α + (‖y‖/Δ - 1)*‖y‖²/(yᵀy')
     @views α₊ = α + norm_x1^2/dot(x1[(n+1):(n+m)], x2[(n+1):(n+m)])*(norm_x1/Δ - 1)
 
     α = α₊ ≤ 0 ? max(μα*α, αmin) : α₊
-    set_dual_inertia!(solver_workspace, α)
+    set_dual_regularization!(solver_workspace, α)
 
     # [ H + σI  Aᵀ ][x] = -[∇f]
     # [   A    -αI ][y] = -[c] 

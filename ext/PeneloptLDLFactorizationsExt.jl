@@ -9,14 +9,12 @@ using LinearAlgebra, SparseArrays, SparseMatricesCOO
 import LinearAlgebra.BLAS: @blasfunc
 import LinearAlgebra: BlasInt, libblastrampoline
 
-import Penelopt: AbstractLDLTWorkspace
-import Penelopt: construct_ldlt_workspace, solve_system!, update_workspace!
-import Penelopt: get_H, get_inertia, get_solution!, get_status
-import Penelopt: getrf!, getrs!
-import Penelopt: CompactBFGS, CompactBFGSK2
-import Penelopt: set_dual_inertia!, set_primal_inertia!
-import Penelopt: primal_diagonal_and_row_sums, up_lb_is_pos_def
-
+import Penelopt: AbstractLDLTWorkspace, AbstractK2Matrix, SparseSymmetricCSC
+import Penelopt: CompactBFGSK2Matrix, getrf!, getrs!
+import Penelopt: get_n, get_m, get_status
+import Penelopt: invalidate_factorization!, construct_ldlt_workspace, solve_system!
+import Penelopt: get_inertia, up_lb_is_pos_def_exact!
+import Penelopt: reset_jacobian!, set_jacobian!, set_dual_regularization!
 include("LDLFactorizations/ldlt.jl")
 
 end

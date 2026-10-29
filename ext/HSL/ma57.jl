@@ -1,71 +1,22 @@
-mutable struct PenaltyMA57Workspace{
-  WP<:Ma57,
-  K2<:AbstractMatrix,
-  V<:AbstractVector,
-  VI<:Union{Nothing,AbstractVector},
-  T<:Real,
-} <: AbstractHSLWorkspace
+mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVector} <:
+               AbstractHSLWorkspace
   M::WP
   H::K2
   x::V
   work::V
   _qn_work::V
-  _ipiv::VI # For CompactBFGS LU factorization
-  _info::Base.RefValue{BlasInt}  # For CompactBFGS LU factorization
   dx::V
-  σ::T
-  n::Int
-  m::Int
   status::Symbol
   factorized::Bool
   _n_fact::Int
-  _primal_diag::V # Preallocated buffer for up_lb_is_pos_def
-  _primal_row_sum::V # Preallocated buffer for up_lb_is_pos_def
-end
-
-function get_H(
-  solver_workspace::PenaltyMA57Workspace{WP,K2},
-) where {T,WP,K2<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  return solver_workspace.H.data
-end
-
-function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:CompactBFGSK2}
-  return solver_workspace.H.H.data
 end
 
 function construct_ma57_workspace(
-  H::M,
-  u1::V,
+  H::AbstractK2Matrix{T,M1,M2,M3},
+  u1,
   n,
   m,
-) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  S = ma57_coord(n + m, H.data.rows, H.data.cols, H.data.vals, sqd = true, print_level = -1)
-  return PenaltyMA57Workspace(
-    S,
-    H,
-    similar(u1),                # x
-    similar(u1, 4*length(u1)),  # work
-    similar(u1, 0),             # _qn_work
-    nothing,                    # _ipiv
-    Ref{BlasInt}(0),            # _info
-    similar(u1),                # dx
-    zero(T),
-    n,
-    m,
-    :uninitialized,
-    false,
-    0,
-    zeros(T, n),
-    zeros(T, n),
-  )
-end
-
-function construct_ma57_workspace(
-  H::M,
-  u1::V,
-  n,
-  m,
-) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
+) where {T,M1,M2,M3<:Symmetric{T,SparseMatrixCOO{T,Int}}}
   S = ma57_coord(
     n + m,
     H.H.data.rows,
@@ -74,102 +25,19 @@ function construct_ma57_workspace(
     sqd = true,
     print_level = -1,
   )
+  _qn_work = M1 <: CompactBFGS ? similar(u1, 2*length(u1)*H.B._mem) : similar(u1, 0)
+
   return PenaltyMA57Workspace(
     S,
     H,
-    similar(u1),                                         # x
-    similar(u1, 4*length(u1)),                           # work
-    similar(u1, 2*length(u1)*H.B._mem),                  # _qn_work
-    Vector{LinearAlgebra.BlasInt}(undef, 2 * H.B._mem),  # _ipiv
-    Ref{BlasInt}(0),                                     # _info
-    similar(u1),                                         # dx
-    zero(T),
-    n,
-    m,
+    similar(u1),                # x
+    similar(u1, 4*length(u1)),  # work
+    _qn_work,                   # _qn_work
+    similar(u1),                # dx
     :uninitialized,
     false,
     0,
-    zeros(T, 0),
-    zeros(T, 0),
   )
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyMA57Workspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:SparseMatrixCOO}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_B, nnz_A = length(B.vals), length(A.vals)
-
-  H = get_H(solver_workspace)
-
-  H.vals[1:nnz_B] .= B.vals
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
-  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
-
-  solver_workspace.M.vals .= H.vals
-
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
-end
-
-function update_workspace!(solver_workspace::PenaltyMA57Workspace, A, σ, α)
-  # Warning: Considers tht B is a zero matrix.
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-  H = get_H(solver_workspace)
-  nnz_B = length(H.vals) - nnz_A - n - m
-
-  H.vals .= 0
-  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
-  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
-  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
-
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
-end
-
-function update_workspace!(
-  solver_workspace::PenaltyMA57Workspace,
-  B::M,
-  A,
-  σ,
-  α,
-) where {M<:CompactBFGS}
-  n, m = solver_workspace.n, solver_workspace.m
-  nnz_A = length(A.vals)
-
-  H = get_H(solver_workspace)
-
-  H.vals[1:nnz_A] .= A.vals
-  H.vals[(nnz_A+1):(nnz_A+n)] .= σ + B.ξ
-  H.vals[(nnz_A+n+1):(nnz_A+n+m)] .= -α
-
-  solver_workspace.M.vals .= H.vals
-
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
-end
-
-function set_dual_inertia!(solver_workspace::PenaltyMA57Workspace, α)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  H.vals[(end-m+1):end] .= -α
-  solver_workspace.M.vals[(end-m+1):end] .= -α
-  solver_workspace.factorized = false
-end
-
-function set_primal_inertia!(solver_workspace::PenaltyMA57Workspace, σ)
-  n, m = solver_workspace.n, solver_workspace.m
-  H = get_H(solver_workspace)
-  H.vals[(end-m-n+1):(end-m)] .= σ
-  solver_workspace.M.vals[(end-m-n+1):(end-m)] .= σ
-  solver_workspace.σ = σ
-  solver_workspace.factorized = false
 end
 
 function solve_system!(
@@ -221,11 +89,11 @@ end
 function solve_system!(
   workspace::PenaltyMA57Workspace{WP,K2},
   u::V,
-) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
+) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
   workspace.status = :success
   H = workspace.H
   B = workspace.H.B
-  n, m = workspace.n, workspace.m
+  n, m = get_n(workspace), get_m(workspace)
   p = min(B._insert - 1, B._mem)
   x1, x2, x3, y1 = H.x1, H.x2, H.x3, H.y1
   Z1, Z2 = H.Z1, H.Z2
@@ -331,8 +199,14 @@ function solve_system!(
     # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
-    @views info_f =
-      getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), workspace._ipiv, workspace._info)
+    @views info_f = getrf!(
+      BlasInt(2p),
+      BlasInt(2p),
+      Z2,
+      stride(Z2, 2),
+      workspace.H.ipiv,
+      workspace.H.info,
+    )
     if info_f != 0
       workspace.status = :failed
       return
@@ -344,10 +218,10 @@ function solve_system!(
       BlasInt(1),
       Z2[1:(2p), 1:(2p)],
       stride(Z2, 2),
-      workspace._ipiv,
+      workspace.H.ipiv,
       y1[1:(2p)],
       BlasInt(2p),
-      workspace._info,
+      workspace.H.info,
     )
     if info_s != 0
       workspace.status = :failed
@@ -386,20 +260,9 @@ function solve_system!(
   end
 end
 
-function get_solution!(
-  x::V,
-  workspace::PenaltyMA57Workspace{WP,K2},
-) where {V<:AbstractVector,WP,K2}
-  x .= workspace.x
-end
-
-function get_status(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
-  return workspace.status
-end
-
 function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
 
-  n, m = workspace.n, workspace.m
+  n, m = get_n(workspace), get_m(workspace)
   (npos, nzero, nneg) = (0, 0, 0)
 
   nneg = workspace.M.info.info[24]
@@ -408,4 +271,35 @@ function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2}
   npos = n + m - nzero - nneg
 
   return npos, nzero, nneg
+end
+
+# Perform Cholesky facto of H + σI to check positive definiteness.
+function up_lb_is_pos_def_exact!(workspace::PenaltyMA57Workspace)
+
+  # Step 1: Factorize
+  # [B + σI  0]
+  # [0      -I]
+  previous_inertia = workspace.H.α
+  reset_jacobian!(workspace.H)
+  set_dual_regularization!(workspace, one(previous_inertia))
+
+  try
+    ma57_factorize!(workspace.M)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+  workspace._n_fact += 1
+
+  # Step 2: Revert values of H to original values
+  set_jacobian!(workspace.H, workspace.H.A)
+  set_dual_regularization!(workspace, previous_inertia)
+
+  # Step 3: Check the ineria
+  npos, nzero, nneg = get_inertia(workspace)
+  is_pos_def = (
+    npos == get_n(workspace) &&
+    !(workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4)
+  )
+
+  return is_pos_def
 end
