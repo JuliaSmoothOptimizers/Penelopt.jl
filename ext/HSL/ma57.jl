@@ -9,6 +9,7 @@ mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVec
   status::Symbol
   factorized::Bool
   _n_fact::Int
+  _n_precise::Int # Counter for how many times the relative error has been below threshold
   options::Opt
 end
 
@@ -17,6 +18,10 @@ function construct_ma57_workspace(
   u1,
   n,
   m;
+  min_pivtol::T = eps(T),
+  initial_pivtol::T = eps(T),
+  max_pivtol::T = T(1e-2),
+  decrease_pivtol_factor::T = T(0.1),
   kwargs...
 ) where {T,M1,M2,M3<:Symmetric{T,SparseMatrixCOO{T,Int}}}
   S = ma57_coord(
@@ -27,6 +32,7 @@ function construct_ma57_workspace(
     sqd = true,
     print_level = -1,
   )
+  S.control.cntl[1] = initial_pivtol # Ma57 cntl(1): pivot threshold, see update_pivtol!
   _qn_work = M1 <: CompactBFGS ? similar(u1, 2*length(u1)*H.B._mem) : similar(u1, 0)
 
   return PenaltyMA57Workspace(
@@ -39,8 +45,28 @@ function construct_ma57_workspace(
     :uninitialized,
     false,
     0,
-    PenaltyLinearSolverOptions(; kwargs...)
+    0,
+    PenaltyLinearSolverOptions(; min_pivtol, initial_pivtol, max_pivtol, decrease_pivtol_factor, kwargs...)
   )
+end
+
+# Linear solver options interface, following src/linear_algebra/mumps.jl.
+# Ma57 cntl(1): threshold for numerical pivoting, used when icntl(7) = 1.
+set_pivtol!(workspace::PenaltyMA57Workspace, pivtol) = (workspace.M.control.cntl[1] = pivtol; nothing)
+get_pivtol(workspace::PenaltyMA57Workspace) = workspace.M.control.cntl[1]
+# Ma57 rinfo(6), rinfo(7): backward errors, computed by ma57_solve! when iterative refinement is performed.
+relative_error!(workspace::PenaltyMA57Workspace) = max(workspace.M.info.rinfo[6], workspace.M.info.rinfo[7])
+# Ma57 icntl(9) is a maximum number of iterative refinement steps; Ma57 cannot force a fixed number, so these are ignored.
+force_iterative_refinement!(workspace::PenaltyMA57Workspace) = nothing
+relax_iterative_refinement!(workspace::PenaltyMA57Workspace) = nothing
+set_n_precise_solve!(workspace::PenaltyMA57Workspace, n::Int) = (workspace._n_precise = n; nothing)
+get_n_precise_solve(workspace::PenaltyMA57Workspace) = workspace._n_precise
+
+function reset!(workspace::PenaltyMA57Workspace)
+  set_n_fact!(workspace, 0)
+  relax_iterative_refinement!(workspace)
+  set_pivtol!(workspace, workspace.options.initial_pivtol)
+  set_n_precise_solve!(workspace, 0)
 end
 
 function solve_system!(
@@ -50,9 +76,9 @@ function solve_system!(
   workspace.status = :success
 
   # Ma57 icntl(7): Controls the pivotting strategy.
-  # Ma57 icntl(7): A value of 3 performs no pivoting: for a sufficiently large value of σ and a positive value of α,
-  # The matrix is strongly factorizable, so we don't need pivoting.
-  workspace.M.control.icntl[7] = 3
+  # Ma57 icntl(7): A value of 1 performs threshold pivoting with tolerance cntl(1), which is managed by
+  # update_pivtol! as CNTL(1) is for MUMPS. The default cntl(1) = eps(T) barely restricts the choice of pivots.
+  workspace.M.control.icntl[7] = 1
 
   if !workspace.factorized
     try
@@ -73,13 +99,13 @@ function solve_system!(
   end
 
   # Ma57 icntl(9): Controls the max number of iterative refinement steps.
-  workspace.M.control.icntl[9] = 10
+  workspace.M.control.icntl[9] = workspace.options.n_itref
 
   # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
   # then the iterative refinement stops.
   workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
   try
-    ma57_solve!(workspace.M, u, workspace.x, workspace.dx, workspace.work, 10)
+    ma57_solve!(workspace.M, u, workspace.x, workspace.dx, workspace.work, workspace.options.n_itref)
   catch e
     !(e isa HSL.Ma57Exception) && rethrow(e)
   end
@@ -87,6 +113,8 @@ function solve_system!(
     workspace.status = :failed
     return
   end
+
+  update_pivtol!(workspace)
 end
 
 function solve_system!(
@@ -115,9 +143,9 @@ function solve_system!(
   # [A     -αI]
 
   # Ma57 icntl(7): Controls the pivotting strategy.
-  # Ma57 icntl(7): A value of 3 performs no pivoting: for a sufficiently large value of σ and a positive value of α,
-  # The matrix is strongly factorizable, so we don't need pivoting.
-  workspace.M.control.icntl[7] = 3
+  # Ma57 icntl(7): A value of 1 performs threshold pivoting with tolerance cntl(1), which is managed by
+  # update_pivtol! as CNTL(1) is for MUMPS. The default cntl(1) = eps(T) barely restricts the choice of pivots.
+  workspace.M.control.icntl[7] = 1
 
   if !workspace.factorized
     try
@@ -142,13 +170,13 @@ function solve_system!(
   # [x₁] = [A     -αI]  [u]
 
   # Ma57 icntl(9): Controls the max number of iterative refinement steps.
-  workspace.M.control.icntl[9] = 10
+  workspace.M.control.icntl[9] = workspace.options.n_itref
 
   # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
   # then the iterative refinement stops.
   workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
   try
-    ma57_solve!(workspace.M, u, x1, workspace.dx, workspace.work, 10)
+    ma57_solve!(workspace.M, u, x1, workspace.dx, workspace.work, workspace.options.n_itref)
   catch e
     !(e isa HSL.Ma57Exception) && rethrow(e)
   end
@@ -156,6 +184,8 @@ function solve_system!(
     workspace.status = :failed
     return
   end
+
+  update_pivtol!(workspace)
 
   if p > 0
 
@@ -245,7 +275,7 @@ function solve_system!(
     # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
     # [x₃] = [A     -αI]  [x₂]
     try
-      ma57_solve!(workspace.M, x2, x3, workspace.dx, workspace.work, 10)
+      ma57_solve!(workspace.M, x2, x3, workspace.dx, workspace.work, workspace.options.n_itref)
     catch e
       !(e isa HSL.Ma57Exception) && rethrow(e)
     end
@@ -253,6 +283,8 @@ function solve_system!(
       workspace.status = :failed
       return
     end
+
+    update_pivtol!(workspace)
 
     # Step 8:
     # [B  Aᵀ]⁻¹[u] = x₁ - x₃ 

@@ -17,6 +17,10 @@ import Penelopt:
 import Penelopt: getrf!, getrs!
 import Penelopt: CompactBFGS, CompactBFGSK2Matrix
 import Penelopt: PenaltyLinearSolverOptions
+import Penelopt: set_pivtol!, get_pivtol, relative_error!
+import Penelopt: force_iterative_refinement!, relax_iterative_refinement!
+import Penelopt: set_n_precise_solve!, get_n_precise_solve
+import Penelopt: update_pivtol!, set_n_fact!, reset!
 
 function __init__()
   Penelopt._set_hsl_available(HSL.LIBHSL_isfunctional())
