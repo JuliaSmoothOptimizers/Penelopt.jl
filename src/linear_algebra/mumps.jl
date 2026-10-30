@@ -119,6 +119,7 @@ function solve_system!(
   end
 
   workspace.x .= u
+  MUMPS.associate_rhs!(mumps, workspace.x; unsafe = true)
   MUMPS.mumps_solve!(workspace.x, mumps; rhs_changed = true)
 
   # MUMPS infog(1): a negative value is an error in the factorization.
