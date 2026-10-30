@@ -41,8 +41,10 @@ function test_problem(
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 
     # Test stability and allocations
-    preprocessed_nlp =
-      nlp |> remove_fixed_variables |> remove_constraint_shift |> scale_model
+    preprocessed_nlp = nlp
+    if length(nlp.meta.ifix) > 0
+      preprocessed_nlp = remove_fixed_variables(nlp)
+    end
     null_model = NullHessianModel(preprocessed_nlp)
 
     solver = L2PenaltySolver(null_model, linear_solver = linear_solver)
@@ -92,8 +94,10 @@ function test_problem(
     @test stats.solver_specific[:n_fact] > 0
 
     # Test stability and allocations
-    preprocessed_nlp =
-      nlp |> remove_fixed_variables |> remove_constraint_shift |> scale_model
+    preprocessed_nlp = nlp
+    if length(nlp.meta.ifix) > 0
+      preprocessed_nlp = remove_fixed_variables(nlp)
+    end
     LBFGS_model = CompactBFGSModel(preprocessed_nlp)
 
     solver = L2PenaltySolver(LBFGS_model, linear_solver = linear_solver)
@@ -139,8 +143,10 @@ function test_problem(
     @test stats.solver_specific[:n_fact] > 0
 
     # Test stability and allocations
-    preprocessed_nlp =
-      nlp |> remove_fixed_variables |> remove_constraint_shift |> scale_model
+    preprocessed_nlp = nlp
+    if length(nlp.meta.ifix) > 0
+      preprocessed_nlp = remove_fixed_variables(nlp)
+    end
 
     solver = L2PenaltySolver(preprocessed_nlp, linear_solver = linear_solver)
     stats_optimized = PeneloptExecutionStats(preprocessed_nlp)

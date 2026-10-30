@@ -17,7 +17,6 @@ mutable struct L2PenaltySolver{
   s0::V
   ∇fk::V
   temp_b::V
-  y_report::V
   subsolver::S
   subpb::PB
   substats::GenericExecutionStats{T,V,V,T}
@@ -51,7 +50,6 @@ function L2PenaltySolver(
   dual_res = similar(x0)
   cn = similar(x0, nlp.meta.ncon)
   y = similar(x0, nlp.meta.ncon)
-  y_report = similar(x0, nlp.meta.ncon)
   ∇fk = similar(x0)
 
   penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
@@ -81,7 +79,6 @@ function L2PenaltySolver(
     s0,
     ∇fk,
     temp_b,
-    y_report,
     solver,
     penalty_subproblem,
     substats,
@@ -147,7 +144,7 @@ function L2Penalty(
   end
 
   # Preprocessing
-  preprocessed_nlp = nlp |> remove_fixed_variables |> remove_constraint_shift |> scale_model
+  preprocessed_nlp = nlp |> remove_fixed_variables |> remove_constraint_shift
 
   if qn_hessian_approximation == "bfgs"
     preprocessed_nlp = CompactBFGSModel(
@@ -244,10 +241,6 @@ function SolverCore.solve!(
   ms_αmin1::T = eps(T)^(0.8),
   ms_αmin2::T = eps(T)^(0.6),
   ms_ηC::T = eps(T),
-
-  ## Scaling arguments
-  nlp_scaling_method::String = isa(nlp, QuasiNewtonModel) ? "gradient-based" : "none",
-  gmax::T = T(100),
 ) where {T,V}
   reset!(stats)
 
@@ -302,12 +295,6 @@ function SolverCore.solve!(
   set_residuals!(stats, dual_feas, primal_feas)
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
-
-  ## Scaling
-  scaling_model = find_model(ScaledModel, nlp)
-  if nlp_scaling_method == "gradient-based" && scaling_model !== nothing
-    update_scaling!(scaling_model, solver.∇fk, ψ.A; gmax = gmax)
-  end
 
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), τ0)
@@ -490,12 +477,9 @@ function SolverCore.solve!(
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
-    set_objective!(stats, unscale_objective(scaling_model, fx))
+    set_objective!(stats, fx)
     set_residuals!(stats, primal_feas, dual_feas)
-
-    unscale_multipliers!(solver.y_report, scaling_model, solver.y)
-    set_constraint_multipliers!(stats, solver.y_report)
-
+    set_constraint_multipliers!(stats, solver.y)
     set_solver_specific!(stats, :n_fact, solver.substats.solver_specific[:n_fact])
 
     set_status!(
