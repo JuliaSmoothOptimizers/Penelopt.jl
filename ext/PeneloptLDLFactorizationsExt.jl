@@ -13,8 +13,11 @@ import Penelopt: AbstractLDLTWorkspace, AbstractK2Matrix, SparseSymmetricCSC
 import Penelopt: CompactBFGSK2Matrix, getrf!, getrs!
 import Penelopt: get_n, get_m, get_status
 import Penelopt: invalidate_factorization!, construct_ldlt_workspace, solve_system!
+import Penelopt: factorized, factorize!
+import Penelopt: set_status!, get_n_fact, set_n_fact!
 import Penelopt: get_inertia, up_lb_is_pos_def_exact!
 import Penelopt: reset_jacobian!, set_jacobian!, set_dual_regularization!
+
 include("LDLFactorizations/ldlt.jl")
 
 end
