@@ -1,5 +1,5 @@
 abstract type PenaltyWorkspace end
-abstract type PenaltyDirectWorkspace{WP, K2} <: PenaltyWorkspace end
+abstract type PenaltyDirectWorkspace{WP,K2} <: PenaltyWorkspace end
 
 function construct_workspace(H::M, u1::V, n::Int, m::Int; solver = :mumps) where {M,V}
   if solver == :ldlt
@@ -184,14 +184,7 @@ function solve_linear_system!(
     # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
     # (       [A     -αI]     )  [y₁]
     # using LAPACK
-    @views info_f = getrf!(
-      BlasInt(2p),
-      BlasInt(2p),
-      Z2,
-      stride(Z2, 2),
-      ipiv,
-      info,
-    )
+    @views info_f = getrf!(BlasInt(2p), BlasInt(2p), Z2, stride(Z2, 2), ipiv, info)
     if info_f != 0
       set_status!(workspace, :failed)
       return
@@ -312,17 +305,17 @@ function construct_ma57_workspace(H, u1, n, m)
   error("MA57 not available. Load PeneloptHSLExt.")
 end
 
-abstract type AbstractHSLWorkspace{WP, K2} <: PenaltyDirectWorkspace{WP, K2} end
+abstract type AbstractHSLWorkspace{WP,K2} <: PenaltyDirectWorkspace{WP,K2} end
 
 # LDLFactorizations Misc.
 function construct_ldlt_workspace(H, u1, n, m)
   error("LDLFactorizations not available. Load PeneloptLDLFactorizationsExt.")
 end
 
-abstract type AbstractLDLTWorkspace{WP, K2} <: PenaltyDirectWorkspace{WP, K2} end
+abstract type AbstractLDLTWorkspace{WP,K2} <: PenaltyDirectWorkspace{WP,K2} end
 
 # MUMPS Misc.
-abstract type AbstractMUMPSWorkspace{WP, K2} <: PenaltyDirectWorkspace{WP, K2} end
+abstract type AbstractMUMPSWorkspace{WP,K2} <: PenaltyDirectWorkspace{WP,K2} end
 
 get_n_fact(workspace::PenaltyDirectWorkspace) = workspace._n_fact
 

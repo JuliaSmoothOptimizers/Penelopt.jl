@@ -1,5 +1,5 @@
 mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractVector} <:
-               AbstractMUMPSWorkspace{WP, K2}
+               AbstractMUMPSWorkspace{WP,K2}
   M::WP
   H::K2
   x::V
@@ -102,10 +102,7 @@ function factorize!(workspace::PenaltyMUMPSWorkspace)
   end
 end
 
-function solve_system!(
-  workspace::PenaltyMUMPSWorkspace,
-  u::AbstractVector,
-)
+function solve_system!(workspace::PenaltyMUMPSWorkspace, u::AbstractVector)
   set_status!(workspace, :success)
   mumps, H = workspace.M, workspace.H
 
@@ -131,10 +128,7 @@ function solve_system!(
   return
 end
 
-function solve_system!(
-  workspace::PenaltyMUMPSWorkspace,
-  Z::AbstractMatrix,
-)
+function solve_system!(workspace::PenaltyMUMPSWorkspace, Z::AbstractMatrix)
   workspace.status = :success
   mumps, H = workspace.M, workspace.H
 
@@ -172,7 +166,8 @@ function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
   return npos, nzero, nneg
 end
 
-relative_error!(workspace::PenaltyMUMPSWorkspace) = max(workspace.M.rinfog[6], workspace.M.rinfog[7], workspace.M.rinfog[8])
+relative_error!(workspace::PenaltyMUMPSWorkspace) =
+  max(workspace.M.rinfog[6], workspace.M.rinfog[7], workspace.M.rinfog[8])
 
 function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M

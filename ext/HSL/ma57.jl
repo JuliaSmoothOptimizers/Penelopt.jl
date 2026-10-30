@@ -1,5 +1,5 @@
 mutable struct PenaltyMA57Workspace{WP<:Ma57,K2<:AbstractK2Matrix,V<:AbstractVector} <:
-               AbstractHSLWorkspace{WP, K2}
+               AbstractHSLWorkspace{WP,K2}
   M::WP
   H::K2
   x::V
@@ -71,10 +71,7 @@ function factorize!(workspace::PenaltyMA57Workspace)
   end
 end
 
-function solve_system!(
-  workspace::PenaltyMA57Workspace,
-  u::AbstractVector,
-)
+function solve_system!(workspace::PenaltyMA57Workspace, u::AbstractVector)
   set_status!(workspace, :success)
 
   factorize!(workspace)
@@ -96,10 +93,7 @@ function solve_system!(
   end
 end
 
-function solve_system!(
-  workspace::PenaltyMA57Workspace,
-  u::AbstractMatrix,
-)
+function solve_system!(workspace::PenaltyMA57Workspace, u::AbstractMatrix)
   set_status!(workspace, :success)
 
   factorize!(workspace)
