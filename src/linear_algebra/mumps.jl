@@ -146,11 +146,11 @@ function solve_system!(
     return
   end
 
-  MUMPS.associate_rhs!(mumps, Z1; unsafe = true)
-  MUMPS.mumps_solve!(Z1, mumps; rhs_changed = true)
+  MUMPS.associate_rhs!(mumps, Z; unsafe = true)
+  MUMPS.mumps_solve!(Z, mumps; rhs_changed = true)
 
   # MUMPS infog(1): a negative value is an error in the factorization.
-  if any(isnan, Z1) || mumps.infog[1] < 0
+  if any(isnan, Z) || mumps.infog[1] < 0
     set_status!(workspace, :failed)
     return
   end

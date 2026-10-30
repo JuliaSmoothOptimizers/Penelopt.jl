@@ -30,7 +30,7 @@ function construct_ldlt_workspace(
   )
 end
 
-factorized(workspace::PenaltyLDLTWorkspace) = factorized(workspace.M)
+factorized(workspace::PenaltyLDLTWorkspace) = LDLFactorizations.factorized(workspace.M)
 
 function invalidate_factorization!(workspace::PenaltyLDLTWorkspace)
   workspace.M.__factorized = false
@@ -121,8 +121,8 @@ function solve_system!(
     return
   end
 
-  ldiv!(workspace.M, Z1)
-  if any(isnan, Z1)
+  ldiv!(workspace.M, Z)
+  if any(isnan, Z)
     set_status!(workspace, :failed)
     return
   end

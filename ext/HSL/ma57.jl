@@ -110,12 +110,12 @@ function solve_system!(
   end
 
   try
-    ma57_solve!(workspace.M, Z1, workspace._qn_work)
+    ma57_solve!(workspace.M, u, workspace._qn_work)
   catch e
     !(e isa HSL.Ma57Exception) && rethrow(e)
   end
 
-  if any(isnan, Z1) || workspace.M.info.info[1] < 0
+  if any(isnan, u) || workspace.M.info.info[1] < 0
     workspace.status = :failed
     return
   end

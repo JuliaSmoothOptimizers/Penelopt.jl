@@ -106,6 +106,7 @@ function solve_system!(
 ) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
   workspace.status = :success
   H = workspace.H
+  B = H.B
 
   n, m = get_n(workspace), get_m(workspace)
   p = min(B._insert - 1, B._mem)
@@ -138,7 +139,8 @@ function solve_system!(
   # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
   # [x₁] = [A     -αI]  [u]
   solve_system!(workspace, u)
-  workspace.x1 .= workspace.x
+  get_status(workspace) == :failed && return
+  x1 .= workspace.x
 
   if p > 0
     # Step 3: Compute
@@ -159,6 +161,7 @@ function solve_system!(
     @views Z1[1:n, (p+1):(2*p)] .= Vk
 
     solve_system!(workspace, Z1)
+    get_status(workspace) == :failed && return
 
     # Step 4.2: Compute 
     # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
@@ -220,6 +223,7 @@ function solve_system!(
     # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
     # [x₃] = [A     -αI]  [x₂]
     solve_system!(workspace, x2)
+    get_status(workspace) == :failed && return
     x3 .= workspace.x
 
     # Step 8:
