@@ -75,8 +75,8 @@ end
 function factorize!(workspace::PenaltyMUMPSWorkspace)
   factorized(workspace) && return
   mumps = workspace.M
-  mumps.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.INITIALIZE
-  MUMPS.factorize!(mumps)
+  mumps.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.ANALYZE_FACTOR
+  MUMPS.invoke_mumps!(mumps)
   set_n_fact!(workspace, get_n_fact(workspace) + 1)
 
   k, max_iter = 0, 5
@@ -89,7 +89,7 @@ function factorize!(workspace::PenaltyMUMPSWorkspace)
   while mumps.infog[1] == -9 && k < max_iter
     MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
     mumps.job = MUMPS.FACTOR
-    MUMPS.factorize!(mumps)
+    MUMPS.invoke_mumps!(mumps)
     set_n_fact!(workspace, get_n_fact(workspace) + 1)
     k = k + 1
   end
