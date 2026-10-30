@@ -43,11 +43,6 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
 
   set_solver_specific!(r2n_stats, :n_fact, get_n_fact(ls_workspace))
 
-  # Invalidate the factorization analysis for subsequent solves of 
-  # ( H     Jᵀ )( s ) = - ( g )
-  # ( J    -αI )( y ) = - ( c )
-  isa(ls_workspace.H, K2Matrix) && invalidate_analysis!(ls_workspace)
-
   return θ
 end
 
@@ -128,12 +123,6 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
 
   # Set factorization counters
   set_solver_specific!(r2n_stats, :n_fact, get_n_fact(ls_workspace))
-
-  
-  # Invalidate the factorization analysis for subsequent solves of 
-  # ( H     Jᵀ )( s ) = - ( g )
-  # ( J    -αI )( y ) = - ( c )
-  isa(ls_workspace.H, K2Matrix) && invalidate_analysis!(ls_workspace)
 end
 
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
