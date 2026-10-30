@@ -25,7 +25,6 @@ include("instances/instance-generator.jl")
   include("test-no-fixed-vars.jl")
   include("test-no-shifted-constraints.jl")
   include("test-preprocessing-order.jl")
-  include("test-scaling.jl")
 end
 
 @testset "quasi-Newton" begin

@@ -171,30 +171,6 @@ If your problem has both fixed variables and shifted constraints, compose the tw
 nlp_preprocessed = nlp |> remove_fixed_variables |> remove_constraint_shift
 ```
 
-## Scaling
-
-Penelopt can rescale the objective and constraints by factors $d_f$ and $d_c$ before solving, to compensate for badly-scaled problems. See [this section](options.md#scaling).
-
-If you wish to use a [preallocated solver](performance.md#preallocation), construct the `ScaledModel` up front; `L2Penalty` will still refresh its scaling factors automatically at the start of `solve!`.
-
-```@example scaling
-using ADNLPModels, NLPModels, Penelopt
-
-nlp = ADNLPModel(x -> sum(x .^ 2), ones(5), x -> [sum(x .^ 3)], [5.0], [5.0])
-
-nlp_scaled = scale_model(nlp)
-
-solver = L2PenaltySolver(nlp_scaled)
-stats = PeneloptExecutionStats(nlp_scaled)
-
-solve!(solver, nlp_scaled, stats; nlp_scaling_method = "gradient-based")
-
-# Map the solution back to the original (unscaled) units
-f_orig = unscale_objective(nlp_scaled, stats.objective)
-c_orig = unscale_constraints(nlp_scaled, cons(nlp_scaled, stats.solution))
-y_orig = unscale_multipliers(nlp_scaled, stats.multipliers)
-```
-
 ## Quasi-Newton Approximations
 
 If the Hessian of the Lagrangian of your nonlinear programming problem is dense, ill-conditionned, expensive to compute, or inaccessible, you may be interested in replacing it with a quasi-Newton approximation.
@@ -245,5 +221,5 @@ julia> solve!(solver, nlp_bfgs, stats)
 ```
 
 !!! danger "Quasi-Newton approximations and preprocessing"
-    Apply `remove_fixed_variables`, `remove_constraint_shift`, and `scale_model` before constructing a quasi-Newton approximation, not after.
+    Apply `remove_fixed_variables` and `remove_constraint_shift` before constructing a quasi-Newton approximation, not after.
     The quasi-Newton approximation is built for whatever problem you pass it; it will not be valid for the original, unpreprocessed problem.
