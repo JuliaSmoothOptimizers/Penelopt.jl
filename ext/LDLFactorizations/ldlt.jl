@@ -2,7 +2,7 @@ mutable struct PenaltyLDLTWorkspace{
   WP<:LDLFactorization,
   K2<:AbstractK2Matrix,
   V<:AbstractVector,
-} <: AbstractLDLTWorkspace{WP, K2}
+} <: AbstractLDLTWorkspace{WP,K2}
   M::WP
   H::K2
   x::V
@@ -68,9 +68,7 @@ function refine!(
   return workspace.x
 end
 
-function factorize!(
-  workspace::PenaltyLDLTWorkspace
-)
+function factorize!(workspace::PenaltyLDLTWorkspace)
   factorized(workspace) && return
   ldl_factorize!(workspace.H.H, workspace.M)
   set_n_fact!(workspace, get_n_fact(workspace) + 1)
@@ -80,10 +78,7 @@ function factorize!(
   end
 end
 
-function solve_system!(
-  workspace::PenaltyLDLTWorkspace,
-  u::AbstractVector,
-)
+function solve_system!(workspace::PenaltyLDLTWorkspace, u::AbstractVector)
   set_status!(workspace, :success)
 
   factorize!(workspace)
@@ -108,10 +103,7 @@ function solve_system!(
   end
 end
 
-function solve_system!(
-  workspace::PenaltyLDLTWorkspace,
-  Z::AbstractMatrix,
-)
+function solve_system!(workspace::PenaltyLDLTWorkspace, Z::AbstractMatrix)
   set_status!(workspace, :success)
 
   factorize!(workspace)
