@@ -11,6 +11,7 @@ import LinearAlgebra: BlasInt, libblastrampoline
 
 import Penelopt: AbstractHSLWorkspace, AbstractK2Matrix
 import Penelopt: construct_ma57_workspace, solve_system!, update_workspace!
+import Penelopt: factorized, factorize!
 import Penelopt: get_H, get_inertia, get_solution!, get_status, get_n, get_m
 import Penelopt:
   up_lb_is_pos_def_exact!, reset_jacobian!, set_jacobian!, set_dual_regularization!

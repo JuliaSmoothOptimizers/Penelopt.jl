@@ -1,10 +1,11 @@
 mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractVector} <:
-               AbstractMUMPSWorkspace
+               AbstractMUMPSWorkspace{WP, K2}
   M::WP
   H::K2
   x::V
   status::Symbol
   factorized::Bool
+  analyzed::Bool
   _n_fact::Int
   _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
@@ -68,44 +69,52 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0)
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, false, 0, 0)
+end
+
+function factorize!(workspace::PenaltyMUMPSWorkspace)
+  factorized(workspace) && return
+  workspace.M.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.ANALYZE
+  factorize!(workspace.M)
+  set_n_fact!(workspace, get_n_fact(workspace) + 1)
+
+  k, max_iter = 0, 5
+  # MUMPS Documentation - infog(1) = -9
+  # The main internal real/complex workarray S is too small. If INFO(2) is positive, then the number
+  # of entries that are missing in S at the moment when the error is raised is available in INFO(2).
+  # If INFO(2) is negative, then its absolute value should be multiplied by 1 million. If an error –9
+  # occurs, the user should increase the value of ICNTL(14) before calling the factorization (JOB=
+  # 2) again, except if LWK USER is provided LWK USER should be increased.
+  while mumps.infog[1] == -9 && k < max_iter
+    MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
+    mumps.job = MUMPS.FACTOR
+    factorize!(mumps)
+    set_n_fact!(workspace, get_n_fact(workspace) + 1)
+    k = k + 1
+  end
+
+  # MUMPS infog(1): a negative value is an error in the factorization.
+  if mumps.infog[1] < 0
+    workspace.status = :failed
+    return
+  else
+    workspace.analyzed = true
+    workspace.factorized = true
+  end
 end
 
 function solve_system!(
-  workspace::PenaltyMUMPSWorkspace{WP,K2},
-  u::V,
-) where {V<:AbstractVector,WP,K2}
-  workspace.status = :success
+  workspace::PenaltyMUMPSWorkspace,
+  u::AbstractVector,
+)
+  set_status!(workspace, :success)
   mumps, H = workspace.M, workspace.H
 
-  if !workspace.factorized
-    job = mumps.job
-    mumps.job = MUMPS.INITIALIZE
-    factorize!(mumps)
-    workspace._n_fact += 1
+  factorize!(workspace)
 
-    k, max_iter = 0, 5
-    # MUMPS Documentation - infog(1) = -9
-    # The main internal real/complex workarray S is too small. If INFO(2) is positive, then the number
-    # of entries that are missing in S at the moment when the error is raised is available in INFO(2).
-    # If INFO(2) is negative, then its absolute value should be multiplied by 1 million. If an error –9
-    # occurs, the user should increase the value of ICNTL(14) before calling the factorization (JOB=
-    # 2) again, except if LWK USER is provided LWK USER should be increased.
-    while mumps.infog[1] == -9 && k < max_iter
-      MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
-      mumps.job = MUMPS.FACTOR
-      factorize!(mumps)
-      workspace._n_fact += 1
-      k = k + 1
-    end
-
-    # MUMPS infog(1): a negative value is an error in the factorization.
-    if mumps.infog[1] < 0
-      workspace.status = :failed
-      return
-    else
-      workspace.factorized = true
-    end
+  if !factorized(workspace)
+    set_status!(workspace, :failed)
+    return
   end
 
   workspace.x .= u
@@ -113,7 +122,8 @@ function solve_system!(
 
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, workspace.x) || mumps.infog[1] < 0
-    workspace.status = :failed
+    set_status!(workspace, :failed)
+    return
   end
 
   update_pivtol!(workspace)
@@ -122,186 +132,31 @@ function solve_system!(
 end
 
 function solve_system!(
-  workspace::PenaltyMUMPSWorkspace{WP,K2},
-  u::V,
-) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
+  workspace::PenaltyMUMPSWorkspace,
+  Z::AbstractMatrix,
+)
   workspace.status = :success
-  H = workspace.H
-  B = workspace.H.B
-  mumps = workspace.M
-  n, m = get_n(workspace), get_m(workspace)
-  p = min(B._insert - 1, B._mem)
-  x1, x2, x3, y1 = H.x1, H.x2, H.x3, H.y1
-  Z1, Z2 = H.Z1, H.Z2
+  mumps, H = workspace.M, workspace.H
 
-  Uk = @view B.Uk[:, 1:p]
-  Vk = @view B.Vk[:, 1:p]
+  factorize!(workspace)
 
-  # Step 0: Write
-  # [B  Aᵀ] = [σI+ξI  Aᵀ] + [-U V]([U V])ᵀ
-  # [A -αI] = [A     -αI] + [ 0 0]([0 0])
-  # Hence,
-  # [B  Aᵀ] = [σI+ξI  Aᵀ] + EFᵀ
-  # [A -αI] = [A     -αI] + EFᵀ
-
-  # Step 1: Factorize
-  # [σI+ξI  Aᵀ]
-  # [A     -αI]
-
-  if !workspace.factorized
-    job = mumps.job
-    mumps.job = MUMPS.INITIALIZE
-    factorize!(mumps)
-    workspace._n_fact += 1
-
-    k, max_iter = 0, 5
-    # MUMPS Documentation - infog(1) = -9
-    # The main internal real/complex workarray S is too small. If INFO(2) is positive, then the number
-    # of entries that are missing in S at the moment when the error is raised is available in INFO(2).
-    # If INFO(2) is negative, then its absolute value should be multiplied by 1 million. If an error –9
-    # occurs, the user should increase the value of ICNTL(14) before calling the factorization (JOB=
-    # 2) again, except if LWK USER is provided LWK USER should be increased.
-    while mumps.infog[1] == -9 && k < max_iter
-      MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
-      mumps.job = MUMPS.FACTOR
-      factorize!(mumps)
-      workspace._n_fact += 1
-      k = k + 1
-    end
-
-    # MUMPS infog(1): a negative value is an error in the factorization.
-    if mumps.infog[1] < 0
-      workspace.status = :failed
-      return
-    else
-      workspace.factorized = true
-    end
+  if !factorized(workspace)
+    set_status!(workspace, :failed)
+    return
   end
 
-  # Step 2: Compute
-  # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
-  # [x₁] = [A     -αI]  [u]
-
-  x1 .= u
-  MUMPS.associate_rhs!(mumps, x1; unsafe = true)
-  MUMPS.mumps_solve!(x1, mumps; rhs_changed = true)
+  MUMPS.associate_rhs!(mumps, Z1; unsafe = true)
+  MUMPS.mumps_solve!(Z1, mumps; rhs_changed = true)
 
   # MUMPS infog(1): a negative value is an error in the factorization.
-  if any(isnan, x1) || mumps.infog[1] < 0
-    workspace.status = :failed
+  if any(isnan, Z1) || mumps.infog[1] < 0
+    set_status!(workspace, :failed)
     return
   end
 
   update_pivtol!(workspace)
 
-  if p > 0
-
-    # Step 3: Compute
-    # y₁ = Fᵀx₁ = [Uᵀx₁(1:n)]
-    # y₁ = Fᵀx₁ = [Vᵀx₁(1:n)]
-    @views mul!(y1[1:p], Uk', x1[1:n])
-    @views mul!(y1[(p+1):(2*p)], Vk', x1[1:n])
-
-
-    # Step 4: Assemble Schur complement (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )
-    #                                   (       [A     -αI]     )
-    # Step 4.1: Compute 
-    # Z₁ = [σI+ξI  Aᵀ]⁻¹ E = [σI+ξI  Aᵀ]⁻¹[-U V]
-    # Z₁ = [A     -αI]   E = [A     -αI]  [ 0 0]
-    Z1 .= 0
-
-    @views Z1[1:n, 1:p] .= Uk .* (-1)
-    @views Z1[1:n, (p+1):(2*p)] .= Vk
-
-    MUMPS.associate_rhs!(mumps, Z1; unsafe = true)
-    MUMPS.mumps_solve!(Z1, mumps; rhs_changed = true)
-
-    # MUMPS infog(1): a negative value is an error in the factorization.
-    if any(isnan, Z1) || mumps.infog[1] < 0
-      workspace.status = :failed
-      return
-    end
-
-    update_pivtol!(workspace)
-
-    # Step 4.2: Compute 
-    # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
-    # Z₂ = FᵀZ₁ = VᵀZ₁[1:n]
-    Z2 .= 0
-    @views mul!(Z2[1:p, 1:(2*p)], Uk', Z1[1:n, (1:(2*p))])
-    @views mul!(Z2[(p+1):(2*p), 1:(2*p)], Vk', Z1[1:n, (1:(2*p))])
-
-    # Step 4.3: Compute 
-    # Z₂ = I + Z₂
-    for i = 1:(2*p)
-      Z2[i, i] += 1
-    end
-
-    # Step 5: Solve
-    # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
-    # (       [A     -αI]     )  [y₁]
-    # using LAPACK
-    @views info_f = getrf!(
-      BlasInt(2p),
-      BlasInt(2p),
-      Z2,
-      stride(Z2, 2),
-      workspace.H.ipiv,
-      workspace.H.info,
-    )
-    if info_f != 0
-      workspace.status = :failed
-      return
-    end
-
-    @views info_s = getrs!(
-      'N',
-      BlasInt(2p),
-      BlasInt(1),
-      Z2[1:(2p), 1:(2p)],
-      stride(Z2, 2),
-      workspace.H.ipiv,
-      y1[1:(2p)],
-      BlasInt(2p),
-      workspace.H.info,
-    )
-    if info_s != 0
-      workspace.status = :failed
-      return
-    end
-    if any(isnan, @view y1[1:(2*p)])
-      workspace.status = :failed
-      return
-    end
-
-    # Step 6: Compute
-    # x₂ = E[y₂] = [-U V][y₂] = [-Uy₂ + Vy₂]
-    # x₂ = E[y₂] = [ 0 0][y₂] = [0]
-    @views mul!(x2[1:n], Vk, y1[(p+1):(2*p)])
-    @views mul!(x2[1:n], Uk, y1[1:p], -one(eltype(y1)), one(eltype(y1)))
-
-    # Step 7: Solve
-    # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
-    # [x₃] = [A     -αI]  [x₂]
-    x3 .= x2
-    MUMPS.associate_rhs!(mumps, x3; unsafe = true)
-    MUMPS.mumps_solve!(x3, mumps; rhs_changed = true)
-
-    # MUMPS infog(1): a negative value is an error in the factorization.
-    if any(isnan, x3) || mumps.infog[1] < 0
-      workspace.status = :failed
-      return
-    end
-
-    update_pivtol!(workspace)
-
-    # Step 8:
-    # [B  Aᵀ]⁻¹[u] = x₁ - x₃ 
-    # [A -αI]  [u] = x₁ - x₃
-    workspace.x .= x1 .- x3
-  else
-    workspace.x .= x1
-  end
+  return
 end
 
 function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
@@ -317,17 +172,15 @@ function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
   return npos, nzero, nneg
 end
 
-function relative_error!(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
-  mumps = workspace.M
-
-  return max(mumps.rinfog[6], mumps.rinfog[7], mumps.rinfog[8])
-end
+relative_error!(workspace::PenaltyMUMPSWorkspace) = max(workspace.M.rinfog[6], workspace.M.rinfog[7], workspace.M.rinfog[8])
 
 function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
 
   MUMPS.set_cntl!(mumps, 1, 1e-2)
   MUMPS.set_icntl!(mumps, 10, -5)
+
+  invalidate_analysis!(workspace)
 end
 
 function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
@@ -335,6 +188,8 @@ function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
 
   MUMPS.set_cntl!(mumps, 1, max(mumps.cntl[1] / 10, eps(eltype(workspace.x))))
   MUMPS.set_icntl!(mumps, 10, 5)
+
+  invalidate_analysis!(workspace)
 end
 
 function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
@@ -343,7 +198,7 @@ function update_pivtol!(workspace::PenaltyMUMPSWorkspace)
   relative_error = relative_error!(workspace)
   if relative_error > sqrt(eps(eltype(workspace.x)))
     increase_pivtol!(workspace)
-    workspace.status = :failed
+    set_status!(workspace, :failed)
     workspace._n_precise = 0
   elseif relative_error < eps(eltype(workspace.x)) * 100
     workspace._n_precise += 1
@@ -362,28 +217,6 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   workspace._n_precise = 0
 end
 
-# Perform Cholesky facto of H + σI to check positive definiteness.
-function up_lb_is_pos_def_exact!(workspace::PenaltyMUMPSWorkspace)
-
-  # Step 1: Factorize
-  # [B + σI  0]
-  # [0      -I]
-  previous_inertia = workspace.H.α
-  reset_jacobian!(workspace.H)
-  set_dual_regularization!(workspace, one(previous_inertia))
-
-  mumps = workspace.M
-  mumps.job = MUMPS.FACTOR
-  factorize!(mumps)
-  workspace._n_fact += 1
-
-  # Step 2: Revert values of H to original values
-  set_jacobian!(workspace.H, workspace.H.A)
-  set_dual_regularization!(workspace, previous_inertia)
-
-  # Step 3: Check the ineria
-  npos, nzero, nneg = get_inertia(workspace)
-  is_pos_def = (npos == get_n(workspace) && mumps.infog[1] >= 0)
-
-  return is_pos_def
+function invalidate_analysis!(workspace::PenaltyMUMPSWorkspace)
+  workspace.analyzed = false
 end
