@@ -27,7 +27,6 @@ function update_workspace!(
   set_dual_regularization!(K, α)
   set_jacobian!(K, A)
   set_hessian!(K, B)
-  invalidate_analysis!(workspace)
   invalidate_factorization!(workspace)
 end
 
@@ -37,7 +36,6 @@ function update_workspace!(workspace::PenaltyDirectWorkspace, A::M, σ::T, α::T
   set_jacobian!(K, A)
   initialize_primal_regularization!(K, σ)
   set_dual_regularization!(K, α)
-  invalidate_analysis!(workspace)
   invalidate_factorization!(workspace)
 end
 
@@ -76,8 +74,6 @@ end
 function invalidate_factorization!(workspace::PenaltyDirectWorkspace)
   workspace.factorized = false
 end
-
-function invalidate_analysis!(workspace::PenaltyDirectWorkspace) end
 
 factorized(workspace::PenaltyDirectWorkspace) = workspace.factorized
 

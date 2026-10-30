@@ -5,7 +5,6 @@ mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractV
   x::V
   status::Symbol
   factorized::Bool
-  analyzed::Bool
   _n_fact::Int
   _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
@@ -69,13 +68,13 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, false, 0, 0)
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0)
 end
 
 function factorize!(workspace::PenaltyMUMPSWorkspace)
   factorized(workspace) && return
   mumps = workspace.M
-  mumps.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.ANALYZE_FACTOR
+  mumps.job = MUMPS.ANALYZE_FACTOR
   MUMPS.invoke_mumps!(mumps)
   set_n_fact!(workspace, get_n_fact(workspace) + 1)
 
@@ -99,7 +98,6 @@ function factorize!(workspace::PenaltyMUMPSWorkspace)
     workspace.status = :failed
     return
   else
-    workspace.analyzed = true
     workspace.factorized = true
   end
 end
@@ -179,7 +177,6 @@ relative_error!(workspace::PenaltyMUMPSWorkspace) = max(workspace.M.rinfog[6], w
 function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
 
-  invalidate_analysis!(workspace)
   MUMPS.set_cntl!(mumps, 1, 1e-2)
   MUMPS.set_icntl!(mumps, 10, -5)
 end
@@ -214,8 +211,4 @@ function SolverCore.reset!(workspace::PenaltyMUMPSWorkspace)
   MUMPS.set_icntl!(workspace.M, 10, 5)
   MUMPS.set_cntl!(workspace.M, 1, eps(eltype(workspace.x)))
   workspace._n_precise = 0
-end
-
-function invalidate_analysis!(workspace::PenaltyMUMPSWorkspace)
-  workspace.analyzed = false
 end
