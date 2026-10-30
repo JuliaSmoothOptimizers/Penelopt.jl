@@ -102,7 +102,7 @@ function extrapolate!(
   # [ J -αI ][py] = [y] 
   @views ms_solver.u2[1:n] .= zero(T)
   @views @. ms_solver.u2[(n+1):(n+m)] = y
-  solve_system!(ms_solver.workspace, ms_solver.u2)
+  solve_linear_system!(ms_solver.workspace, ms_solver.u2)
   get_solution!(ms_solver.x2, ms_solver.workspace)
   @views px, py = ms_solver.x2[1:n], ms_solver.x2[(n+1):(n+m)]
 

@@ -21,10 +21,10 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   α = one(T)
   update_workspace!(ls_workspace, ψ.A, one(T), α)
 
-  solve_system!(ls_workspace, u1)
+  solve_linear_system!(ls_workspace, u1)
   get_solution!(x1, ls_workspace)
 
-  # With a CompactBFGSK2, solve_system! automatically performs the Sherman-Morrison update.
+  # With a CompactBFGSK2, solve_linear_system! automatically performs the Sherman-Morrison update.
   # x1 is the preallocated space for the solution of the linear system with a block identity.
   # Refer to the CompactBFGSK2 code.
   if isa(ls_workspace.H, CompactBFGSK2Matrix)
@@ -76,10 +76,10 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   α = eps(T)
   update_workspace!(ls_workspace, ψ.A, one(T), α)
 
-  solve_system!(ls_workspace, u1)
+  solve_linear_system!(ls_workspace, u1)
   get_solution!(x1, ls_workspace)
 
-  # With a CompactBFGSK2, solve_system! automatically performs the Sherman-Morrison update.
+  # With a CompactBFGSK2, solve_linear_system! automatically performs the Sherman-Morrison update.
   # x1 is the preallocated space for the solution of the linear system with a block identity.
   # Refer to the CompactBFGSK2 code.
   if isa(ls_workspace.H, CompactBFGSK2Matrix)
@@ -93,7 +93,7 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   if status != :success
     α = eps(T)^(0.8)
     update_workspace!(ls_workspace, ψ.A, one(T), α)
-    solve_system!(ls_workspace, u1)
+    solve_linear_system!(ls_workspace, u1)
     get_solution!(x1, ls_workspace)
 
     if isa(ls_workspace.H, CompactBFGSK2Matrix)
@@ -107,7 +107,7 @@ function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
   if status != :success
     α = eps(T)^(0.6)
     update_workspace!(ls_workspace, ψ.A, one(T), α)
-    solve_system!(ls_workspace, u1)
+    solve_linear_system!(ls_workspace, u1)
     get_solution!(x1, ls_workspace)
 
     if isa(ls_workspace.H, CompactBFGSK2Matrix)

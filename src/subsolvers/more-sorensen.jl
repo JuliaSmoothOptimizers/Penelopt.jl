@@ -72,7 +72,7 @@ return `(npos, nzero, nneg, status)`: the observed inertia of the factorized
 system and the status reported by the linear solver.
 """
 function factor_and_solve!(solver_workspace, u1, x1)
-  solve_system!(solver_workspace, u1)
+  solve_linear_system!(solver_workspace, u1)
   get_solution!(x1, solver_workspace)
   npos, nzero, nneg = get_inertia(solver_workspace)
   status = get_status(solver_workspace)
@@ -243,7 +243,7 @@ function SolverCore.solve!(
   # [ H + σI Aᵀ][x'] = -[0]
   # [   A    0 ][y'] = -[x] 
   @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
-  solve_system!(solver_workspace, u2)
+  solve_linear_system!(solver_workspace, u2)
   get_solution!(x2, solver_workspace)
 
   # Check that H + σI is positive definite.
@@ -275,7 +275,7 @@ function SolverCore.solve!(
 
     # [ H + σI  Aᵀ ][x] = -[∇f]
     # [   A    -αI ][y] = -[c] 
-    solve_system!(solver_workspace, u1)
+    solve_linear_system!(solver_workspace, u1)
     get_solution!(x1, solver_workspace)
 
     # Check whether x1 decreases the model.
@@ -314,7 +314,7 @@ function SolverCore.solve!(
     # [ H + σI  Aᵀ ][x'] = -[0]
     # [   A    -αI ][y'] = -[x]
     @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
-    solve_system!(solver_workspace, u2)
+    solve_linear_system!(solver_workspace, u2)
     get_solution!(x2, solver_workspace)
 
     set_iter!(stats, stats.iter + 1)

@@ -67,6 +67,10 @@ end
 function factorize!(::PenaltyDirectWorkspace) end
 function solve_system!(::PenaltyDirectWorkspace, u) end
 
+function solve_linear_system!(workspace::PenaltyDirectWorkspace, u)
+  solve_system!(workspace, u)
+end
+
 function invalidate_factorization!(workspace::PenaltyDirectWorkspace)
   workspace.factorized = false
 end
@@ -100,7 +104,7 @@ end
 # - factorize!(workspace)
 # - solve_system!(workspace, u::AbstractVector) -> Writes the solution into workspace.x
 # - solve_system!(workspace, Z::AbstractMatrix) -> Overwrites Z
-function solve_system!(
+function solve_linear_system!(
   workspace::PenaltyDirectWorkspace{WP,K2},
   u::V,
 ) where {V<:AbstractVector,WP,K2<:CompactBFGSK2Matrix}
