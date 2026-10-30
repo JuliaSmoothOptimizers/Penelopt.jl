@@ -125,8 +125,8 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 * `μ::T = 0.01` (*advanced*): Decrease factor for penalized problem accuracy.
   > If $\epsilon_D^k$ is the accuracy level for the current penalized problem, then when the algorithm increases the accuracy for the subproblem, it performs the update $\epsilon_D^{k+1} = \max(μ\epsilon_D^{k},\epsilon_D)$. Smaller values mean that subproblems are solved to higher accuracy more aggressively. This is $\mu_{\epsilon}$ in the implementation paper.
 
-* `infeasible_tol::T = 0.001` (*advanced*): local infeasibility tolerance.
-  > When an optimality measure of $\min_x \|c(x)\|_2$ arround the current iterate is detected to be smaller (relative to this tolerance) than the current primal residual, the problem is declared infeasible. Larger values can cause false positives while smaller values cause false negatives. This is $\epsilon_I$ in the implementation paper.
+* `infeasible_tol::T = sqrt(eps(T))` (*advanced*): local infeasibility tolerance.
+  > When an optimality measure of $\min_x \|c(x)\|_2$ arround the current iterate is detected to be smaller (relative to this tolerance) than the current primal residual, the problem is declared infeasible. Larger values can cause false positives while smaller values cause false negatives. This is $\epsilon_I$ in the implementation paper. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
 * `infeasible_iter::Int = 2` (*advanced*): local infeasibility detection frequency.
   > Frequency (in *outer-loop* iterations) at which we estimate locally infeasibility. For performance, if you are positive that your model is feasible, you can set this parameter to a very large value. 
