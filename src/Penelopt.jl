@@ -31,9 +31,7 @@ include("types/norm/NormL2.jl")
 include("types/norm/CompositeNormL2.jl")
 include("types/norm/ShiftedCompositeNormL2.jl")
 
-include("types/pre-processing/utils.jl")
 include("types/pre-processing/FixedVariable.jl")
-include("types/pre-processing/Scaling.jl")
 include("types/pre-processing/ShiftedConstraint.jl")
 
 include("linear_algebra/K2.jl")
