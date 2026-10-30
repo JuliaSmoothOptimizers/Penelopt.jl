@@ -210,7 +210,7 @@ function SolverCore.solve!(
   r2n_max_iter::Int = 1000,
   ms_max_iter::Int = 10,
   μ::T = T(1e-2),
-  infeasible_tol::T = T(1e-3),
+  infeasible_tol::T = sqrt(eps(T)),
   infeasible_iter::Int = 2,
 
   ## Logging arguments
