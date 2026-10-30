@@ -74,8 +74,9 @@ end
 
 function factorize!(workspace::PenaltyMUMPSWorkspace)
   factorized(workspace) && return
-  workspace.M.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.ANALYZE
-  factorize!(workspace.M)
+  mumps = workspace.M
+  mumps.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.INITIALIZE
+  MUMPS.factorize!(mumps)
   set_n_fact!(workspace, get_n_fact(workspace) + 1)
 
   k, max_iter = 0, 5
@@ -88,7 +89,7 @@ function factorize!(workspace::PenaltyMUMPSWorkspace)
   while mumps.infog[1] == -9 && k < max_iter
     MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
     mumps.job = MUMPS.FACTOR
-    factorize!(mumps)
+    MUMPS.factorize!(mumps)
     set_n_fact!(workspace, get_n_fact(workspace) + 1)
     k = k + 1
   end
@@ -179,8 +180,6 @@ function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
 
   MUMPS.set_cntl!(mumps, 1, 1e-2)
   MUMPS.set_icntl!(mumps, 10, -5)
-
-  invalidate_analysis!(workspace)
 end
 
 function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
@@ -188,8 +187,6 @@ function decrease_pivtol!(workspace::PenaltyMUMPSWorkspace)
 
   MUMPS.set_cntl!(mumps, 1, max(mumps.cntl[1] / 10, eps(eltype(workspace.x))))
   MUMPS.set_icntl!(mumps, 10, 5)
-
-  invalidate_analysis!(workspace)
 end
 
 function update_pivtol!(workspace::PenaltyMUMPSWorkspace)

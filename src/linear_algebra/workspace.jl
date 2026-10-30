@@ -64,7 +64,7 @@ function set_dual_regularization!(workspace::PenaltyDirectWorkspace, α::T) wher
   invalidate_factorization!(workspace)
 end
 
-function factorize!(::PenaltyDirectWorkspace, u) end
+function factorize!(::PenaltyDirectWorkspace) end
 function solve_system!(::PenaltyDirectWorkspace, u) end
 
 function invalidate_factorization!(workspace::PenaltyDirectWorkspace)
@@ -89,7 +89,7 @@ function get_status(workspace::PenaltyDirectWorkspace)
   return workspace.status
 end
 
-function set_status!(workspace::PenaltyDirectWorkspace, status::Symbol)
+function SolverCore.set_status!(workspace::PenaltyDirectWorkspace, status::Symbol)
   workspace.status = status
 end
 
