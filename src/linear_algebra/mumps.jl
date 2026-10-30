@@ -179,6 +179,7 @@ relative_error!(workspace::PenaltyMUMPSWorkspace) = max(workspace.M.rinfog[6], w
 function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
 
+  invalidate_analysis!(workspace)
   MUMPS.set_cntl!(mumps, 1, 1e-2)
   MUMPS.set_icntl!(mumps, 10, -5)
 end
