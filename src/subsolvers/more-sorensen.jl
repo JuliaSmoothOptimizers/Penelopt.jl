@@ -82,11 +82,11 @@ end
 """
     escalate_and_resolve!(solver, reg_nlp, stats, αmin, failure_status, opts)
 
-Multiply the primal regularization `reg_nlp.model.data.σ` by `opts.μσ` and
+Multiply the primal regularization `reg_nlp.model.data.σ` by `opts.ms_μσ` and
 either report failure — setting `stats.status` to `failure_status` — if `σ`
-has reached `opts.σmax`, or restart the Moré-Sorensen iteration with the new
+has reached `opts.ms_σmax`, or restart the Moré-Sorensen iteration with the new
 `σ`. `opts` is the `NamedTuple` of tuning parameters built once at the top
-of `solve!` (everything but `α0`/`_restart`, which vary across restarts) and
+of `solve!` (everything but `ms_α0`/`_restart`, which vary across restarts) and
 is forwarded as-is to the recursive `solve!` call, only initializing the
 dual regularization at `αmin` (the smallest value already known to work for
 the current system) instead of retrying it from `0`.
@@ -99,13 +99,13 @@ function escalate_and_resolve!(
   failure_status::Symbol,
   opts::NamedTuple,
 ) where {T,V,M,H,P}
-  reg_nlp.model.data.σ *= opts.μσ
-  if reg_nlp.model.data.σ >= opts.σmax
+  reg_nlp.model.data.σ *= opts.ms_μσ
+  if reg_nlp.model.data.σ >= opts.ms_σmax
     set_status!(stats, failure_status)
     opts.print_level > 0 && @info conclusion_message(solver, stats)
     return
   end
-  return solve!(solver, reg_nlp, stats; opts..., α0 = αmin, _restart = true)
+  return solve!(solver, reg_nlp, stats; opts..., ms_α0 = αmin, _restart = true)
 end
 
 function SolverCore.solve!(
@@ -114,18 +114,18 @@ function SolverCore.solve!(
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
   print_level::Int = 0,
-  verbose::Int = 1,
-  atol::T = eps(T)^(0.6),
+  ms_verbose::Int = 1,
+  ms_tol::T = eps(T)^(0.6),
   max_time::T = T(30),
-  max_iter::Int = 10,
-  μα::T = T(0.1),
-  μσ::T = T(10),
-  α0::T = eps(T),
-  αmin1::T = eps(T)^(0.8),
-  αmin2::T = eps(T)^(0.6),
-  σmax::T = 1 / eps(T)^(0.8),
-  accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
-  ηC::T = eps(T), # Cauchy decrease acceptance constant, see up_lb_is_pos_def fallback below.
+  ms_max_iter::Int = 10,
+  ms_μα::T = T(0.1),
+  ms_μσ::T = T(10),
+  ms_α0::T = eps(T),
+  ms_αmin1::T = eps(T)^(0.8),
+  ms_αmin2::T = eps(T)^(0.6),
+  ms_σmax::T = 1 / eps(T)^(0.8),
+  ms_accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
+  ms_ηC::T = eps(T), # Cauchy decrease acceptance constant, see up_lb_is_pos_def fallback below.
   _restart::Bool = false, # Internal flag only: true when this call is a recursive continuation.
 ) where {T,V,M,H,P}
   if !_restart
@@ -140,21 +140,21 @@ function SolverCore.solve!(
   start_time = time() - stats.elapsed_time
 
   # Bundled once so the escalation call sites below stay short: everything
-  # solve! was called with, except α0/_restart which change across restarts.
+  # solve! was called with, except ms_α0/_restart which change across restarts.
   opts = (;
     x,
     print_level,
-    verbose,
-    atol,
+    ms_verbose,
+    ms_tol,
     max_time,
-    max_iter,
-    μα,
-    μσ,
-    αmin1,
-    αmin2,
-    σmax,
-    accept_descent,
-    ηC,
+    ms_max_iter,
+    ms_μα,
+    ms_μσ,
+    ms_αmin1,
+    ms_αmin2,
+    ms_σmax,
+    ms_accept_descent,
+    ms_ηC,
   )
 
   n = reg_nlp.model.meta.nvar
@@ -168,7 +168,7 @@ function SolverCore.solve!(
   @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n+1):(n+m)] = -reg_nlp.h.b
 
-  α = α0
+  α = ms_α0
   update_workspace!(
     solver_workspace,
     reg_nlp.model.data.H,
@@ -177,7 +177,7 @@ function SolverCore.solve!(
     α,
   )
 
-  αmin = αmin1
+  αmin = ms_αmin1
 
   # [ H + σI Aᵀ][x] = -[∇f]
   # [   A    0 ][y] = -[c] 
@@ -191,15 +191,15 @@ function SolverCore.solve!(
     npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
 
     if nneg < m || status == :failed
-      αmin = αmin2
+      αmin = ms_αmin2
       α = αmin
       set_dual_regularization!(solver_workspace, α)
       npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
     end
   end
 
-  while (npos < n || status == :failed) && reg_nlp.model.data.σ <= σmax
-    reg_nlp.model.data.σ *= μσ
+  while (npos < n || status == :failed) && reg_nlp.model.data.σ <= ms_σmax
+    reg_nlp.model.data.σ *= ms_μσ
     set_primal_regularization!(solver_workspace, reg_nlp.model.data.σ)
 
     # [ H + σI Aᵀ][x] = -[∇f]
@@ -208,7 +208,7 @@ function SolverCore.solve!(
   end
 
   # Solve with H = 0 instead.
-  if reg_nlp.model.data.σ > σmax && (npos < n || status == :failed)
+  if reg_nlp.model.data.σ > ms_σmax && (npos < n || status == :failed)
     isa(reg_nlp.model.data.H, CompactBFGS) ? NLPModels.reset!(reg_nlp.model.data.H) :
     reg_nlp.model.data.H.vals .= 0
     update_workspace!(solver_workspace, reg_nlp.h.A, reg_nlp.model.data.σ, α)
@@ -225,7 +225,7 @@ function SolverCore.solve!(
   is_descent = check_descent(reg_nlp, @view x1[1:n])
   norm_x1 = norm(@view x1[(n+1):(n+m)])
 
-  if print_level > 0 && stats.iter % verbose == 0
+  if print_level > 0 && stats.iter % ms_verbose == 0
     @info log_ms_iteration(
       stats,
       reg_nlp.model.data.σ,
@@ -250,7 +250,7 @@ function SolverCore.solve!(
   is_pos_def = up_lb_is_pos_def(solver_workspace)
   set_solver_specific!(stats, :is_pos_def, is_pos_def)
 
-  converged = (is_descent && accept_descent) || norm_x1 <= Δ
+  converged = (is_descent && ms_accept_descent) || norm_x1 <= Δ
 
   if converged
     set_solution!(stats, @view x1[1:n])
@@ -264,13 +264,13 @@ function SolverCore.solve!(
   end
 
   # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
-  !is_pos_def && (max_iter = min(max_iter, 5))
+  !is_pos_def && (ms_max_iter = min(ms_max_iter, 5))
 
-  while abs(norm_x1 - Δ) > atol && stats.iter < max_iter && stats.elapsed_time < max_time
+  while abs(norm_x1 - Δ) > ms_tol && stats.iter < ms_max_iter && stats.elapsed_time < max_time
     # α = α + (‖y‖/Δ - 1)*‖y‖²/(yᵀy')
     @views α₊ = α + norm_x1^2/dot(x1[(n+1):(n+m)], x2[(n+1):(n+m)])*(norm_x1/Δ - 1)
 
-    α = α₊ ≤ 0 ? max(μα*α, αmin) : α₊
+    α = α₊ ≤ 0 ? max(ms_μα*α, αmin) : α₊
     set_dual_regularization!(solver_workspace, α)
 
     # [ H + σI  Aᵀ ][x] = -[∇f]
@@ -282,12 +282,12 @@ function SolverCore.solve!(
     is_descent = check_descent(reg_nlp, @view x1[1:n])
     norm_x1 = norm(@view x1[(n+1):(n+m)])
 
-    if is_descent && accept_descent
+    if is_descent && ms_accept_descent
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
       set_solver_specific!(stats, :alpha, α)
       set_iter!(stats, stats.iter + 1)
-      if print_level > 0 && stats.iter % verbose == 0
+      if print_level > 0 && stats.iter % ms_verbose == 0
         @info log_ms_iteration(
           stats,
           reg_nlp.model.data.σ,
@@ -320,7 +320,7 @@ function SolverCore.solve!(
     set_iter!(stats, stats.iter + 1)
     set_time!(stats, time()-start_time)
 
-    if print_level > 0 && stats.iter % verbose == 0
+    if print_level > 0 && stats.iter % ms_verbose == 0
       @info log_ms_iteration(
         stats,
         reg_nlp.model.data.σ,
@@ -342,7 +342,7 @@ function SolverCore.solve!(
   set_status!(stats, :first_order)
   set_solver_specific!(stats, :alpha, α)
 
-  stats.iter >= max_iter && set_status!(stats, :max_iter)
+  stats.iter >= ms_max_iter && set_status!(stats, :max_iter)
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
 
   is_descent = check_descent(reg_nlp, @view x1[1:n])

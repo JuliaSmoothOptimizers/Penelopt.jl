@@ -24,12 +24,12 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
             solver,
             small_instance_boundary,
             stats,
-            atol = 1e-9,
-            accept_descent = false,
+            ms_tol = 1e-9,
+            ms_accept_descent = false,
           )
         ) == 0
       else
-        solve!(solver, small_instance_boundary, stats, atol = 1e-9, accept_descent = false)
+        solve!(solver, small_instance_boundary, stats, ms_tol = 1e-9, ms_accept_descent = false)
       end
       @test norm(solution[:u] - stats.solution) <= 1e-6
       @test norm(solution[:y] - solver.x1[(n+1):end]) <= 1e-6
@@ -48,12 +48,12 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
             solver,
             small_instance_interior,
             stats,
-            atol = 1e-9,
-            accept_descent = false,
+            ms_tol = 1e-9,
+            ms_accept_descent = false,
           )
         ) == 0
       else
-        solve!(solver, small_instance_interior, stats, atol = 1e-9, accept_descent = false)
+        solve!(solver, small_instance_interior, stats, ms_tol = 1e-9, ms_accept_descent = false)
       end
       @test norm(solution[:u] - stats.solution) <= 1e-6
       @test norm(solution[:y] - solver.x1[(n+1):end]) <= 1e-6
@@ -73,12 +73,12 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
             solver,
             medium_instance_boundary,
             stats,
-            atol = 1e-9,
-            accept_descent = false,
+            ms_tol = 1e-9,
+            ms_accept_descent = false,
           )
         ) == 0
       else
-        solve!(solver, medium_instance_boundary, stats, atol = 1e-9, accept_descent = false)
+        solve!(solver, medium_instance_boundary, stats, ms_tol = 1e-9, ms_accept_descent = false)
       end
       @test norm(solution[:u] - stats.solution) <= 1e-6
       @test norm(solution[:y] - solver.x1[(n+1):end]) <= 1e-6
@@ -97,12 +97,12 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
             solver,
             medium_instance_interior,
             stats,
-            atol = 1e-9,
-            accept_descent = false,
+            ms_tol = 1e-9,
+            ms_accept_descent = false,
           )
         ) == 0
       else
-        solve!(solver, medium_instance_interior, stats, atol = 1e-9, accept_descent = false)
+        solve!(solver, medium_instance_interior, stats, ms_tol = 1e-9, ms_accept_descent = false)
       end
       @test norm(solution[:u] - stats.solution) <= 1e-6
       @test norm(solution[:y] - solver.x1[(n+1):end]) <= 1e-6
@@ -123,9 +123,9 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
           solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
         )
         if VERSION >= v"1.12"
-          @test @wrappedallocs(solve!(solver, reg_nlp, stats, accept_descent = false)) == 0
+          @test @wrappedallocs(solve!(solver, reg_nlp, stats, ms_accept_descent = false)) == 0
         else
-          solve!(solver, reg_nlp, stats, accept_descent = false)
+          solve!(solver, reg_nlp, stats, ms_accept_descent = false)
         end
         instance_name = basename(instance)
         if occursin("boundary", instance_name)

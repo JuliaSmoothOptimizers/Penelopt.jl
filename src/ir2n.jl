@@ -75,7 +75,6 @@ function SolverCore.solve!(
   print_level::Int = 0,
   r2n_verbose::Int = 1,
   r2n_max_iter::Int = 1000,
-  ms_max_iter::Int = 10,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
   r2n_σmin::T = eps(T)^2,
@@ -92,17 +91,9 @@ function SolverCore.solve!(
   primal_decrease::Bool = false,
   first_increase::Bool = true,
 
-  ## MS Specific arguments
-  ms_verbose::Int = 1,
-  ms_accept_descent::Bool = true,
-  ms_σmax::T = 1/eps(T)^(0.8),
-  ms_tol::T = eps(T)^(0.6),
-  ms_μα::T = T(0.1),
-  ms_μσ::T = T(10),
-  ms_α0::T = eps(T),
-  ms_αmin1::T = eps(T)^(0.8),
-  ms_αmin2::T = eps(T)^(0.6),
+  ## Subsolver arguments
   ms_ηC::T = eps(T),
+  kwargs...,
 ) where {T,V}
   reset!(stats)
   σk = (σk < 0) ? max(r2n_σ0, r2n_σmin) : max(σk, r2n_σmin)
@@ -228,18 +219,9 @@ function SolverCore.solve!(
       solver.subsolver,
       solver.subpb,
       solver.substats;
-      verbose = ms_verbose,
       print_level = print_level - 1,
-      max_iter = ms_max_iter,
-      accept_descent = ms_accept_descent,
-      σmax = ms_σmax,
-      atol = ms_tol,
-      μα = ms_μα,
-      μσ = ms_μσ,
-      α0 = ms_α0,
-      αmin1 = ms_αmin1,
-      αmin2 = ms_αmin2,
-      ηC = ms_ηC,
+      ms_ηC = ms_ηC,
+      kwargs...,
     )
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
