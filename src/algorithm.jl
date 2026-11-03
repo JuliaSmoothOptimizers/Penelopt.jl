@@ -253,7 +253,7 @@ function SolverCore.solve!(
   grad!(nlp, x, get_gradient(solver))
   initialize_multipliers!(solver)
   dual_feas = least_square_dual_feas!(solver)
-  set_multipliers!(solver.subsolver)
+  set_multipliers!(solver.subsolver, y)
 
   primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
@@ -277,7 +277,7 @@ function SolverCore.solve!(
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), τ0)
   set_penalty!(solver, τ)
-  σk = nothing
+  σk = -one(T) # Use subsolver's default σk (max(σ0, σmin))
 
   ## Logging
   if print_level > 0
@@ -338,7 +338,7 @@ function SolverCore.solve!(
         solver;
         primal_decrease = primal_decrease,
         first_increase = first_increase,
-        (isnothing(σk) ? (;) : (; σk = σk))..., # On first pass, let the subsolver choose its initial regularization parameter
+        σk = σk,
         kwargs...,
       )...,
     )
@@ -346,7 +346,7 @@ function SolverCore.solve!(
     if solver.substats.status == :unbounded
       τ *= 10
       set_penalty!(solver, τ)
-      σk = nothing
+      σk = -one(T)
       shift!(solver, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue

@@ -36,10 +36,10 @@ function PenaltyR2NExecutionStats(penalty_nlp::AbstractNLPModel{T,V}) where {T,V
   return PenaltyR2NExecutionStats{T,V}(stats)
 end
 
-Base.getproperty(s::PenaltyR2NExecutionStats, name::Symbol) =
+@inline Base.getproperty(s::PenaltyR2NExecutionStats, name::Symbol) =
   name === :stats ? getfield(s, :stats) : getproperty(getfield(s, :stats), name)
 
-Base.setproperty!(s::PenaltyR2NExecutionStats, name::Symbol, value) =
+@inline Base.setproperty!(s::PenaltyR2NExecutionStats, name::Symbol, value) =
   setproperty!(getfield(s, :stats), name, value)
 
 Base.propertynames(s::PenaltyR2NExecutionStats) = propertynames(getfield(s, :stats))

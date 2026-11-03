@@ -80,7 +80,7 @@ function SolverCore.solve!(
   max_eval::Int = -1,
   σmin::T = eps(T)^2,
   σ0::T = eps(T),
-  σk::T = σ0,
+  σk::T = -one(T), # < 0 -> fallback to max(σ0, σmin)
   η1::T = √√eps(T),
   η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
   γ::T = T(3),
@@ -105,7 +105,7 @@ function SolverCore.solve!(
   ms_ηC::T = eps(T),
 ) where {T,V}
   reset!(stats)
-  σk = max(σk, σmin)
+  σk = (σk < 0) ? max(σ0, σmin) : max(σk, σmin)
 
   # Retrieve workspace
   nlp, h = reg_nlp.model, reg_nlp.h
@@ -439,17 +439,23 @@ shift!(solver::PenaltyR2NSolver, x::AbstractVector; kwargs...) =
 Translate the keyword arguments of the outer loop into keyword arguments of the R2N `solve!`.
 Options prefixed with `r2n_` are passed without their prefix, options prefixed with `ms_` are
 passed as is, and so are the warm-start arguments `σk`, `primal_decrease` and `first_increase`.
+The keys are translated at compile time, so that this function does not allocate.
 """
-function subsolver_kwargs(::PenaltyR2NSolver; kwargs...)
-  r2n_kwargs = map(collect(kwargs)) do (key, val)
+subsolver_kwargs(::PenaltyR2NSolver; kwargs...) =
+  merge((; is_shifted = true), _r2n_kwargs(NamedTuple(kwargs)))
+
+@generated function _r2n_kwargs(kwargs::NamedTuple{names}) where {names}
+  new_names = Symbol[]
+  for key in names
     name = String(key)
     if startswith(name, "r2n_")
-      Symbol(name[5:end]) => val
+      push!(new_names, Symbol(name[5:end]))
     elseif startswith(name, "ms_") || key in (:σk, :primal_decrease, :first_increase)
-      key => val
+      push!(new_names, key)
     else
-      throw(ArgumentError("L2Penalty: unknown keyword argument `$key`."))
+      msg = "L2Penalty: unknown keyword argument `$key`."
+      return :(throw(ArgumentError($msg)))
     end
   end
-  return (; is_shifted = true, r2n_kwargs...)
+  return :(NamedTuple{$(Tuple(new_names))}(values(kwargs)))
 end
