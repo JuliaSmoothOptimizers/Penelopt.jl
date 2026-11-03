@@ -64,3 +64,30 @@ for (getrf, getrs, T) in ((:sgetrf_, :sgetrs_, :Float32), (:dgetrf_, :dgetrs_, :
     end
   end
 end
+
+for (potrf, T) in ((:spotrf_, :Float32), (:dpotrf_, :Float64))
+  @eval begin
+
+    function potrf!(
+      uplo::Char,
+      n::BlasInt,
+      a::AbstractMatrix{$T},
+      lda::BlasInt,
+      info::Base.RefValue{BlasInt},
+    )
+      ccall(
+        (@blasfunc($potrf), libblastrampoline),
+        Cvoid,
+        (Ref{UInt8}, Ref{BlasInt}, Ptr{$T}, Ref{BlasInt}, Ref{BlasInt}, Clong),
+        uplo,
+        n,
+        a,
+        lda,
+        info,
+        1,
+      )
+      return info[]
+    end
+  end
+end
+

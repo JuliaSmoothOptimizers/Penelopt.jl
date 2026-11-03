@@ -17,6 +17,7 @@ mutable struct CompactBFGS{T,V<:AbstractVector{T},MT<:AbstractMatrix{T}} <:
   _insert::Int
   _nskip::Int
   _max_skip::Int
+  _info::Base.RefValue{BlasInt}
 end
 
 function CompactBFGS(
@@ -45,6 +46,7 @@ function CompactBFGS(
     1,
     0,
     max_skip,
+    Ref{BlasInt}(0),
   )
 end
 
@@ -171,11 +173,10 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   mul!(Mk, _DLk', _DLk)                                    # Mₖ = Lₖ Dₖ⁻¹ Lₖᵀ
   mul!(Mk, Sk', Sk, ξ, one(T))                             # Mₖ = ξ Sₖᵀ Sₖ + Lₖ Dₖ⁻¹ Lₖᵀ
 
-  # Step 2: factorize Mₖ
-  try
-    cholesky!(Symmetric(@view Mk[1:k, 1:k]))                 # Mₖ = Jₖᵀ Jₖ (factorization)
-  catch e
-    @warn "Cholesky factorization of Mₖ failed. Resetting the compact BFGS model."
+  # Step 2: factorize Mₖ = JₖᵀJₖ in place (Jₖ in the upper triangle of Mk[1:k, 1:k])
+  info = potrf!('U', BlasInt(k), Mk, BlasInt(stride(Mk, 2)), Ref{BlasInt}(0))
+  if info != 0
+    @warn "Cholesky factorization of Mₖ failed (info = $info). Resetting the compact BFGS model."
     NLPModels.reset!(op)
     return
   end
@@ -186,7 +187,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   # Step 4: compute Uₖ
   mul!(Uk, Vk, _DLk)                                       # Uₖ = Yₖ Dₖ⁻¹ Lₖᵀ
   axpy!(ξ, Sk, Uk)                                         # Uₖ = ξ Sₖ + Yₖ Dₖ⁻¹ Lₖᵀ
-  @views rdiv!(Uk[:, 1:k], UpperTriangular(Mk[1:k, 1:k]))  # Uₖ = (ξ Sₖ + Yₖ Dₖ⁻¹ Lₖᵀ) Jₖ⁻¹
+  BLAS.trsm!('R', 'U', 'N', 'N', one(T), view(Mk, 1:k, 1:k), view(Uk, :, 1:k))
 
   op._insert = min(k + 1, mem + 1)
 end
@@ -218,6 +219,7 @@ function Base.copy(op::CompactBFGS{T,V,MT}) where {T,V,MT}
     op._insert,
     op._nskip,
     op._max_skip,
+    Ref{BlasInt}(op._info[]),
   )
 end
 
@@ -238,6 +240,7 @@ function Base.similar(op::CompactBFGS{T,V,MT}) where {T,V,MT}
     op._insert,
     op._nskip,
     op._max_skip,
+    Ref{BlasInt}(0),
   )
 end
 
@@ -257,4 +260,5 @@ function Base.copy!(dest::CompactBFGS{T,V,MT}, src::CompactBFGS{T,V,MT}) where {
   dest._insert = src._insert
   dest._nskip = src._nskip
   dest._max_skip = src._max_skip
+  dest._info[] = src._info[]
 end
