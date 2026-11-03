@@ -174,7 +174,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   mul!(Mk, Sk', Sk, ξ, one(T))                             # Mₖ = ξ Sₖᵀ Sₖ + Lₖ Dₖ⁻¹ Lₖᵀ
 
   # Step 2: factorize Mₖ = JₖᵀJₖ in place (Jₖ in the upper triangle of Mk[1:k, 1:k])
-  info = potrf!('U', BlasInt(k), Mk, BlasInt(stride(Mk, 2)), Ref{BlasInt}(0))
+  info = potrf!('U', BlasInt(k), Mk, BlasInt(stride(Mk, 2)), op._info)
   if info != 0
     @warn "Cholesky factorization of Mₖ failed (info = $info). Resetting the compact BFGS model."
     NLPModels.reset!(op)
