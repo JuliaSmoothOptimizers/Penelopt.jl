@@ -7,6 +7,7 @@ mutable struct L2PenaltySolver{
   V<:AbstractVector{T},
   S<:AbstractOptimizationSolver,
   PB<:L2PenalizedProblem,
+  ST<:AbstractExecutionStats,
 } <: AbstractOptimizationSolver
   x::V
   xn::V
@@ -20,7 +21,7 @@ mutable struct L2PenaltySolver{
   y_report::V
   subsolver::S
   subpb::PB
-  substats::GenericExecutionStats{T,V,V,T}
+  substats::ST
 end
 
 """
@@ -55,23 +56,14 @@ function L2PenaltySolver(
   ∇fk = similar(x0)
 
   penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
-  substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol,T}())
+  substats = PenaltyR2NExecutionStats(penalty_subproblem)
   solver = PenaltyR2NSolver(
     penalty_subproblem;
     m_monotone = r2n_m_monotone,
     linear_solver = linear_solver,
   )
 
-  set_solver_specific!(substats, :primal_ktol, T(0))
-  set_solver_specific!(substats, :dual_ktol, T(0))
-  set_solver_specific!(substats, :n_fact, T(0))
-  set_solver_specific!(substats, :tau, T(0))
-  set_solver_specific!(substats, :sigma, T(0))
-  set_solver_specific!(substats, :rho, T(0))
-  set_solver_specific!(substats, :smooth_obj, T(0))
-  set_solver_specific!(substats, :nonsmooth_obj, T(0))
-
-  return L2PenaltySolver(
+  return L2PenaltySolver{T,V,typeof(solver),typeof(penalty_subproblem),typeof(substats)}(
     x,
     xn,
     y,
@@ -261,7 +253,7 @@ function SolverCore.solve!(
   grad!(nlp, x, get_gradient(solver))
   initialize_multipliers!(solver)
   dual_feas = least_square_dual_feas!(solver)
-  set_multipliers!(solver)
+  set_multipliers!(solver.subsolver)
 
   primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
@@ -392,7 +384,7 @@ function SolverCore.solve!(
       set_penalty!(solver, τ)
 
       # Initialize regularization parameter
-      σk = get_sigma(solver)
+      σk = get_sigma(solver.substats)
 
       # Subsolver: Activate the aggressive regularization parameter update if sigma is too small
       first_increase = true
@@ -410,7 +402,7 @@ function SolverCore.solve!(
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
 
       # Initialize regularization parameter
-      σk = get_sigma(solver)
+      σk = get_sigma(solver.substats)
 
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
@@ -445,7 +437,7 @@ function SolverCore.solve!(
     unscale_multipliers!(solver.y_report, scaling_model, solver.y)
     set_constraint_multipliers!(stats, solver.y_report)
 
-    set_solver_specific!(stats, :n_fact, get_n_fact(solver))
+    set_solver_specific!(stats, :n_fact, get_n_fact(solver.substats))
 
     set_status!(
       stats,
@@ -500,15 +492,6 @@ function set_penalty!(solver::L2PenaltySolver{T}, τ::T) where {T}
 end
 
 """
-    set_multipliers!(solver::L2PenaltySolver, y = solver.y)
-
-Pass the Lagrange multiplier estimates `y` to the subsolver,
-with the convention ∇f(x) + J(x)ᵀy = 0.
-"""
-set_multipliers!(solver::L2PenaltySolver, y::AbstractVector = solver.y) =
-  set_multipliers!(solver.subsolver, y)
-
-"""
     get_constraints(solver::L2PenaltySolver)
 
 Return c(x) at the current iterate of the subsolver.
@@ -527,7 +510,7 @@ get_jacobian(solver::L2PenaltySolver) = get_jacobian(solver.subsolver)
 
 Return ∇f(x) at the current iterate of the solver.
 """
-get_gradient(solver::L2PenaltySolver) = ∇fk
+get_gradient(solver::L2PenaltySolver) = solver.∇fk
 
 """
     set_gradient!(solver::L2PenaltySolver, ∇f::AbstractVector)
@@ -538,35 +521,6 @@ function set_gradient!(solver::L2PenaltySolver, ∇f::AbstractVector)
   solver.∇fk .= ∇f
   return solver
 end
-
-"""
-    get_smooth_obj(solver::L2PenaltySolver)
-
-Return f(x) at the last solution of the subsolver.
-"""
-get_smooth_obj(solver::L2PenaltySolver) = solver.substats.solver_specific[:smooth_obj]
-
-"""
-    get_nonsmooth_obj(solver::L2PenaltySolver)
-
-Return τ‖c(x)‖₂ at the last solution of the subsolver.
-"""
-get_nonsmooth_obj(solver::L2PenaltySolver) = solver.substats.solver_specific[:nonsmooth_obj]
-
-"""
-    get_n_fact(solver::L2PenaltySolver)
-
-Return the number of factorizations performed by the subsolver.
-"""
-get_n_fact(solver::L2PenaltySolver) = solver.substats.solver_specific[:n_fact]
-
-"""
-    get_sigma(solver::L2PenaltySolver)
-
-Return the regularization parameter at the last solution of the subsolver.
-It is used to warm-start the next subsolve.
-"""
-get_sigma(solver::L2PenaltySolver) = solver.substats.solver_specific[:sigma]
 
 """
     initialize_constraints!(solver::L2PenaltySolver, x)

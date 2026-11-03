@@ -22,7 +22,7 @@ import SolverCore: get_status, reset!
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
-include("PeneloptExecutionStats.jl")
+include("stats.jl")
 
 include("types/quasi-newton/NullHessian.jl")
 include("types/quasi-newton/CompactBFGS.jl")

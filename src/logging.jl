@@ -37,7 +37,7 @@ end
 function introduction_message(
   solver::PenaltyR2NSolver,
   nlp::AbstractNLPModel,
-  stats::GenericExecutionStats,
+  stats::PenaltyR2NExecutionStats,
 )
   return separator(type = :inner_loop) * @sprintf(
     "\n            |  Solving subproblem minₓ f(x) + %-3.2e ‖c(x)‖₂ with tolerance %-3.2e...",

@@ -67,7 +67,7 @@ SolverCore.reset!(solver::PenaltyR2NSolver, model) = SolverCore.reset!(solver)
 function SolverCore.solve!(
   solver::PenaltyR2NSolver{T,V},
   reg_nlp::AbstractPenalizedProblem{T,V},
-  stats::GenericExecutionStats{T,V};
+  stats::PenaltyR2NExecutionStats{T,V};
   callback = (args...) -> nothing,
   x::V = reg_nlp.model.meta.x0,
   atol::T = √eps(T),
