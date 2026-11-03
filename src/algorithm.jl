@@ -536,3 +536,67 @@ function SolverCore.solve!(
   set_solution!(stats, x)
   return stats
 end
+
+# Utilities
+
+"""
+    set_penalty!(solver::L2PenaltySolver, τ)
+
+Set the penalty parameter of the subproblem to `τ` and record it in `solver.substats`.
+"""
+function set_penalty!(solver::L2PenaltySolver{T}, τ::T) where {T}
+  set_penalty!(solver.subsolver, τ)
+  set_solver_specific!(solver.substats, :tau, τ)
+  return solver
+end
+
+"""
+    set_multipliers!(solver::L2PenaltySolver, y = solver.y)
+
+Pass the Lagrange multiplier estimates `y` to the subsolver,
+with the convention ∇f(x) + J(x)ᵀy = 0.
+"""
+set_multipliers!(solver::L2PenaltySolver, y::AbstractVector = solver.y) =
+  set_multipliers!(solver.subsolver, y)
+
+"""
+    get_constraints(solver::L2PenaltySolver)
+
+Return c(x) at the current iterate of the subsolver.
+"""
+get_constraints(solver::L2PenaltySolver) = get_constraints(solver.subsolver)
+
+"""
+    get_jacobian(solver::L2PenaltySolver)
+
+Return J(x) at the current iterate of the subsolver.
+"""
+get_jacobian(solver::L2PenaltySolver) = get_jacobian(solver.subsolver)
+
+"""
+    get_gradient(solver::L2PenaltySolver)
+
+Return ∇f(x) at the current iterate of the subsolver.
+"""
+get_gradient(solver::L2PenaltySolver) = get_gradient(solver.subsolver)
+
+"""
+    get_smooth_obj(solver::L2PenaltySolver)
+
+Return f(x) at the last solution of the subsolver.
+"""
+get_smooth_obj(solver::L2PenaltySolver) = solver.substats.solver_specific[:smooth_obj]
+
+"""
+    get_nonsmooth_obj(solver::L2PenaltySolver)
+
+Return τ‖c(x)‖₂ at the last solution of the subsolver.
+"""
+get_nonsmooth_obj(solver::L2PenaltySolver) = solver.substats.solver_specific[:nonsmooth_obj]
+
+"""
+    get_n_fact(solver::L2PenaltySolver)
+
+Return the number of factorizations performed by the subsolver.
+"""
+get_n_fact(solver::L2PenaltySolver) = solver.substats.solver_specific[:n_fact]

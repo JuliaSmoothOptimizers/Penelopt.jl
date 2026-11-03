@@ -373,3 +373,45 @@ function SolverCore.solve!(
   set_residuals!(stats, zero(eltype(xk)), stats.dual_feas)
   return stats
 end
+
+# Utilities
+
+"""
+    set_penalty!(solver::PenaltyR2NSolver, τ)
+
+Set the penalty parameter of the subproblem handled by `solver` to `τ`.
+Both the shifted model and its parent `L2PenalizedProblem` are updated.
+"""
+set_penalty!(solver::PenaltyR2NSolver{T}, τ::T) where {T} = set_penalty!(solver.subpb, τ)
+
+"""
+    set_multipliers!(solver::PenaltyR2NSolver, y)
+
+Set the Lagrange multiplier estimates used by `solver` to `y`,
+with the convention ∇f(x) + J(x)ᵀy = 0.
+"""
+function set_multipliers!(solver::PenaltyR2NSolver, y::AbstractVector)
+  solver.y .= y
+  return solver
+end
+
+"""
+    get_constraints(solver::PenaltyR2NSolver)
+
+Return c(x) at the point around which the subproblem of `solver` is currently shifted.
+"""
+get_constraints(solver::PenaltyR2NSolver) = solver.subpb.h.b
+
+"""
+    get_jacobian(solver::PenaltyR2NSolver)
+
+Return J(x) at the point around which the subproblem of `solver` is currently shifted.
+"""
+get_jacobian(solver::PenaltyR2NSolver) = solver.subpb.h.A
+
+"""
+    get_gradient(solver::PenaltyR2NSolver)
+
+Return ∇f(x) at the point around which the subproblem of `solver` is currently shifted.
+"""
+get_gradient(solver::PenaltyR2NSolver) = solver.subpb.model.data.c
