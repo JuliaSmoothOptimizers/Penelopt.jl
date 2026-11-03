@@ -50,7 +50,9 @@ function kkt_primal_feas!(solver::L2PenaltySolver{T}) where {T}
   return norm(get_constraints(solver), Inf)
 end
 
-function initialize_multipliers!(solver::L2PenaltySolver{T,V,<:PenaltyR2NSolver}) where {T,V}
+function initialize_multipliers!(
+  solver::L2PenaltySolver{T,V,<:PenaltyR2NSolver},
+) where {T,V}
 
   ## Retrieve workspace
   r2n_solver, r2n_stats = solver.subsolver, solver.substats

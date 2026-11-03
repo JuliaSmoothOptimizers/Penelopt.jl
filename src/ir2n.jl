@@ -205,7 +205,14 @@ function SolverCore.solve!(
     end
 
     # Check the watchdog
-    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, r2n_watchdog_max_iter, r2n_watchdog_η0)
+    if check_watchdog!(
+      watchdog_checkpoint,
+      stats,
+      mk,
+      xk,
+      r2n_watchdog_max_iter,
+      r2n_watchdog_η0,
+    )
       fallback!(mk, xk, y, watchdog_checkpoint)
       φ.data.σ *= r2n_γ^r2n_watchdog_max_iter
       σk = φ.data.σ
@@ -326,7 +333,8 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
 
     n_tiny_step =
-      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(x[i]), eachindex(s, x)) ? n_tiny_step + 1 : 0
+      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(x[i]), eachindex(s, x)) ?
+      n_tiny_step + 1 : 0
 
     set_status!(
       stats,
@@ -423,7 +431,8 @@ get_gradient(solver::PenaltyR2NSolver) = solver.subpb.model.data.c
 
 Evaluate c(x) and J(x) and store them in the subproblem of `solver`.
 """
-initialize_constraints!(solver::PenaltyR2NSolver, x::AbstractVector) = shift!(solver.subpb.h, x)
+initialize_constraints!(solver::PenaltyR2NSolver, x::AbstractVector) =
+  shift!(solver.subpb.h, x)
 
 """
     shift!(solver::PenaltyR2NSolver, x; ∇f = nothing, y = nothing, J = nothing, c = nothing)
