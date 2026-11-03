@@ -78,7 +78,7 @@ The fields for the `L2PenaltySolver` are:
 | `temp_b` | `V` | (*internal*) scratch buffer of length $m$, used e.g. by the least-squares multiplier computation |
 | `subsolver` | `PenaltyR2NSolver` | the R2N (inner-loop) solver structure used to (approximately) minimize the current penalized subproblem $f(x) + \tau_k\lVert c(x) \rVert_2$ |
 | `subpb` | `L2PenalizedProblem` | the penalized subproblem $f(x) + \tau_k\lVert c(x)\rVert_2$ associated with `nlp` |
-| `substats` | `GenericExecutionStats` | the statistics object updated by `subsolver` at every R2N iteration |
+| `substats` | `PenaltyR2NExecutionStats` | the statistics object updated by `subsolver` at every R2N iteration |
 
 We mark some fields as *internal* which means that we discourage users to read/modify these in [callbacks](callbacks.md) as they are only used for internal computations.
 

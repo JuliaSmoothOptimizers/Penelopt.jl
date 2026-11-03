@@ -7,6 +7,7 @@ mutable struct L2PenaltySolver{
   V<:AbstractVector{T},
   S<:AbstractOptimizationSolver,
   PB<:L2PenalizedProblem,
+  ST<:AbstractExecutionStats,
 } <: AbstractOptimizationSolver
   x::V
   xn::V
@@ -20,7 +21,7 @@ mutable struct L2PenaltySolver{
   y_report::V
   subsolver::S
   subpb::PB
-  substats::GenericExecutionStats{T,V,V,T}
+  substats::ST
 end
 
 """
@@ -55,23 +56,14 @@ function L2PenaltySolver(
   ∇fk = similar(x0)
 
   penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
-  substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol,T}())
+  substats = PenaltyR2NExecutionStats(penalty_subproblem)
   solver = PenaltyR2NSolver(
     penalty_subproblem;
     m_monotone = r2n_m_monotone,
     linear_solver = linear_solver,
   )
 
-  set_solver_specific!(substats, :primal_ktol, T(0))
-  set_solver_specific!(substats, :dual_ktol, T(0))
-  set_solver_specific!(substats, :n_fact, T(0))
-  set_solver_specific!(substats, :tau, T(0))
-  set_solver_specific!(substats, :sigma, T(0))
-  set_solver_specific!(substats, :rho, T(0))
-  set_solver_specific!(substats, :smooth_obj, T(0))
-  set_solver_specific!(substats, :nonsmooth_obj, T(0))
-
-  return L2PenaltySolver(
+  return L2PenaltySolver{T,V,typeof(solver),typeof(penalty_subproblem),typeof(substats)}(
     x,
     xn,
     y,
@@ -207,8 +199,6 @@ function SolverCore.solve!(
   max_eval::Int = -1,
   max_time::Float64 = 30.0,
   max_iter::Int = 100,
-  r2n_max_iter::Int = 1000,
-  ms_max_iter::Int = 10,
   μ::T = T(1e-2),
   infeasible_tol::T = T(1e-3),
   infeasible_iter::Int = 2,
@@ -216,38 +206,17 @@ function SolverCore.solve!(
   ## Logging arguments
   print_level::Int = 0,
   verbose::Int = 1,
-  r2n_verbose::Int = 1,
-  ms_verbose::Int = 1,
 
   ## Outer Loop specific arguments
   τmin::T = T(1),
   τ0::T = T(1),
 
-  ## R2N Specific arguments
-  r2n_η1::T = √√eps(T),
-  r2n_η2::T = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
-  r2n_σmin::T = eps(T)^2,
-  r2n_σ0::T = eps(T),
-  r2n_γ::T = T(3),
-  r2n_watchdog_max_iter::Int = 10,
-  r2n_watchdog_η0::T = √eps(T),
-  r2n_tiny_step_tol::T = eps(T),
-  r2n_nmax_tiny_step::Int = 2,
-
-  ## MS Specific arguments
-  ms_accept_descent::Bool = true,
-  ms_σmax::T = 1/eps(T)^(0.8),
-  ms_tol::T = eps(T)^(0.6),
-  ms_μα::T = T(0.1),
-  ms_μσ::T = T(10),
-  ms_α0::T = eps(T),
-  ms_αmin1::T = eps(T)^(0.8),
-  ms_αmin2::T = eps(T)^(0.6),
-  ms_ηC::T = eps(T),
-
   ## Scaling arguments
   nlp_scaling_method::String = isa(nlp, QuasiNewtonModel) ? "gradient-based" : "none",
   gmax::T = T(100),
+
+  ## Subsolver arguments
+  kwargs...,
 ) where {T,V}
   reset!(stats)
 
@@ -263,16 +232,12 @@ function SolverCore.solve!(
   end
 
   # Retrieve workspace
-  penalty_pb = solver.subpb # f(x) + τ‖c(x)‖₂
-  mk = solver.subsolver.subpb
-  φ, ψ = mk.model, mk.h
-
   x = solver.x .= x
   y = solver.y
 
-  shift!(ψ, x)
-  fx = obj(nlp, x)
-  hx = norm(ψ.b)
+  initialize_constraints!(solver, x) # Compute c(x) and J(x)
+  fx = obj(nlp, x)                   # f(x)
+  hx = norm(get_constraints(solver)) # ‖c(x)‖₂
 
   set_iter!(stats, 0)
   rem_eval = max_eval
@@ -285,10 +250,10 @@ function SolverCore.solve!(
   primal_feas = kkt_primal_feas!(solver)
 
   set_solver_specific!(solver.substats, :smooth_obj, fx)
-  grad!(nlp, x, solver.∇fk)
+  grad!(nlp, x, get_gradient(solver))
   initialize_multipliers!(solver)
   dual_feas = least_square_dual_feas!(solver)
-  solver.subsolver.y .= solver.y
+  set_multipliers!(solver.subsolver, y)
 
   primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
@@ -306,14 +271,13 @@ function SolverCore.solve!(
   ## Scaling
   scaling_model = find_model(ScaledModel, nlp)
   if nlp_scaling_method == "gradient-based" && scaling_model !== nothing
-    update_scaling!(scaling_model, solver.∇fk, ψ.A; gmax = gmax)
+    update_scaling!(scaling_model, get_gradient(solver), get_jacobian(solver); gmax = gmax)
   end
 
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), τ0)
-  set_penalty!(mk, τ)
-  νsub = 1 / r2n_σ0
-  set_solver_specific!(solver.substats, :tau, τ)
+  set_penalty!(solver, τ)
+  σk = -one(T) # Use subsolver's default σk (max(σ0, σmin))
 
   ## Logging
   if print_level > 0
@@ -325,7 +289,14 @@ function SolverCore.solve!(
   end
 
   ## Initialize Model
-  shift!(mk, x, ∇f = solver.∇fk, y = y, J = ψ.A, c = ψ.b)
+  shift!(
+    solver,
+    x,
+    ∇f = get_gradient(solver),
+    y = y,
+    J = get_jacobian(solver),
+    c = get_constraints(solver),
+  )
 
   infeasible = false
   not_desc = false
@@ -358,53 +329,24 @@ function SolverCore.solve!(
       solver.subpb,
       solver.substats;
       x = x,
-
-      ## Termination arguments
       atol = dual_ktol,
       rtol = dual_krtol,
-      max_iter = r2n_max_iter,
-      ms_max_iter = ms_max_iter,
       max_time = max_time - stats.elapsed_time,
       max_eval = rem_eval,
-
-      ## Logging arguments
       print_level = print_level - 1,
-      verbose = r2n_verbose,
-      ms_verbose = ms_verbose,
-
-      ## R2N Specific arguments
-      σmin = r2n_σmin,
-      σk = max(1 / νsub, r2n_σmin),
-      η1 = r2n_η1,
-      η2 = r2n_η2,
-      γ = r2n_γ,
-      watchdog_max_iter = r2n_watchdog_max_iter,
-      watchdog_η0 = r2n_watchdog_η0,
-      tiny_step_tol = r2n_tiny_step_tol,
-      nmax_tiny_step = r2n_nmax_tiny_step,
       is_shifted = true,
       primal_decrease = primal_decrease,
       first_increase = first_increase,
-
-      ## MS Specific arguments
-      ms_accept_descent = ms_accept_descent,
-      ms_σmax = ms_σmax,
-      ms_tol = ms_tol,
-      ms_μα = ms_μα,
-      ms_μσ = ms_μσ,
-      ms_α0 = ms_α0,
-      ms_αmin1 = ms_αmin1,
-      ms_αmin2 = ms_αmin2,
-      ms_ηC = ms_ηC,
+      σk = σk,
+      kwargs...,
     )
 
     if solver.substats.status == :unbounded
       τ *= 10
-      set_penalty!(mk, τ)
-      νsub = 1 / r2n_σ0
-      shift!(mk, x, y = y)
+      set_penalty!(solver, τ)
+      σk = -one(T)
+      shift!(solver, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
-      set_solver_specific!(solver.substats, :tau, τ)
       continue
     end
 
@@ -413,11 +355,11 @@ function SolverCore.solve!(
     end
 
     x .= solver.substats.solution
-    y .= solver.subsolver.y
-    fx = solver.substats.solver_specific[:smooth_obj]
+    y .= solver.substats.multipliers
+    fx = get_smooth_obj(solver.substats)
     hx_prev = copy(hx)
-    hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
-    solver.∇fk .= φ.data.c
+    hx = get_nonsmooth_obj(solver.substats)/τ
+    set_gradient!(solver, get_gradient(solver.subsolver))
 
     ## Compute feasibility 
     primal_feas = kkt_primal_feas!(solver)
@@ -427,7 +369,7 @@ function SolverCore.solve!(
       # Update penalty parameter
       τ₊ = max(τ + τmin, norm(y, 1))
       if extrapolate!(x, solver, τ₊, τ)
-        shift!(mk, x, y = y, c = solver.cn)
+        shift!(solver, x, y = y, c = solver.cn)
 
         # Subsolver: Do not impose primal decrease
         primal_decrease = false
@@ -437,10 +379,10 @@ function SolverCore.solve!(
         primal_decrease = true
       end
       τ = τ₊
-      set_penalty!(mk, τ)
+      set_penalty!(solver, τ)
 
       # Initialize regularization parameter
-      νsub = 1 / solver.substats.solver_specific[:sigma]
+      σk = get_sigma(solver.substats)
 
       # Subsolver: Activate the aggressive regularization parameter update if sigma is too small
       first_increase = true
@@ -448,7 +390,6 @@ function SolverCore.solve!(
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
-      set_solver_specific!(solver.substats, :tau, τ)
       dual_krtol = μ
     else
       # Tighten tolerances
@@ -458,10 +399,8 @@ function SolverCore.solve!(
       set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
 
-      y .= solver.substats.multipliers
-
       # Initialize regularization parameter
-      νsub = 1/solver.substats.solver_specific[:sigma]
+      σk = get_sigma(solver.substats)
 
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
@@ -496,7 +435,7 @@ function SolverCore.solve!(
     unscale_multipliers!(solver.y_report, scaling_model, solver.y)
     set_constraint_multipliers!(stats, solver.y_report)
 
-    set_solver_specific!(stats, :n_fact, solver.substats.solver_specific[:n_fact])
+    set_solver_specific!(stats, :n_fact, get_n_fact(solver.substats))
 
     set_status!(
       stats,
@@ -536,3 +475,65 @@ function SolverCore.solve!(
   set_solution!(stats, x)
   return stats
 end
+
+# Utilities
+
+"""
+    set_penalty!(solver::L2PenaltySolver, τ)
+
+Set the penalty parameter of the subproblem to `τ` and record it in `solver.substats`.
+"""
+function set_penalty!(solver::L2PenaltySolver{T}, τ::T) where {T}
+  set_penalty!(solver.subsolver, τ)
+  set_solver_specific!(solver.substats, :tau, τ)
+  return solver
+end
+
+"""
+    get_constraints(solver::L2PenaltySolver)
+
+Return c(x) at the current iterate of the subsolver.
+"""
+get_constraints(solver::L2PenaltySolver) = get_constraints(solver.subsolver)
+
+"""
+    get_jacobian(solver::L2PenaltySolver)
+
+Return J(x) at the current iterate of the subsolver.
+"""
+get_jacobian(solver::L2PenaltySolver) = get_jacobian(solver.subsolver)
+
+"""
+    get_gradient(solver::L2PenaltySolver)
+
+Return ∇f(x) at the current iterate of the solver.
+"""
+get_gradient(solver::L2PenaltySolver) = solver.∇fk
+
+"""
+    set_gradient!(solver::L2PenaltySolver, ∇f::AbstractVector)
+
+Set the gradient of the objective function at the current iterate of the solver.
+"""
+function set_gradient!(solver::L2PenaltySolver, ∇f::AbstractVector)
+  solver.∇fk .= ∇f
+  return solver
+end
+
+"""
+    initialize_constraints!(solver::L2PenaltySolver, x)
+
+Evaluate c(x) and J(x), so that they can be retrieved with `get_constraints`
+and `get_jacobian`.
+"""
+initialize_constraints!(solver::L2PenaltySolver, x::AbstractVector) =
+  initialize_constraints!(solver.subsolver, x)
+
+"""
+    shift!(solver::L2PenaltySolver, x; kwargs...)
+
+Initialize the subsolver at `x`. The keyword arguments `∇f`, `y`, `J` and `c`
+can be passed to avoid reevaluating these quantities.
+"""
+shift!(solver::L2PenaltySolver, x::AbstractVector; kwargs...) =
+  shift!(solver.subsolver, x; kwargs...)

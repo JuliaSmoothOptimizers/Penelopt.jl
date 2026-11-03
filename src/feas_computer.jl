@@ -1,4 +1,4 @@
-function compute_θ!(solver::L2PenaltySolver{T}) where {T}
+function compute_θ!(solver::L2PenaltySolver{T,V,<:PenaltyR2NSolver}) where {T,V}
   # Computes a model decrease for the feasbility problem minₓ ‖c(x)‖₂
 
   ## Retrieve workspace
@@ -47,10 +47,12 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_primal_feas!(solver::L2PenaltySolver{T}) where {T}
-  return norm(solver.subsolver.subpb.h.b, Inf)
+  return norm(get_constraints(solver), Inf)
 end
 
-function initialize_multipliers!(solver::L2PenaltySolver{T}) where {T}
+function initialize_multipliers!(
+  solver::L2PenaltySolver{T,V,<:PenaltyR2NSolver},
+) where {T,V}
 
   ## Retrieve workspace
   r2n_solver, r2n_stats = solver.subsolver, solver.substats
@@ -131,7 +133,7 @@ end
 
 function least_square_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   dual_res, y = solver.dual_res, solver.y
-  g, J = solver.∇fk, solver.subsolver.subpb.h.A
+  g, J = solver.∇fk, get_jacobian(solver)
 
   # dual_res = ∇f + Jᵀy
   dual_res .= g

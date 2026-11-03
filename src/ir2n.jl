@@ -67,43 +67,36 @@ SolverCore.reset!(solver::PenaltyR2NSolver, model) = SolverCore.reset!(solver)
 function SolverCore.solve!(
   solver::PenaltyR2NSolver{T,V},
   reg_nlp::AbstractPenalizedProblem{T,V},
-  stats::GenericExecutionStats{T,V};
+  stats::PenaltyR2NExecutionStats{T,V};
   callback = (args...) -> nothing,
   x::V = reg_nlp.model.meta.x0,
   atol::T = √eps(T),
   rtol::T = √eps(T),
   print_level::Int = 0,
-  verbose::Int = 0,
-  max_iter::Int = 1000,
-  ms_max_iter::Int = 10,
+  r2n_verbose::Int = 1,
+  r2n_max_iter::Int = 1000,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
-  σk::T = eps(T)^(1 / 5),
-  σmin::T = eps(T)^2,
-  η1::T = √√eps(T),
-  η2::T = T(0.1),
-  γ::T = T(3),
-  watchdog_max_iter::Int = 10,
-  watchdog_η0::T = eps(T),
-  tiny_step_tol::T = eps(T),
-  nmax_tiny_step::Int = 2,
+  r2n_σmin::T = eps(T)^2,
+  r2n_σ0::T = eps(T),
+  σk::T = -one(T), # < 0 -> fallback to max(r2n_σ0, r2n_σmin)
+  r2n_η1::T = √√eps(T),
+  r2n_η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
+  r2n_γ::T = T(3),
+  r2n_watchdog_max_iter::Int = 10,
+  r2n_watchdog_η0::T = √eps(T),
+  r2n_tiny_step_tol::T = eps(T),
+  r2n_nmax_tiny_step::Int = 2,
   is_shifted::Bool = false,
   primal_decrease::Bool = false,
   first_increase::Bool = true,
 
-  ## MS Specific arguments
-  ms_verbose::Int = 1,
-  ms_accept_descent::Bool = true,
-  ms_σmax::T = 1/eps(T)^(0.8),
-  ms_tol::T = eps(T)^(0.6),
-  ms_μα::T = T(0.1),
-  ms_μσ::T = T(10),
-  ms_α0::T = eps(T),
-  ms_αmin1::T = eps(T)^(0.8),
-  ms_αmin2::T = eps(T)^(0.6),
+  ## Subsolver arguments
   ms_ηC::T = eps(T),
+  kwargs...,
 ) where {T,V}
   reset!(stats)
+  σk = (σk < 0) ? max(r2n_σ0, r2n_σmin) : max(σk, r2n_σmin)
 
   # Retrieve workspace
   nlp, h = reg_nlp.model, reg_nlp.h
@@ -113,7 +106,7 @@ function SolverCore.solve!(
   xk = solver.xk .= x
 
   # Make sure ψ has the correct shift 
-  !is_shifted && shift!(mk, xk, compute_grad = compute_grad)
+  !is_shifted && shift!(mk, xk)
 
   ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
@@ -154,7 +147,7 @@ function SolverCore.solve!(
       optimal = solved,
       max_eval = max_eval,
       max_time = max_time,
-      max_iter = max_iter - 1,
+      max_iter = r2n_max_iter - 1,
     ),
   )
 
@@ -169,8 +162,8 @@ function SolverCore.solve!(
       nlp,
       stats;
       type = :inner_loop,
-      η1 = η1,
-      η2 = η2,
+      η1 = r2n_η1,
+      η2 = r2n_η2,
       active_watchdog = is_active(watchdog_checkpoint),
     )
   end
@@ -203,9 +196,16 @@ function SolverCore.solve!(
     end
 
     # Check the watchdog
-    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, watchdog_η0)
+    if check_watchdog!(
+      watchdog_checkpoint,
+      stats,
+      mk,
+      xk,
+      r2n_watchdog_max_iter,
+      r2n_watchdog_η0,
+    )
       fallback!(mk, xk, y, watchdog_checkpoint)
-      φ.data.σ *= γ^watchdog_max_iter
+      φ.data.σ *= r2n_γ^r2n_watchdog_max_iter
       σk = φ.data.σ
       hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
       m_fh_hist .= watchdog_checkpoint.m_fh_hist
@@ -219,18 +219,9 @@ function SolverCore.solve!(
       solver.subsolver,
       solver.subpb,
       solver.substats;
-      verbose = ms_verbose,
       print_level = print_level - 1,
-      max_iter = ms_max_iter,
-      accept_descent = ms_accept_descent,
-      σmax = ms_σmax,
-      atol = ms_tol,
-      μα = ms_μα,
-      μσ = ms_μσ,
-      α0 = ms_α0,
-      αmin1 = ms_αmin1,
-      αmin2 = ms_αmin2,
-      ηC = ms_ηC,
+      ms_ηC = ms_ηC,
+      kwargs...,
     )
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
@@ -260,7 +251,7 @@ function SolverCore.solve!(
     end
     ρk = pos_def_check ? ρk : 0
 
-    if η1 ≤ ρk < Inf
+    if r2n_η1 ≤ ρk < Inf
       xk .= xkn
 
       #update functions
@@ -270,13 +261,13 @@ function SolverCore.solve!(
 
     end
 
-    if η2 ≤ ρk < Inf
-      σk = max(σk / γ, σmin)
+    if r2n_η2 ≤ ρk < Inf
+      σk = max(σk / r2n_γ, r2n_σmin)
     end
 
-    if ρk < η1 || ρk == Inf
+    if ρk < r2n_η1 || ρk == Inf
       if first_increase && ρk < 0
-        σk = max(sqrt(stats.dual_feas), σk * γ)
+        σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
       elseif ρk < 0 &&
              ρk > -1 / eps(T) &&
@@ -291,7 +282,7 @@ function SolverCore.solve!(
             -d∇fks + max(1, abs(fk)) * 10 * eps()
           ) : zero(T)
 
-        if η2 ≤ fρk < Inf # Activate watchdog
+        if r2n_η2 ≤ fρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
@@ -304,10 +295,10 @@ function SolverCore.solve!(
           shift!(mk, xk, y = y, c = ckn)
 
         else
-          σk = σk * γ
+          σk = σk * r2n_γ
         end
       else
-        σk = σk * γ
+        σk = σk * r2n_γ
       end
     end
 
@@ -324,7 +315,8 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
 
     n_tiny_step =
-      all(i -> abs(s[i]) < tiny_step_tol * abs(x[i]), eachindex(s, x)) ? n_tiny_step + 1 : 0
+      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(x[i]), eachindex(s, x)) ?
+      n_tiny_step + 1 : 0
 
     set_status!(
       stats,
@@ -336,14 +328,14 @@ function SolverCore.solve!(
         unbounded = fk < - 1 / eps(T),
         max_eval = max_eval,
         max_time = max_time,
-        max_iter = max_iter - 1,
-        small_step = n_tiny_step > nmax_tiny_step,
+        max_iter = r2n_max_iter - 1,
+        small_step = n_tiny_step > r2n_nmax_tiny_step,
       ),
     )
 
     ## Log status
-    if print_level > 0 && stats.iter % verbose == 0
-      if stats.iter % (20 * verbose) == 0 && stats.iter > 0
+    if print_level > 0 && stats.iter % r2n_verbose == 0
+      if stats.iter % (20 * r2n_verbose) == 0 && stats.iter > 0
         @info separator(type = :inner_loop)
         @info header_message(type = :inner_loop)
         @info separator(type = :inner_loop)
@@ -353,8 +345,8 @@ function SolverCore.solve!(
         nlp,
         stats;
         type = :inner_loop,
-        η1 = η1,
-        η2 = η2,
+        η1 = r2n_η1,
+        η2 = r2n_η2,
         active_watchdog = is_active(watchdog_checkpoint),
       )
     end
@@ -373,3 +365,61 @@ function SolverCore.solve!(
   set_residuals!(stats, zero(eltype(xk)), stats.dual_feas)
   return stats
 end
+
+# Utilities
+
+"""
+    set_penalty!(solver::PenaltyR2NSolver, τ)
+
+Set the penalty parameter of the subproblem handled by `solver` to `τ`.
+Both the shifted model and its parent `L2PenalizedProblem` are updated.
+"""
+set_penalty!(solver::PenaltyR2NSolver{T}, τ::T) where {T} = set_penalty!(solver.subpb, τ)
+
+"""
+    set_multipliers!(solver::PenaltyR2NSolver, y)
+
+Set the Lagrange multiplier estimates used by `solver` to `y`,
+with the convention ∇f(x) + J(x)ᵀy = 0.
+"""
+function set_multipliers!(solver::PenaltyR2NSolver, y::AbstractVector)
+  solver.y .= y
+  return solver
+end
+
+"""
+    get_constraints(solver::PenaltyR2NSolver)
+
+Return c(x) at the point around which the subproblem of `solver` is currently shifted.
+"""
+get_constraints(solver::PenaltyR2NSolver) = solver.subpb.h.b
+
+"""
+    get_jacobian(solver::PenaltyR2NSolver)
+
+Return J(x) at the point around which the subproblem of `solver` is currently shifted.
+"""
+get_jacobian(solver::PenaltyR2NSolver) = solver.subpb.h.A
+
+"""
+    get_gradient(solver::PenaltyR2NSolver)
+
+Return ∇f(x) at the point around which the subproblem of `solver` is currently shifted.
+"""
+get_gradient(solver::PenaltyR2NSolver) = solver.subpb.model.data.c
+
+"""
+    initialize_constraints!(solver::PenaltyR2NSolver, x)
+
+Evaluate c(x) and J(x) and store them in the subproblem of `solver`.
+"""
+initialize_constraints!(solver::PenaltyR2NSolver, x::AbstractVector) =
+  shift!(solver.subpb.h, x)
+
+"""
+    shift!(solver::PenaltyR2NSolver, x; ∇f = nothing, y = nothing, J = nothing, c = nothing)
+
+Shift the subproblem of `solver` around `x`. The quantities that are passed are not reevaluated.
+"""
+shift!(solver::PenaltyR2NSolver, x::AbstractVector; kwargs...) =
+  shift!(solver.subpb, x; kwargs...)

@@ -76,7 +76,7 @@ function extrapolate!(
   solver::L2PenaltySolver{T,V,S,PB},
   τ₂::T,
   τ₁::T,
-) where {T,V,S,N<:AbstractNLPModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
+) where {T,V,S<:PenaltyR2NSolver,N<:AbstractNLPModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
 
   # Step 0: Retrieve workspace
   r2n_solver = solver.subsolver
