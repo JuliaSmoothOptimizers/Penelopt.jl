@@ -266,7 +266,9 @@ function SolverCore.solve!(
   # If the matrix is not positive definite, perform just a few iterations of the Moré-Sorensen before returning.
   !is_pos_def && (ms_max_iter = min(ms_max_iter, 5))
 
-  while abs(norm_x1 - Δ) > ms_tol && stats.iter < ms_max_iter && stats.elapsed_time < max_time
+  while abs(norm_x1 - Δ) > ms_tol &&
+        stats.iter < ms_max_iter &&
+        stats.elapsed_time < max_time
     # α = α + (‖y‖/Δ - 1)*‖y‖²/(yᵀy')
     @views α₊ = α + norm_x1^2/dot(x1[(n+1):(n+m)], x2[(n+1):(n+m)])*(norm_x1/Δ - 1)
 
