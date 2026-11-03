@@ -334,13 +334,11 @@ function SolverCore.solve!(
       max_time = max_time - stats.elapsed_time,
       max_eval = rem_eval,
       print_level = print_level - 1,
-      subsolver_kwargs(
-        solver;
-        primal_decrease = primal_decrease,
-        first_increase = first_increase,
-        σk = σk,
-        kwargs...,
-      )...,
+      is_shifted = true,
+      primal_decrease = primal_decrease,
+      first_increase = first_increase,
+      σk = σk,
+      kwargs...,
     )
 
     if solver.substats.status == :unbounded
@@ -539,13 +537,3 @@ can be passed to avoid reevaluating these quantities.
 """
 shift!(solver::L2PenaltySolver, x::AbstractVector; kwargs...) =
   shift!(solver.subsolver, x; kwargs...)
-
-"""
-    subsolver_kwargs(solver::L2PenaltySolver; kwargs...)
-
-Translate the keyword arguments of the outer loop that are not consumed by it
-(e.g., `r2n_*`, `ms_*` and the warm-start arguments) into keyword arguments of
-the `solve!` method of the subsolver.
-"""
-subsolver_kwargs(solver::L2PenaltySolver; kwargs...) =
-  subsolver_kwargs(solver.subsolver; kwargs...)

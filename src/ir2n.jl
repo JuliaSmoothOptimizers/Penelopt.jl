@@ -73,21 +73,21 @@ function SolverCore.solve!(
   atol::T = √eps(T),
   rtol::T = √eps(T),
   print_level::Int = 0,
-  verbose::Int = 1,
-  max_iter::Int = 1000,
+  r2n_verbose::Int = 1,
+  r2n_max_iter::Int = 1000,
   ms_max_iter::Int = 10,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
-  σmin::T = eps(T)^2,
-  σ0::T = eps(T),
-  σk::T = -one(T), # < 0 -> fallback to max(σ0, σmin)
-  η1::T = √√eps(T),
-  η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
-  γ::T = T(3),
-  watchdog_max_iter::Int = 10,
-  watchdog_η0::T = √eps(T),
-  tiny_step_tol::T = eps(T),
-  nmax_tiny_step::Int = 2,
+  r2n_σmin::T = eps(T)^2,
+  r2n_σ0::T = eps(T),
+  σk::T = -one(T), # < 0 -> fallback to max(r2n_σ0, r2n_σmin)
+  r2n_η1::T = √√eps(T),
+  r2n_η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
+  r2n_γ::T = T(3),
+  r2n_watchdog_max_iter::Int = 10,
+  r2n_watchdog_η0::T = √eps(T),
+  r2n_tiny_step_tol::T = eps(T),
+  r2n_nmax_tiny_step::Int = 2,
   is_shifted::Bool = false,
   primal_decrease::Bool = false,
   first_increase::Bool = true,
@@ -105,7 +105,7 @@ function SolverCore.solve!(
   ms_ηC::T = eps(T),
 ) where {T,V}
   reset!(stats)
-  σk = (σk < 0) ? max(σ0, σmin) : max(σk, σmin)
+  σk = (σk < 0) ? max(r2n_σ0, r2n_σmin) : max(σk, r2n_σmin)
 
   # Retrieve workspace
   nlp, h = reg_nlp.model, reg_nlp.h
@@ -156,7 +156,7 @@ function SolverCore.solve!(
       optimal = solved,
       max_eval = max_eval,
       max_time = max_time,
-      max_iter = max_iter - 1,
+      max_iter = r2n_max_iter - 1,
     ),
   )
 
@@ -171,8 +171,8 @@ function SolverCore.solve!(
       nlp,
       stats;
       type = :inner_loop,
-      η1 = η1,
-      η2 = η2,
+      η1 = r2n_η1,
+      η2 = r2n_η2,
       active_watchdog = is_active(watchdog_checkpoint),
     )
   end
@@ -205,9 +205,9 @@ function SolverCore.solve!(
     end
 
     # Check the watchdog
-    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, watchdog_η0)
+    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, r2n_watchdog_max_iter, r2n_watchdog_η0)
       fallback!(mk, xk, y, watchdog_checkpoint)
-      φ.data.σ *= γ^watchdog_max_iter
+      φ.data.σ *= r2n_γ^r2n_watchdog_max_iter
       σk = φ.data.σ
       hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
       m_fh_hist .= watchdog_checkpoint.m_fh_hist
@@ -262,7 +262,7 @@ function SolverCore.solve!(
     end
     ρk = pos_def_check ? ρk : 0
 
-    if η1 ≤ ρk < Inf
+    if r2n_η1 ≤ ρk < Inf
       xk .= xkn
 
       #update functions
@@ -272,13 +272,13 @@ function SolverCore.solve!(
 
     end
 
-    if η2 ≤ ρk < Inf
-      σk = max(σk / γ, σmin)
+    if r2n_η2 ≤ ρk < Inf
+      σk = max(σk / r2n_γ, r2n_σmin)
     end
 
-    if ρk < η1 || ρk == Inf
+    if ρk < r2n_η1 || ρk == Inf
       if first_increase && ρk < 0
-        σk = max(sqrt(stats.dual_feas), σk * γ)
+        σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
       elseif ρk < 0 &&
              ρk > -1 / eps(T) &&
@@ -293,7 +293,7 @@ function SolverCore.solve!(
             -d∇fks + max(1, abs(fk)) * 10 * eps()
           ) : zero(T)
 
-        if η2 ≤ fρk < Inf # Activate watchdog
+        if r2n_η2 ≤ fρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
@@ -306,10 +306,10 @@ function SolverCore.solve!(
           shift!(mk, xk, y = y, c = ckn)
 
         else
-          σk = σk * γ
+          σk = σk * r2n_γ
         end
       else
-        σk = σk * γ
+        σk = σk * r2n_γ
       end
     end
 
@@ -326,7 +326,7 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
 
     n_tiny_step =
-      all(i -> abs(s[i]) < tiny_step_tol * abs(x[i]), eachindex(s, x)) ? n_tiny_step + 1 : 0
+      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(x[i]), eachindex(s, x)) ? n_tiny_step + 1 : 0
 
     set_status!(
       stats,
@@ -338,14 +338,14 @@ function SolverCore.solve!(
         unbounded = fk < - 1 / eps(T),
         max_eval = max_eval,
         max_time = max_time,
-        max_iter = max_iter - 1,
-        small_step = n_tiny_step > nmax_tiny_step,
+        max_iter = r2n_max_iter - 1,
+        small_step = n_tiny_step > r2n_nmax_tiny_step,
       ),
     )
 
     ## Log status
-    if print_level > 0 && stats.iter % verbose == 0
-      if stats.iter % (20 * verbose) == 0 && stats.iter > 0
+    if print_level > 0 && stats.iter % r2n_verbose == 0
+      if stats.iter % (20 * r2n_verbose) == 0 && stats.iter > 0
         @info separator(type = :inner_loop)
         @info header_message(type = :inner_loop)
         @info separator(type = :inner_loop)
@@ -355,8 +355,8 @@ function SolverCore.solve!(
         nlp,
         stats;
         type = :inner_loop,
-        η1 = η1,
-        η2 = η2,
+        η1 = r2n_η1,
+        η2 = r2n_η2,
         active_watchdog = is_active(watchdog_checkpoint),
       )
     end
@@ -432,30 +432,3 @@ Shift the subproblem of `solver` around `x`. The quantities that are passed are 
 """
 shift!(solver::PenaltyR2NSolver, x::AbstractVector; kwargs...) =
   shift!(solver.subpb, x; kwargs...)
-
-"""
-    subsolver_kwargs(solver::PenaltyR2NSolver; kwargs...)
-
-Translate the keyword arguments of the outer loop into keyword arguments of the R2N `solve!`.
-Options prefixed with `r2n_` are passed without their prefix, options prefixed with `ms_` are
-passed as is, and so are the warm-start arguments `σk`, `primal_decrease` and `first_increase`.
-The keys are translated at compile time, so that this function does not allocate.
-"""
-subsolver_kwargs(::PenaltyR2NSolver; kwargs...) =
-  merge((; is_shifted = true), _r2n_kwargs(NamedTuple(kwargs)))
-
-@generated function _r2n_kwargs(kwargs::NamedTuple{names}) where {names}
-  new_names = Symbol[]
-  for key in names
-    name = String(key)
-    if startswith(name, "r2n_")
-      push!(new_names, Symbol(name[5:end]))
-    elseif startswith(name, "ms_") || key in (:σk, :primal_decrease, :first_increase)
-      push!(new_names, key)
-    else
-      msg = "L2Penalty: unknown keyword argument `$key`."
-      return :(throw(ArgumentError($msg)))
-    end
-  end
-  return :(NamedTuple{$(Tuple(new_names))}(values(kwargs)))
-end
