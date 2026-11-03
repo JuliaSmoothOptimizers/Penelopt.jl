@@ -73,18 +73,19 @@ function SolverCore.solve!(
   atol::T = √eps(T),
   rtol::T = √eps(T),
   print_level::Int = 0,
-  verbose::Int = 0,
+  verbose::Int = 1,
   max_iter::Int = 1000,
   ms_max_iter::Int = 10,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
-  σk::T = eps(T)^(1 / 5),
   σmin::T = eps(T)^2,
+  σ0::T = eps(T),
+  σk::T = σ0,
   η1::T = √√eps(T),
-  η2::T = T(0.1),
+  η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
   γ::T = T(3),
   watchdog_max_iter::Int = 10,
-  watchdog_η0::T = eps(T),
+  watchdog_η0::T = √eps(T),
   tiny_step_tol::T = eps(T),
   nmax_tiny_step::Int = 2,
   is_shifted::Bool = false,
@@ -104,6 +105,7 @@ function SolverCore.solve!(
   ms_ηC::T = eps(T),
 ) where {T,V}
   reset!(stats)
+  σk = max(σk, σmin)
 
   # Retrieve workspace
   nlp, h = reg_nlp.model, reg_nlp.h
@@ -113,7 +115,7 @@ function SolverCore.solve!(
   xk = solver.xk .= x
 
   # Make sure ψ has the correct shift 
-  !is_shifted && shift!(mk, xk, compute_grad = compute_grad)
+  !is_shifted && shift!(mk, xk)
 
   ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
@@ -415,3 +417,39 @@ get_jacobian(solver::PenaltyR2NSolver) = solver.subpb.h.A
 Return ∇f(x) at the point around which the subproblem of `solver` is currently shifted.
 """
 get_gradient(solver::PenaltyR2NSolver) = solver.subpb.model.data.c
+
+"""
+    initialize_constraints!(solver::PenaltyR2NSolver, x)
+
+Evaluate c(x) and J(x) and store them in the subproblem of `solver`.
+"""
+initialize_constraints!(solver::PenaltyR2NSolver, x::AbstractVector) = shift!(solver.subpb.h, x)
+
+"""
+    shift!(solver::PenaltyR2NSolver, x; ∇f = nothing, y = nothing, J = nothing, c = nothing)
+
+Shift the subproblem of `solver` around `x`. The quantities that are passed are not reevaluated.
+"""
+shift!(solver::PenaltyR2NSolver, x::AbstractVector; kwargs...) =
+  shift!(solver.subpb, x; kwargs...)
+
+"""
+    subsolver_kwargs(solver::PenaltyR2NSolver; kwargs...)
+
+Translate the keyword arguments of the outer loop into keyword arguments of the R2N `solve!`.
+Options prefixed with `r2n_` are passed without their prefix, options prefixed with `ms_` are
+passed as is, and so are the warm-start arguments `σk`, `primal_decrease` and `first_increase`.
+"""
+function subsolver_kwargs(::PenaltyR2NSolver; kwargs...)
+  r2n_kwargs = map(collect(kwargs)) do (key, val)
+    name = String(key)
+    if startswith(name, "r2n_")
+      Symbol(name[5:end]) => val
+    elseif startswith(name, "ms_") || key in (:σk, :primal_decrease, :first_increase)
+      key => val
+    else
+      throw(ArgumentError("L2Penalty: unknown keyword argument `$key`."))
+    end
+  end
+  return (; is_shifted = true, r2n_kwargs...)
+end
