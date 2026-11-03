@@ -299,7 +299,7 @@ function SolverCore.solve!(
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
-  set_residuals!(stats, dual_feas, primal_feas)
+  set_residuals!(stats, primal_feas, dual_feas)
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
