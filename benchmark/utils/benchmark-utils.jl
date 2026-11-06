@@ -76,7 +76,7 @@ const BENCHMARK_SOLVERS = Dict(
       max_iter = typemax(Int),
       linear_solver = "mumps",
       r2n_watchdog = false,
-      m_monotone = 1,
+      r2n_m_monotone = 1,
     ),
   (:l2penalty, :lbfgs) =>
     nlp -> L2Penalty(
@@ -89,7 +89,7 @@ const BENCHMARK_SOLVERS = Dict(
       qn_hessian_approximation = "bfgs",
       linear_solver = "mumps",
       r2n_watchdog = false,
-      m_monotone = 1,
+      r2n_m_monotone = 1,
     ),
   (:ipopt, :exact) =>
     nlp -> ipopt(
