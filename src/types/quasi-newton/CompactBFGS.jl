@@ -103,7 +103,7 @@ see [Preallocation](@ref).
 # Keyword arguments
 - `mem::Int = 6`: number of pairs ``(s, y)`` stored.
 - `scaling::Bool = true`: whether the initial approximation is ``B_0 = \\gamma I`` with ``\\gamma = y^T y / s^T y``.
-- `max_skip::Int = 2`: an update is skipped when `dot(s, y) ≤ eps(T)`; the approximation is reset once more than `max_skip` consecutive updates have been skipped.
+- `max_skip::Int = 2`: an update is skipped unless `dot(s, y) > eps(T) * ‖y‖ * max(‖s‖, ‖y‖)`; the approximation is reset once more than `max_skip` consecutive updates have been skipped.
 
 These correspond to the `qn_mem`, `qn_scaling` and `qn_max_skip` options, see [Options Reference](@ref).
 """
@@ -126,8 +126,10 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   ξ = op.ξ
 
   sy = dot(s, y)
+  ny = norm(y)
 
-  if sy <= eps(T) * norm(s) * norm(y) || sy <= eps(T) * norm(y)^2
+  # Skip unless sᵀy > ε‖y‖max(‖s‖, ‖y‖)
+  if !(sy > eps(T) * ny * max(norm(s), ny))
     op._nskip = op._nskip + 1
     if op._nskip > op._max_skip
       NLPModels.reset!(op)
