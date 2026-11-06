@@ -82,6 +82,7 @@ function SolverCore.solve!(
   σk::T = -one(T), # < 0 -> fallback to max(r2n_σ0, r2n_σmin)
   r2n_η1::T = √√eps(T),
   r2n_η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
+  r2n_η3::T = T(0.9),
   r2n_γ::T = T(3),
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
@@ -285,7 +286,7 @@ function SolverCore.solve!(
             -dψks + max(1, abs(hk)) * 10 * eps()
           ) : zero(T)
 
-        if r2n_η2 ≤ fρk < Inf || r2n_η2 ≤ hρk < Inf # Activate watchdog
+        if r2n_η3 ≤ fρk < Inf || r2n_η3 ≤ hρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
