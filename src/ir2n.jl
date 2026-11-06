@@ -84,7 +84,7 @@ function SolverCore.solve!(
   r2n_η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
   r2n_η3::T = T(0.9),
   r2n_γ::T = T(3),
-  r2n_watchdog::Bool = true,
+  r2n_watchdog::Bool = isa(reg_nlp.model, NullHessianModel) ? false : true
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
   r2n_tiny_step_tol::T = eps(T),
@@ -271,8 +271,7 @@ function SolverCore.solve!(
         first_increase = false
       elseif r2n_watchdog &&
              ρk > -1 / eps(T) &&
-             !is_active(watchdog_checkpoint) &&
-             !isa(nlp, NullHessianModel) # Watchdog procedure
+             !is_active(watchdog_checkpoint)
 
         # Check acceptance w.r.t f
         # Predicted decrease: f - (f + ∇fᵀs) = -∇fᵀs
