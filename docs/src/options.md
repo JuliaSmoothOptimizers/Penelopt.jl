@@ -202,7 +202,7 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > When computing the ratio of the actual decrease and the first-order decrease (see `r2n_η1`), the decrease is computed with respect to the maximum of the last `r2n_m_monotone` values of the objective.
 
  * `r2n_watchdog::Bool = true` (*advanced*): whether to use the watchdog technique.
-    > When set to `false`, the watchdog is never activated and a step is only accepted when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η1`. The watchdog is never used with `qn_hessian_approximation = "null"`, regardless of this option. In the exact Hessian case, the watchdog checkpoint stores neither the Hessian nor the Jacobian: they are re-evaluated when falling back to the checkpoint. See the implementation paper for more details.
+    > When set to `false`, the watchdog is never activated and a step is only accepted when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η1`. When `qn_hessian_approximation = "null"`, the default value becomes `r2n_watchdog = false`. See the implementation paper for more details.
 
  * `r2n_η3::T = 0.9` (*advanced*): watchdog activation threshold.
     > When a step is rejected (see `r2n_η1`), the watchdog is activated if the ratio of the actual decrease and the first-order decrease of either the smooth part $f$ or the penalty part $\tau\lVert c \rVert_2$ of the objective, taken separately, is larger than `r2n_η3`. Only used when `r2n_watchdog = true`.

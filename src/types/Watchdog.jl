@@ -2,13 +2,15 @@
     watchdog_checkpoint
 
 Iterate saved when the watchdog is activated, so that R2N can fall back to it.
+
+The Jacobian is never stored: it is re-evaluated in `fallback!`. In the exact Hessian
+case, the Hessian is not stored either and is re-evaluated as well.
 """
-mutable struct watchdog_checkpoint{T,V,JV,HV}
+mutable struct watchdog_checkpoint{T,V,HV}
   xk::V
   ∇fk::V
   ck::V
   yk::V
-  Jkvals::JV
   Hkvals::HV
   active::Bool
   iter::Int
@@ -36,7 +38,6 @@ function watchdog_checkpoint(
     ck,
     yk,
     nothing,
-    nothing,
     false,
     0,
     zero(T),
@@ -58,7 +59,6 @@ function watchdog_checkpoint(
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
   ck, yk = similar(b_model), similar(b_model)
-  Jkvals = similar(ψ.A.vals)
   Hk =
     (isa(φ.data.H, AbstractLinearOperator) || O <: NullHessianModel) ? nothing :
     similar(φ.data.H)
@@ -67,7 +67,6 @@ function watchdog_checkpoint(
     ∇fk,
     ck,
     yk,
-    Jkvals,
     Hk,
     false,
     0,
@@ -118,7 +117,6 @@ function save!(
   !isnothing(checkpoint.Hkvals) && copy!(checkpoint.Hkvals, φ.data.H)
   checkpoint.σk = φ.data.σ
   checkpoint.ck .= ψ.b
-  checkpoint.Jkvals .= ψ.A.vals
   checkpoint.primal_feas = stats.primal_feas
   checkpoint.dual_feas = stats.dual_feas
   checkpoint.iter = stats.iter
@@ -156,8 +154,14 @@ function fallback!(
   φ.data.c .= checkpoint.∇fk
   !isnothing(checkpoint.Hkvals) && copy!(φ.data.H, checkpoint.Hkvals)
   φ.data.σ = checkpoint.σk
-  ψ.b .= checkpoint.ck
-  ψ.A.vals .= checkpoint.Jkvals
+
+  # J is not stored: reuse the stored c and re-evaluate J(x) at the checkpoint.
+  # Shift ψ only, since shifting `nlp` would push a spurious pair into the approximation.
+  shift!(ψ, x, c = checkpoint.ck)
+
+  # The next quasi-Newton pair must be computed w.r.t. the checkpoint,
+  # not w.r.t. the last iterate visited during the watchdog.
+  nlp._qn_x_prev .= x
 end
 
 function activate!(checkpoint::watchdog_checkpoint)
