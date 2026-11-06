@@ -1,9 +1,14 @@
-mutable struct watchdog_checkpoint{T,V,HV}
+"""
+    watchdog_checkpoint
+
+Iterate saved when the watchdog is activated, so that R2N can fall back to it.
+"""
+mutable struct watchdog_checkpoint{T,V,JV,HV}
   xk::V
   ∇fk::V
   ck::V
   yk::V
-  Jkvals::V
+  Jkvals::JV
   Hkvals::HV
   active::Bool
   iter::Int
@@ -25,15 +30,13 @@ function watchdog_checkpoint(
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
   ck, yk = similar(b_model), similar(b_model)
-  Jkvals = similar(ψ.A.vals)
-  Hkvals = similar(φ.data.H.vals)
   return watchdog_checkpoint(
     xk,
     ∇fk,
     ck,
     yk,
-    Jkvals,
-    Hkvals,
+    nothing,
+    nothing,
     false,
     0,
     zero(T),
@@ -91,10 +94,8 @@ function save!(
   checkpoint.xk .= x
   checkpoint.yk .= y
   checkpoint.∇fk .= φ.data.c
-  checkpoint.Hkvals .= φ.data.H.vals
   checkpoint.σk = φ.data.σ
   checkpoint.ck .= ψ.b
-  checkpoint.Jkvals .= ψ.A.vals
   checkpoint.primal_feas = stats.primal_feas
   checkpoint.dual_feas = stats.dual_feas
   checkpoint.iter = stats.iter
@@ -131,15 +132,15 @@ function fallback!(
   y,
   checkpoint::watchdog_checkpoint,
 ) where {T,V,M,H,P}
-  φ, ψ = nlp.model, nlp.h
+  φ = nlp.model
 
   x .= checkpoint.xk
   y .= checkpoint.yk
-  φ.data.c .= checkpoint.∇fk
-  φ.data.H.vals .= checkpoint.Hkvals
   φ.data.σ = checkpoint.σk
-  ψ.b .= checkpoint.ck
-  ψ.A.vals .= checkpoint.Jkvals
+
+  # H and J are not stored in the exact Hessian case: reuse the stored ∇f and c,
+  # and re-evaluate H(x, y) and J(x) at the checkpoint.
+  shift!(nlp, x, ∇f = checkpoint.∇fk, y = y, c = checkpoint.ck)
 end
 
 function fallback!(
@@ -169,67 +170,7 @@ end
 
 is_active(checkpoint::watchdog_checkpoint) = checkpoint.active
 
-function check_watchdog!(
-  checkpoint::watchdog_checkpoint{T,V,V},
-  stats,
-  mk,
-  xk,
-  watchdog_max_iter,
-  η0,
-) where {T,V}
-
-  achieve_reduction =
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*checkpoint.dual_feas^2) ||
-    (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
-  max_iter = stats.iter - checkpoint.iter > watchdog_max_iter
-
-  if !is_active(checkpoint)
-    return false
-  elseif achieve_reduction
-    deactivate!(checkpoint)
-    return false
-  elseif !max_iter
-    return false
-  else
-    return true
-  end
-end
-
-function check_watchdog!(
-  checkpoint::watchdog_checkpoint{T,V,HV},
-  stats,
-  mk,
-  xk,
-  watchdog_max_iter,
-  η0,
-) where {T,V,HV<:CompactBFGS}
-
-  achieve_reduction =
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*checkpoint.dual_feas^2) ||
-    (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
-  max_iter = stats.iter - checkpoint.iter > watchdog_max_iter
-
-  if !is_active(checkpoint)
-    return false
-  elseif achieve_reduction
-    deactivate!(checkpoint)
-    return false
-  elseif !max_iter
-    return false
-  else
-    return true
-  end
-end
-
-function check_watchdog!(
-  checkpoint::watchdog_checkpoint{T,V,HV},
-  stats,
-  mk,
-  xk,
-  watchdog_max_iter,
-  η0,
-) where {T,V,HV<:Nothing}
-
+function check_watchdog!(checkpoint::watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, η0)
   achieve_reduction =
     (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*checkpoint.dual_feas^2) ||
     (stats.dual_feas < (1-η0)*checkpoint.dual_feas)

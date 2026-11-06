@@ -84,6 +84,7 @@ function SolverCore.solve!(
   r2n_η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
   r2n_η3::T = T(0.9),
   r2n_γ::T = T(3),
+  r2n_watchdog::Bool = true,
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
   r2n_tiny_step_tol::T = eps(T),
@@ -233,7 +234,8 @@ function SolverCore.solve!(
     ckn = h.b
     mks = dot(∇fk, s) + ψ(s)
 
-    fhmax = (m_monotone > 1) && !is_active(watchdog_checkpoint) ? maximum(m_fh_hist) : fk + hk
+    fhmax =
+      (m_monotone > 1) && !is_active(watchdog_checkpoint) ? maximum(m_fh_hist) : fk + hk
     Δobj = fhmax - (fkn + hkn) + max(1, abs(fhmax)) * 10 * eps(T)
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps(T)
 
@@ -267,23 +269,27 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
-      elseif ρk > -1 / eps(T) && !is_active(watchdog_checkpoint) &&
+      elseif r2n_watchdog &&
+             ρk > -1 / eps(T) &&
+             !is_active(watchdog_checkpoint) &&
              !isa(nlp, NullHessianModel) # Watchdog procedure
 
         # Check acceptance w.r.t f
+        # Predicted decrease: f - (f + ∇fᵀs) = -∇fᵀs
         d∇fks = dot(∇fk, s)
         fρk =
           d∇fks <= 0 ?
-          (fk - fkn + max(1, abs(fk)) * 10 * eps())/(
-            -d∇fks + max(1, abs(fk)) * 10 * eps()
+          (fk - fkn + max(1, abs(fk)) * 10 * eps(T))/(
+            -d∇fks + max(1, abs(fk)) * 10 * eps(T)
           ) : zero(T)
 
         # Check acceptance w.r.t. h
-        dψks = ψ(s)
+        # Predicted decrease: τ‖c‖ - τ‖c + Js‖ = hk - ψ(s)
+        dψks = hk - ψ(s)
         hρk =
-          dψks <= 0 ?
-          (hk - hkn + max(1, abs(hk)) * 10 * eps())/(
-            -dψks + max(1, abs(hk)) * 10 * eps()
+          dψks >= 0 ?
+          (hk - hkn + max(1, abs(hk)) * 10 * eps(T))/(
+            dψks + max(1, abs(hk)) * 10 * eps(T)
           ) : zero(T)
 
         if r2n_η3 ≤ fρk < Inf || r2n_η3 ≤ hρk < Inf # Activate watchdog
@@ -319,7 +325,7 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
 
     n_tiny_step =
-      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(1 + xk[i]), eachindex(s, xk)) ?
+      all(i -> abs(s[i]) < r2n_tiny_step_tol * (1 + abs(xk[i])), eachindex(s, xk)) ?
       n_tiny_step + 1 : 0
 
     set_status!(
