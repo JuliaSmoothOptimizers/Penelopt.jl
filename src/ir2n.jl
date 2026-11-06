@@ -232,7 +232,7 @@ function SolverCore.solve!(
     ckn = h.b
     mks = dot(∇fk, s) + ψ(s)
 
-    fhmax = m_monotone > 1 ? maximum(m_fh_hist) : fk + hk
+    fhmax = (m_monotone > 1) && !is_active(watchdog_checkpoint) ? maximum(m_fh_hist) : fk + hk
     Δobj = fhmax - (fkn + hkn) + max(1, abs(fhmax)) * 10 * eps(T)
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps(T)
 
@@ -241,15 +241,12 @@ function SolverCore.solve!(
     ## Check step assumption 3.4
     pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
     if !pos_def_check
-      # sHs = (∇fᵀs + 0.5 * sᵀ(H + σI)s) - ∇fᵀs = 0.5 * sᵀ(H + σI)s
-      sHs = obj(φ, s) - dot(∇fk, s)
-
       # Step Assumption 3.4 in implementation paper:
       # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * sᵀ(H + σI)s
       # This assumption is only necessary when (H + σI) is not p.d.
-      pos_def_check = Δmod >= 1/2 * sHs * ms_ηC
+      pos_def_check = Δmod >= 1/2 * stats.dual_feas * ms_ηC
     end
-    ρk = pos_def_check ? ρk : 0
+    ρk = pos_def_check ? ρk : -Inf
 
     if r2n_η1 ≤ ρk < Inf
       xk .= xkn
@@ -269,9 +266,7 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
-      elseif ρk < 0 &&
-             ρk > -1 / eps(T) &&
-             !is_active(watchdog_checkpoint) &&
+      elseif ρk > -1 / eps(T) && !is_active(watchdog_checkpoint) &&
              !isa(nlp, NullHessianModel) # Watchdog procedure
 
         # Check acceptance w.r.t f
@@ -282,7 +277,15 @@ function SolverCore.solve!(
             -d∇fks + max(1, abs(fk)) * 10 * eps()
           ) : zero(T)
 
-        if r2n_η2 ≤ fρk < Inf # Activate watchdog
+        # Check acceptance w.r.t. h
+        dψks = ψ(s)
+        hρk =
+          dψks <= 0 ?
+          (hk - hkn + max(1, abs(hk)) * 10 * eps())/(
+            -dψks + max(1, abs(hk)) * 10 * eps()
+          ) : zero(T)
+
+        if r2n_η2 ≤ fρk < Inf || r2n_η2 ≤ hρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
