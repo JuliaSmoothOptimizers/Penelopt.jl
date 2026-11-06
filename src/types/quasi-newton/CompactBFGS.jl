@@ -127,7 +127,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
 
   sy = dot(s, y)
 
-  if sy <= eps(T) * norm(s) * norm(y)
+  if sy <= eps(T) * norm(s) * norm(y) || sy <= eps(T) * norm(y)^2
     op._nskip = op._nskip + 1
     if op._nskip > op._max_skip
       NLPModels.reset!(op)
