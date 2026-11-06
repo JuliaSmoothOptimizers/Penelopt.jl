@@ -315,7 +315,7 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
 
     n_tiny_step =
-      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(x[i]), eachindex(s, x)) ?
+      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(1 + xk[i]), eachindex(s, xk)) ?
       n_tiny_step + 1 : 0
 
     set_status!(
