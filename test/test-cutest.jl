@@ -222,7 +222,13 @@ end
   stats = L2Penalty(nlp, atol = 1e-6, rtol = 0.0, r2n_watchdog_max_iter = 1)
   @test stats.status in (:first_order, :infeasible)
 
-  stats = L2Penalty(nlp, atol = 1e-6, rtol = 0.0, r2n_watchdog_max_iter = 1, qn_hessian_approximation = "bfgs")
+  stats = L2Penalty(
+    nlp,
+    atol = 1e-6,
+    rtol = 0.0,
+    r2n_watchdog_max_iter = 1,
+    qn_hessian_approximation = "bfgs",
+  )
   @test stats.status in (:first_order, :infeasible)
   finalize(nlp)
 end

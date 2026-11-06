@@ -269,9 +269,7 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
-      elseif r2n_watchdog &&
-             ρk > -1 / eps(T) &&
-             !is_active(watchdog_checkpoint)
+      elseif r2n_watchdog && ρk > -1 / eps(T) && !is_active(watchdog_checkpoint)
 
         # Check acceptance w.r.t f
         # Predicted decrease: f - (f + ∇fᵀs) = -∇fᵀs
