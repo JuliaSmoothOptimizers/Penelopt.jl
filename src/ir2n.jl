@@ -82,7 +82,9 @@ function SolverCore.solve!(
   σk::T = -one(T), # < 0 -> fallback to max(r2n_σ0, r2n_σmin)
   r2n_η1::T = √√eps(T),
   r2n_η2::T = isa(reg_nlp.model, QuasiNewtonModel) ? T(0.9) : T(0.1),
+  r2n_η3::T = T(0.9),
   r2n_γ::T = T(3),
+  r2n_watchdog::Bool = !isa(reg_nlp.model, NullHessianModel),
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
   r2n_tiny_step_tol::T = eps(T),
@@ -232,7 +234,8 @@ function SolverCore.solve!(
     ckn = h.b
     mks = dot(∇fk, s) + ψ(s)
 
-    fhmax = m_monotone > 1 ? maximum(m_fh_hist) : fk + hk
+    fhmax =
+      (m_monotone > 1) && !is_active(watchdog_checkpoint) ? maximum(m_fh_hist) : fk + hk
     Δobj = fhmax - (fkn + hkn) + max(1, abs(fhmax)) * 10 * eps(T)
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps(T)
 
@@ -241,15 +244,12 @@ function SolverCore.solve!(
     ## Check step assumption 3.4
     pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
     if !pos_def_check
-      # sHs = (∇fᵀs + 0.5 * sᵀ(H + σI)s) - ∇fᵀs = 0.5 * sᵀ(H + σI)s
-      sHs = obj(φ, s) - dot(∇fk, s)
-
       # Step Assumption 3.4 in implementation paper:
       # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * sᵀ(H + σI)s
       # This assumption is only necessary when (H + σI) is not p.d.
-      pos_def_check = Δmod >= 1/2 * sHs * ms_ηC
+      pos_def_check = Δmod >= 1/2 * stats.dual_feas * ms_ηC
     end
-    ρk = pos_def_check ? ρk : 0
+    ρk = pos_def_check ? ρk : -Inf
 
     if r2n_η1 ≤ ρk < Inf
       xk .= xkn
@@ -269,20 +269,29 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
-      elseif ρk < 0 &&
+      elseif r2n_watchdog &&
              ρk > -1 / eps(T) &&
-             !is_active(watchdog_checkpoint) &&
-             !isa(nlp, NullHessianModel) # Watchdog procedure
+             !is_active(watchdog_checkpoint)
 
         # Check acceptance w.r.t f
+        # Predicted decrease: f - (f + ∇fᵀs) = -∇fᵀs
         d∇fks = dot(∇fk, s)
         fρk =
           d∇fks <= 0 ?
-          (fk - fkn + max(1, abs(fk)) * 10 * eps())/(
-            -d∇fks + max(1, abs(fk)) * 10 * eps()
+          (fk - fkn + max(1, abs(fk)) * 10 * eps(T))/(
+            -d∇fks + max(1, abs(fk)) * 10 * eps(T)
           ) : zero(T)
 
-        if r2n_η2 ≤ fρk < Inf # Activate watchdog
+        # Check acceptance w.r.t. h
+        # Predicted decrease: τ‖c‖ - τ‖c + Js‖ = hk - ψ(s)
+        dψks = hk - ψ(s)
+        hρk =
+          dψks >= 0 ?
+          (hk - hkn + max(1, abs(hk)) * 10 * eps(T))/(
+            dψks + max(1, abs(hk)) * 10 * eps(T)
+          ) : zero(T)
+
+        if r2n_η3 ≤ fρk < Inf || r2n_η3 ≤ hρk < Inf # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
@@ -315,7 +324,7 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
 
     n_tiny_step =
-      all(i -> abs(s[i]) < r2n_tiny_step_tol * abs(1 + xk[i]), eachindex(s, xk)) ?
+      all(i -> abs(s[i]) < r2n_tiny_step_tol * (1 + abs(xk[i])), eachindex(s, xk)) ?
       n_tiny_step + 1 : 0
 
     set_status!(
