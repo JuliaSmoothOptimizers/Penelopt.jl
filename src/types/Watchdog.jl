@@ -174,7 +174,14 @@ end
 
 is_active(checkpoint::watchdog_checkpoint) = checkpoint.active
 
-function check_watchdog!(checkpoint::watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, η0)
+function check_watchdog!(
+  checkpoint::watchdog_checkpoint,
+  stats,
+  mk,
+  xk,
+  watchdog_max_iter,
+  η0,
+)
   achieve_reduction =
     (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*checkpoint.dual_feas^2) ||
     (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
