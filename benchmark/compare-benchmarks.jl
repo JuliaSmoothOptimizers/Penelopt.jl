@@ -69,6 +69,13 @@ exact_certification =
 register_certified!(certified_infeasible, exact_certification, :l2penalty_exact_current)
 register_certified!(certified_infeasible, exact_certification, :l2penalty_lbfgs_current)
 
+# Save the certification of the current run so that it can be downloaded as an artifact.
+if CERTIFY_INFEASIBILITY
+  mkpath("benchmark/result")
+  infeasibility_certification = exact_certification
+  @save "benchmark/result/infeasibility_certification.jld2" infeasibility_certification
+end
+
 for key in [:l2penalty_exact_current, :l2penalty_lbfgs_current]
   @info "Infeasibility certification results:\n" * sprint(
     io -> show(
