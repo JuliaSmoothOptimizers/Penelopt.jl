@@ -22,8 +22,6 @@ Jacobian/Hessian sparsity or values, only the constraint *values* and
 `lcon`/`ucon`).
 """
 
-export ShiftedConstraintModel, remove_constraint_shift, constraint_shift
-
 """
     ShiftedConstraintModel(nlp, shift) <: AbstractNLPModel{T,S}
 

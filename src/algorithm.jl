@@ -31,7 +31,7 @@ The solver can then be passed to [`solve!`](@ref) any number of times without fu
 allocation, as long as the problem dimensions do not change. See [Preallocation](@ref).
 
 Unlike [`L2Penalty`](@ref), no preprocessing is applied: if `nlp` has fixed variables or
-shifted constraints, see [`remove_fixed_variables`](@ref) and [`remove_constraint_shift`](@ref).
+shifted constraints, see [Fixed Variables](@ref) and [Shifted Constraints](@ref).
 
 # Keyword arguments
 These options determine the size of the workspace and can only be passed here, not to `solve!`:
