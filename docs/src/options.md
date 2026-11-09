@@ -208,7 +208,7 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > When a step is rejected (see `r2n_η1`), the watchdog is activated if the ratio of the actual decrease and the first-order decrease of either the smooth part $f$ or the penalty part $\tau\lVert c \rVert_2$ of the objective, taken separately, is larger than `r2n_η3`. Only used when `r2n_watchdog = true`.
 
  * `r2n_watchdog_max_iter::Int = 10` (*advanced*): maximum number of watchdog iterations.
-    > When the watchdog technique is activated, the solver accepts a step regardless of `r2n_η1` and proceeds for at most `r2n_watchdog_max_iter` before retreating to the watchdog activation iterate. When the watchdog is active, if a sufficient decrease (see `r2n_watchdog_η0`) in either the dual infeasibility or the objective is attained, the watchdog is deactivated and the current iterate is retained. See the implementation paper for more details.
+    > When the watchdog technique is activated, the solver accepts a step even though its ratio is below `r2n_η1` and proceeds for at most `r2n_watchdog_max_iter` before retreating to the watchdog activation iterate. When the watchdog is active, if a sufficient decrease (see `r2n_watchdog_η0`) in either the dual infeasibility or the objective is attained, the watchdog is deactivated and the current iterate is retained. See the implementation paper for more details.
   
  * `r2n_watchdog_η0::T = √eps(T)` (*advanced*): watchdog deactivation threshold.
     > The watchdog is deactivated when a sufficient decrease condition in either the dual infeasibility or the objective is attained. See the implementation paper for more details. When `T == Float64`, the default value is $\approx 10^{-8}$.
