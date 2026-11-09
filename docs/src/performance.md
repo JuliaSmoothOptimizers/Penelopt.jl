@@ -128,7 +128,7 @@ The example below shows how to construct a preallocated solver for a problem wit
 ```@example fixed
 
 # For the reformulation, it suffices to call the following function.
-nlp_no_fixed = remove_fixed_variables(nlp)
+nlp_no_fixed = Penelopt.remove_fixed_variables(nlp)
 
 # Now you can construct a preallocated solver for the reduced problem.
 solver = L2PenaltySolver(nlp_no_fixed)
@@ -139,7 +139,7 @@ solve!(solver, nlp_no_fixed, stats)
 finalize(nlp) # hide
 
 # To retrieve the solution back you can do
-solution_full = recover_full_solution(nlp_no_fixed, stats.solution)
+solution_full = Penelopt.recover_full_solution(nlp_no_fixed, stats.solution)
 ```
 
 ## Shifted Constraints
@@ -158,7 +158,7 @@ any(!iszero, nlp.meta.lcon) || any(!iszero, nlp.meta.ucon)
 The reformulation is done automatically when calling the solver. If you wish to use a [preallocated solver](performance.md#preallocation) you are responsible for constructing the reformulated problem yourself.
 
 ```@example shifted
-nlp_no_shift = remove_constraint_shift(nlp)
+nlp_no_shift = Penelopt.remove_constraint_shift(nlp)
 
 solver = L2PenaltySolver(nlp_no_shift)
 stats = PeneloptExecutionStats(nlp_no_shift)
@@ -168,7 +168,31 @@ solve!(solver, nlp_no_shift, stats)
 
 If your problem has both fixed variables and shifted constraints, compose the two functions; the order does not matter.
 ```julia
-nlp_preprocessed = nlp |> remove_fixed_variables |> remove_constraint_shift
+nlp_preprocessed = nlp |> Penelopt.remove_fixed_variables |> Penelopt.remove_constraint_shift
+```
+
+## Scaling
+
+Penelopt can rescale the objective and constraints by factors $d_f$ and $d_c$ before solving, to compensate for badly-scaled problems. See [this section](options.md#scaling).
+
+If you wish to use a [preallocated solver](performance.md#preallocation), construct the `ScaledModel` up front; `L2Penalty` will still refresh its scaling factors automatically at the start of `solve!`.
+
+```@example scaling
+using ADNLPModels, NLPModels, Penelopt
+
+nlp = ADNLPModel(x -> sum(x .^ 2), ones(5), x -> [sum(x .^ 3)], [5.0], [5.0])
+
+nlp_scaled = Penelopt.scale_model(nlp)
+
+solver = L2PenaltySolver(nlp_scaled)
+stats = PeneloptExecutionStats(nlp_scaled)
+
+solve!(solver, nlp_scaled, stats; nlp_scaling_method = "gradient-based")
+
+# Map the solution back to the original (unscaled) units
+f_orig = Penelopt.unscale_objective(nlp_scaled, stats.objective)
+c_orig = Penelopt.unscale_constraints(nlp_scaled, cons(nlp_scaled, stats.solution))
+y_orig = Penelopt.unscale_multipliers(nlp_scaled, stats.multipliers)
 ```
 
 ## Quasi-Newton Approximations
