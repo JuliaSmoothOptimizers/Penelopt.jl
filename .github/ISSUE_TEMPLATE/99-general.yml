@@ -8,9 +8,9 @@ body:
 
         Please, before submitting, make sure that:
 
-        - There is not an [existing issue](https://github.com/JuliaSmoothOptimizers/ExactPenalty.jl/issues) with the same question
-        - You have read the [contributing guide](https://JuliaSmoothOptimizers.github.io/ExactPenalty.jl/dev/90-contributing/)
-        - You are following the [code of conduct](https://github.com/JuliaSmoothOptimizers/ExactPenalty.jl/blob/main/CODE_OF_CONDUCT.md)
+        - There is not an [existing issue](https://github.com/JuliaSmoothOptimizers/Penelopt.jl/issues) with the same question
+        - You have read the [contributing guide](https://jso.dev/Penelopt.jl/dev/90-contributing/)
+        - You are following the [code of conduct](https://github.com/JuliaSmoothOptimizers/Penelopt.jl/blob/main/CODE_OF_CONDUCT.md)
         The form below should help you in filling out this issue.
   - type: textarea
     id: description
