@@ -244,3 +244,11 @@ jobs:
         with:
           name: benchmark-plots
           path: benchmark/result/*.svg
+
+      - name: Upload infeasibility certification
+        if: env.CERTIFY_INFEASIBILITY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: infeasibility-certification-current
+          path: benchmark/result/infeasibility_certification.jld2
+          if-no-files-found: error
