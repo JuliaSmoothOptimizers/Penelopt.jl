@@ -132,7 +132,7 @@ function L2Penalty(
   end
 
   if !equality_constrained(nlp) || has_bounds
-    error("L2Penalty: This algorithm only works for equality contrained problems.")
+    error("L2Penalty: This algorithm only works for equality constrained problems.")
   end
 
   # Preprocessing
@@ -221,7 +221,7 @@ function SolverCore.solve!(
   end
 
   if !equality_constrained(nlp) || has_bounds(nlp)
-    error("L2Penalty: This algorithm only works for equality contrained problems.")
+    error("L2Penalty: This algorithm only works for equality constrained problems.")
   end
 
   # Retrieve workspace
@@ -392,7 +392,7 @@ function SolverCore.solve!(
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
 
-      # Subsolver: Desactivate the aggressive regularization parameter update if sigma is too small
+      # Subsolver: Deactivate the aggressive regularization parameter update if sigma is too small
       first_increase = false
     end
 
@@ -403,7 +403,7 @@ function SolverCore.solve!(
 
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
-    # Infeasiblity detection
+    # Infeasibility detection
     if stats.iter % infeasible_iter == 0
       θ = compute_θ!(solver)
 

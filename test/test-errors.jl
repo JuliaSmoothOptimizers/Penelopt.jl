@@ -19,12 +19,12 @@ end
 
   # Unconstrained problem
   nlp = CUTEstModel("3PK")
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." L2Penalty(
+  @test_throws "L2Penalty: This algorithm only works for equality constrained problems." L2Penalty(
     nlp,
   )
   solver = L2PenaltySolver(nlp)
   stats = PeneloptExecutionStats(nlp)
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." solve!(
+  @test_throws "L2Penalty: This algorithm only works for equality constrained problems." solve!(
     solver,
     nlp,
     stats,
@@ -33,12 +33,12 @@ end
 
   # Problem with bounds 
   nlp = CUTEstModel("LIN")
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." L2Penalty(
+  @test_throws "L2Penalty: This algorithm only works for equality constrained problems." L2Penalty(
     nlp,
   )
   solver = L2PenaltySolver(nlp)
   stats = PeneloptExecutionStats(nlp)
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." solve!(
+  @test_throws "L2Penalty: This algorithm only works for equality constrained problems." solve!(
     solver,
     nlp,
     stats,
@@ -47,12 +47,12 @@ end
 
   # Problem with inequalities
   nlp = CUTEstModel("AVGASA")
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." L2Penalty(
+  @test_throws "L2Penalty: This algorithm only works for equality constrained problems." L2Penalty(
     nlp,
   )
   solver = L2PenaltySolver(nlp)
   stats = PeneloptExecutionStats(nlp)
-  @test_throws "L2Penalty: This algorithm only works for equality contrained problems." solve!(
+  @test_throws "L2Penalty: This algorithm only works for equality constrained problems." solve!(
     solver,
     nlp,
     stats,

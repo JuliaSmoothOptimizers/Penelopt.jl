@@ -54,7 +54,6 @@ SparseArrays.nnz(::CompactBFGS) = 0
 LinearAlgebra.Symmetric(op::CompactBFGS, ::Symbol) = op
 Base.size(op::CompactBFGS) = (size(op.Sk, 1), size(op.Sk, 1))
 
-# TODO: test this: compare with LinearOperators.jl
 function LinearAlgebra.mul!(
   x::AbstractVector,
   op::CompactBFGS,

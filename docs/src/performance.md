@@ -54,7 +54,7 @@ julia> solve!(solver, nlp, stats; x = x2)
     Some [options](options.md) require allocations and are therefore passed to the solver structure construction call.
     The following options **need** to be passed to the solver constructor (passing them to `solve!` will cause failure).
     * `r2n_m_monotone::Int = 12`;
-    * `linear_solver::Sring = "mumps"`.
+    * `linear_solver::String = "mumps"`.
     For clarity, if you want to modify these options, while preallocating the workspace, you should do
     ```{julia}
     julia> solver = L2PenaltySolver(nlp, r2n_m_monotone = 6, linear_solver = "ldlt")
@@ -175,7 +175,7 @@ nlp_preprocessed = nlp |> Penelopt.remove_fixed_variables |> Penelopt.remove_con
 
 Penelopt can rescale the objective and constraints by factors $d_f$ and $d_c$ before solving, to compensate for badly-scaled problems. See [this section](options.md#scaling).
 
-If you wish to use a [preallocated solver](performance.md#preallocation), construct the `ScaledModel` up front; `L2Penalty` will still refresh its scaling factors automatically at the start of `solve!`.
+If you wish to use a [preallocated solver](performance.md#preallocation), construct the scaled model up front with `Penelopt.scale_model`; `solve!` refreshes its scaling factors automatically when `nlp_scaling_method = "gradient-based"`.
 
 ```@example scaling
 using ADNLPModels, NLPModels, Penelopt
@@ -189,15 +189,14 @@ stats = PeneloptExecutionStats(nlp_scaled)
 
 solve!(solver, nlp_scaled, stats; nlp_scaling_method = "gradient-based")
 
-# Map the solution back to the original (unscaled) units
-f_orig = Penelopt.unscale_objective(nlp_scaled, stats.objective)
+# `stats.objective` and `stats.multipliers` are already reported in the original (unscaled) units.
+# The constraint values of the original problem can be recovered with
 c_orig = Penelopt.unscale_constraints(nlp_scaled, cons(nlp_scaled, stats.solution))
-y_orig = Penelopt.unscale_multipliers(nlp_scaled, stats.multipliers)
 ```
 
 ## Quasi-Newton Approximations
 
-If the Hessian of the Lagrangian of your nonlinear programming problem is dense, ill-conditionned, expensive to compute, or inaccessible, you may be interested in replacing it with a quasi-Newton approximation.
+If the Hessian of the Lagrangian of your nonlinear programming problem is dense, ill-conditioned, expensive to compute, or inaccessible, you may be interested in replacing it with a quasi-Newton approximation.
 
 `Penelopt.jl` offers you the possibility to run the optimization process with a [Limited-memory BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS) approximation.
 You can simply pass a keyword argument when calling the solver (see the [options](options.md) page):

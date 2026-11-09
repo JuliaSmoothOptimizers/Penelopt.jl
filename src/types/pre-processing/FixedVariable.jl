@@ -7,7 +7,7 @@ logic found in MadNLP.jl's `SparseCallback` (see MadNLP.jl/src/utils.jl).
 Instead of wrapping your model inside MadNLP's full callback machinery,
 this file provides a single function, `remove_fixed_variables`, that you
 can call once before handing your problem to any NLPModels.jl-compatible
-solver (e.g. ExactPenalty.jl, Ipopt, etc.):
+solver (e.g. Penelopt.jl, Ipopt, etc.):
 
     julia> nlp = MyNLPModel(...)
     julia> nlp_free = remove_fixed_variables(nlp)

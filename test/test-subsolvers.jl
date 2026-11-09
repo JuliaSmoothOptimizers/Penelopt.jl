@@ -9,7 +9,7 @@ solvers = [MoreSorensenSolver]
 # Test on real instances
 for (solver_name, solver_constructor) in zip(solver_names, solvers)
   @testset "$solver_name" begin
-    @testset "Well-conditionned" begin
+    @testset "Well-conditioned" begin
       n, m = 10, 2
       small_instance_boundary, solution =
         generate_instance(n, m, 0.5, Hessian_modifier = x -> SparseMatrixCOO(tril(x)))
@@ -133,7 +133,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       @test norm(solver.x1[(n+1):end]) <= solution[:tau]
     end
 
-    @testset "Ill-conditionned" begin
+    @testset "Ill-conditioned" begin
       for instance in instances
         reg_nlp = read_instance(
           instance,
