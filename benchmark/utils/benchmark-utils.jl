@@ -75,6 +75,7 @@ const BENCHMARK_SOLVERS = Dict(
       max_time = BENCHMARK_MAX_TIME,
       max_iter = typemax(Int),
       linear_solver = "mumps",
+      r2n_watchdog = false,
     ),
   (:l2penalty, :lbfgs) =>
     nlp -> L2Penalty(
