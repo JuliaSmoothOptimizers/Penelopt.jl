@@ -37,7 +37,7 @@ function construct_ma57_workspace(
 
   # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
   # then the iterative refinement stops.
-  S.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
+  S.control.cntl[3] = one(T) # Perform iterative refinement
 
   return PenaltyMA57Workspace(
     S,
