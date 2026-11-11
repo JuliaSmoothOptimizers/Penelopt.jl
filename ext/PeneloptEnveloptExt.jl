@@ -11,10 +11,11 @@ using Envelopt:
   EqualityLessModel,
   R2NEnveloptSubSolver,
   envelopt
-using ProximalCore: ProximalCore
-using RegularizedOptimization: RegularizedExecutionStats
 using RegularizedProblems: AbstractRegularizedNLPModel, RegularizedNLPModel
 
+using ProximalCore
+
+include("Envelopt/EnveloptFModel.jl")
 include("Envelopt/EnveloptSolver.jl")
 
 end
