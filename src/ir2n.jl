@@ -87,6 +87,7 @@ function SolverCore.solve!(
   r2n_watchdog::Bool = !isa(reg_nlp.model, NullHessianModel),
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
+  r2n_diverging_tol::T = 1 / eps(T),
   r2n_tiny_step_tol::T = eps(T),
   r2n_nmax_tiny_step::Int = 2,
   is_shifted::Bool = false,
@@ -325,6 +326,8 @@ function SolverCore.solve!(
       all(i -> abs(s[i]) < r2n_tiny_step_tol * (1 + abs(xk[i])), eachindex(s, xk)) ?
       n_tiny_step + 1 : 0
 
+    diverging_iterate = any(x -> !isfinite(x) || abs(x) > r2n_diverging_tol, xk)
+
     set_status!(
       stats,
       get_status(
@@ -332,7 +335,7 @@ function SolverCore.solve!(
         elapsed_time = stats.elapsed_time,
         iter = stats.iter,
         optimal = solved,
-        unbounded = fk < - 1 / eps(T),
+        unbounded = fk < - 1 / eps(T) || diverging_iterate,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = r2n_max_iter - 1,
