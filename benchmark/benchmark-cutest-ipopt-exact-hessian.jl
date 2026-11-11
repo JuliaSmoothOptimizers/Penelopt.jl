@@ -32,7 +32,28 @@ problem_names = problem_names[first:last]
 
 problem_list = (CUTEstModel(name) for name in problem_names)
 
-solvers = Dict(:ipopt_exact => BENCHMARK_SOLVERS[(:ipopt, :exact)])
+solvers = Dict(
+  :ipopt_exact => nlp -> begin
+    # Solve the problem
+    stats = ipopt(
+      nlp,
+      print_level = 0,
+      tol = BENCHMARK_TOL,
+      dual_inf_tol = BENCHMARK_TOL,
+      constr_viol_tol = BENCHMARK_TOL,
+      compl_inf_tol = Inf,
+      acceptable_iter = 0,
+      s_max = floatmax(Float64),
+      max_cpu_time = BENCHMARK_MAX_TIME,
+      max_iter = typemax(Int32)
+    )
+
+    # Set success
+    if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
+      certify_local_infeasibility(nlp, stats.solution) && set_status!(stats, :certified_infeasible)
+    end
+  end
+)
 
 stats = bmark_solvers(solvers, problem_list)
 @save "benchmark/result/stats_ipopt_exact_$(split).jld2" stats

@@ -2,6 +2,9 @@ using JLD2
 
 using CUTEst, Penelopt, SolverBenchmark
 
+const BENCHMARK_TOL = 1e-6
+const BENCHMARK_MAX_TIME = 300.0
+
 include(joinpath(@__DIR__, "utils", "benchmark-utils.jl"))
 
 problem_names = CUTEst.select_sif_problems(
@@ -34,7 +37,25 @@ problem_names = problem_names[first:last]
 
 problem_list = (CUTEstModel(name) for name in problem_names)
 
-solvers = Dict(:l2penalty_lbfgs => BENCHMARK_SOLVERS[(:l2penalty, :lbfgs)])
+solvers = Dict(
+  :l2penalty_lbfgs => nlp -> begin
+    # Solve the problem
+    stats = L2Penalty(
+      nlp,
+      print_level = 0,
+      atol = BENCHMARK_TOL,
+      rtol = 0.0,
+      max_time = BENCHMARK_MAX_TIME,
+      max_iter = typemax(Int),
+      qn_hessian_approximation = "bfgs",
+      linear_solver = "mumps",)
+
+    # Set success
+    if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
+      certify_local_infeasibility(nlp, stats.solution) && set_status!(stats, :certified_infeasible)
+    end
+  end
+)
 
 stats = bmark_solvers(solvers, problem_list)
 @save "benchmark/result/stats_lbfgs_$(split).jld2" stats
