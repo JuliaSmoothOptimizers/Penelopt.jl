@@ -1,0 +1,25 @@
+/* Source: https://github.com/JuliaManifolds/Manopt.jl/blob/v0.6.1/docs/src/assets/link-icons.css */
+/* Automatically adds a Wikipedia icon for links to Wikipedia: amazing! */
+
+a[href^="https://docs.julialang.org/"]::before {
+    content: "";
+    background-image: url('julia-dots.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+a[href^="https://en.wikipedia.org/"]::before {
+    content: "";
+    background-image: url('wikipedia.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin-right: 4px;
+    vertical-align: middle;
+}
