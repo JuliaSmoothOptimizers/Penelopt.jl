@@ -247,7 +247,7 @@ function SolverCore.solve!(
       # Δmod ≥ 0.5 * ηC * dual_feas^2
       pos_def_check = Δmod >= 1/2 * min(1, stats.dual_feas^2) * ms_ηC || is_active(watchdog_checkpoint)
     end
-    ρk = pos_def_check ? ρk : -Inf
+    ρk = pos_def_check ? ρk : zero(T)
 
     if r2n_η1 ≤ ρk < Inf
       xk .= xkn
