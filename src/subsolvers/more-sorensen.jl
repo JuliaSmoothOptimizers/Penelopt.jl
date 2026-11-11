@@ -208,7 +208,7 @@ function SolverCore.solve!(
   end
 
   # Solve with H = 0 instead.
-  if reg_nlp.model.data.σ > ms_σmax && (npos < n || status == :failed)
+  if (reg_nlp.model.data.σ > ms_σmax && (npos < n || status == :failed)) || norm(x1) / norm(u1) > eps(T)^(-0.8)
     isa(reg_nlp.model.data.H, CompactBFGS) ? NLPModels.reset!(reg_nlp.model.data.H) :
     reg_nlp.model.data.H.vals .= 0
     update_workspace!(solver_workspace, reg_nlp.h.A, reg_nlp.model.data.σ, α)
