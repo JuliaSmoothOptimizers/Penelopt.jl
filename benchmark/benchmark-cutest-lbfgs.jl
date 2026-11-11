@@ -2,6 +2,8 @@ using JLD2
 
 using CUTEst, Penelopt, SolverBenchmark
 
+include(joinpath(@__DIR__, "utils", "infeasibility-checker.jl"))
+
 const BENCHMARK_TOL = 1e-6
 const BENCHMARK_MAX_TIME = 300.0
 
@@ -13,6 +15,7 @@ problem_names = CUTEst.select_sif_problems(
     meta["variables"]["free"] + meta["variables"]["fixed"] == meta["variables"]["number"]
   ),
 )
+const CERTIFY_LOCAL_INFEASIBILITY = parse(Bool, get(ENV, "CERTIFY_INFEASIBILITY", "false"))
 
 filter!(x -> x != "FLOSP2TL", problem_names) # This problem of the form min 0 st c(x) = 0 causes the benchmarks to timeout...
 
