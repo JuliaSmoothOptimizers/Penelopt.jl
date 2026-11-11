@@ -170,28 +170,6 @@ If your problem has both fixed variables and shifted constraints, compose the tw
 ```julia
 nlp_preprocessed = nlp |> Penelopt.remove_fixed_variables |> Penelopt.remove_constraint_shift
 ```
-
-## Scaling
-
-Penelopt can rescale the objective and constraints by factors $d_f$ and $d_c$ before solving, to compensate for badly-scaled problems. See [this section](options.md#scaling).
-
-If you wish to use a [preallocated solver](performance.md#preallocation), construct the scaled model up front with `Penelopt.scale_model`; `solve!` refreshes its scaling factors automatically when `nlp_scaling_method = "gradient-based"`.
-
-```@example scaling
-using ADNLPModels, NLPModels, Penelopt
-
-nlp = ADNLPModel(x -> sum(x .^ 2), ones(5), x -> [sum(x .^ 3)], [5.0], [5.0])
-
-nlp_scaled = Penelopt.scale_model(nlp)
-
-solver = L2PenaltySolver(nlp_scaled)
-stats = PeneloptExecutionStats(nlp_scaled)
-
-solve!(solver, nlp_scaled, stats; nlp_scaling_method = "gradient-based")
-
-# `stats.objective` and `stats.multipliers` are already reported in the original (unscaled) units.
-# The constraint values of the original problem can be recovered with
-c_orig = Penelopt.unscale_constraints(nlp_scaled, cons(nlp_scaled, stats.solution))
 ```
 
 ## Quasi-Newton Approximations
