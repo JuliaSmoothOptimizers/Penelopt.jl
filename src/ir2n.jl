@@ -266,7 +266,7 @@ function SolverCore.solve!(
     end
 
     if ρk < r2n_η1 || ρk == Inf
-      if first_increase && ρk < 0
+      if first_increase
         σk = max(sqrt(stats.dual_feas), σk * r2n_γ)
         first_increase = false
       elseif r2n_watchdog && ρk > -1 / eps(T) && !is_active(watchdog_checkpoint)
