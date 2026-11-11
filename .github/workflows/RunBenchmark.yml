@@ -4,10 +4,6 @@ on:
   pull_request:
     types: [labeled, synchronize, reopened]
   workflow_call:
-    inputs:
-      certify_infeasibility:
-        type: boolean
-        default: true
 
 jobs:
   Benchmark-LBFGS:
@@ -23,7 +19,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
 
     env:
-      CERTIFY_INFEASIBILITY: ${{ inputs.certify_infeasibility || contains(github.event.pull_request.labels.*.name, 'certify infeasibility') }}
+      CERTIFY_INFEASIBILITY: true
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
@@ -71,7 +67,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
 
     env:
-      CERTIFY_INFEASIBILITY: ${{ inputs.certify_infeasibility || contains(github.event.pull_request.labels.*.name, 'certify infeasibility') }}
+      CERTIFY_INFEASIBILITY: true
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
