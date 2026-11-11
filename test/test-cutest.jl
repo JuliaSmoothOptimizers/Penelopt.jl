@@ -283,7 +283,7 @@ end
 # Test divering iterates
 @testset "SBRYBNDNE" begin
   nlp = CUTEstModel("SBRYBNDNE")
-  stats = L2Penalty(nlp, atol = 1e-6, rtol = 0.0)
+  stats = L2Penalty(nlp, atol = 1e-6, rtol = 0.0, max_time = 60.0)
   @test stats.status == :first_order
   finalize(nlp)
 end
