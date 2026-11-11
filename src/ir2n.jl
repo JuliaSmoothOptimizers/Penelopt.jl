@@ -359,6 +359,15 @@ function SolverCore.solve!(
     callback(reg_nlp, solver, stats)
 
     done = stats.status != :unknown
+
+    if done && is_active(watchdog_checkpoint)
+      fallback!(mk, xk, y, watchdog_checkpoint)
+      φ.data.σ *= r2n_γ^r2n_watchdog_max_iter
+      σk = φ.data.σ
+      hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
+      m_fh_hist .= watchdog_checkpoint.m_fh_hist
+      deactivate!(watchdog_checkpoint)
+    end
   end
 
   if print_level > 0
