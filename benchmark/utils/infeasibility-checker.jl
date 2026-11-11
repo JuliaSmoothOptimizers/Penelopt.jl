@@ -1,6 +1,7 @@
 using CUTEst,
   Penelopt, NLPModels, NLPModelsIpopt, NLPModelsModifiers, LinearAlgebra, DataFrames
 
+const BENCHMARK_MAX_TIME = 300.0
 """
     certify_local_infeasibility(nlp, xbar; Δ=10.0, tol=1e-9, feas_tol=1e-3)
 
@@ -10,8 +11,6 @@ Check whether `x̄ = xbar` is a locally infeasible point of `nlp` by solving
 
 with IPOPT, starting from `x̄`. Certified infeasible if the trust-region
 constraint is inactive at the solution and ||c(x)|| > feas_tol.
-
-Returns `true`/`false` when conclusive.
 """
 function certify_local_infeasibility(
   nlp::AbstractNLPModel,
