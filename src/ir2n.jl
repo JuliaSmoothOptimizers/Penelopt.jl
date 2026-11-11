@@ -326,8 +326,7 @@ function SolverCore.solve!(
       all(i -> abs(s[i]) < r2n_tiny_step_tol * (1 + abs(xk[i])), eachindex(s, xk)) ?
       n_tiny_step + 1 : 0
 
-    diverging_iterate =
-      any(abs.(xk) .> r2n_diverging_tol) || any(isnan.(xk)) || any(isinf.(xk))
+    diverging_iterate = any(x -> !isfinite(x) || abs(x) > r2n_diverging_tol, xk)
 
     set_status!(
       stats,
