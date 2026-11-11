@@ -125,7 +125,7 @@ function extrapolate!(
   obj_extrap = obj(nlp, x_extrap)
   cons!(nlp, x_extrap, solver.cn)
 
-  if obj_extrap < Inf && norm(solver.cn) < Inf
+  if obj_extrap < solver.substats.solver_specific[:smooth_obj] || norm(solver.cn) < norm(ψ.b)
     solver.x .= x_extrap
     set_solver_specific!(solver.substats, :smooth_obj, obj_extrap)
     # Step 6: Update y_extr = y + (τ₂ - τ₁) ẏ = y + (τ₂ - τ₁) α' py
@@ -133,5 +133,6 @@ function extrapolate!(
     return true
   end
 
+  println("skipped !")
   return false
 end
