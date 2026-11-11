@@ -15,7 +15,6 @@ problem_names = CUTEst.select_sif_problems(
     meta["variables"]["free"] + meta["variables"]["fixed"] == meta["variables"]["number"]
   ),
 )
-const CERTIFY_LOCAL_INFEASIBILITY = parse(Bool, get(ENV, "CERTIFY_INFEASIBILITY", "false"))
 
 filter!(x -> x != "FLOSP2TL", problem_names) # This problem of the form min 0 st c(x) = 0 causes the benchmarks to timeout...
 
@@ -56,7 +55,7 @@ solvers = Dict(
     )
 
     set_solver_specific!(stats, :certified_infeasible, false)
-    if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
+    if stats.status == :infeasible
       set_solver_specific!(stats, :certified_infeasible, certify_local_infeasibility(nlp, stats.solution))
     end
     return stats

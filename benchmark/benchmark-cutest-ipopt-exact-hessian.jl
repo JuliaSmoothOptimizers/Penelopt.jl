@@ -15,7 +15,6 @@ problem_names = CUTEst.select_sif_problems(
     meta["variables"]["free"] + meta["variables"]["fixed"] == meta["variables"]["number"]
   ),
 )
-const CERTIFY_LOCAL_INFEASIBILITY = parse(Bool, get(ENV, "CERTIFY_INFEASIBILITY", "false"))
 
 # Speedup benchmark time for exact Hessian.
 # Split problems across 2 runners.
@@ -53,7 +52,7 @@ solvers = Dict(
     )
 
     set_solver_specific!(stats, :certified_infeasible, false)
-    if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
+    if stats.status == :infeasible
       set_solver_specific!(stats, :certified_infeasible, certify_local_infeasibility(nlp, stats.solution))
     end
     return stats

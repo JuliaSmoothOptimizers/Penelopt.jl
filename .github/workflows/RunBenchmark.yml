@@ -16,10 +16,10 @@ jobs:
 
     if: >
       github.event_name != 'pull_request' ||
-      contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+      (contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'run CUTEst benchmark'))
 
     env:
-      CERTIFY_INFEASIBILITY: true
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
@@ -64,10 +64,10 @@ jobs:
 
     if: >
       github.event_name != 'pull_request' ||
-      contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+      (contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'run CUTEst benchmark'))
 
     env:
-      CERTIFY_INFEASIBILITY: true
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:

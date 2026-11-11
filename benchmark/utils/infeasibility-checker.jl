@@ -51,8 +51,8 @@ function certify_local_infeasibility(
   tr_residual = norm(jprod(nlp, xbar, xsol - xbar)) # ||J(x̄)(x - x̄)||
   primal_feas = norm(cons(nlp, xsol))
 
-  if tr_residual >= Δ
-    @warn "Local infeasibility check for $(nlp.meta.name) was inconclusive (trust-region constraint active at the solution; Δ = $Δ may be too small)"
+  if tr_residual > Δ
+    @warn "Local infeasibility check for $(nlp.meta.name) was inconclusive (Δ = $Δ may be too small)"
     return false
   end
 
