@@ -215,6 +215,7 @@ function SolverCore.solve!(
     # [ σI Aᵀ][x] = -[∇f]
     # [ A  0 ][y] = -[c] 
     npos, nzero, nneg, status = factor_and_solve!(solver_workspace, u1, x1)
+    set_solver_specific!(stats, :is_pos_def, true)
   end
 
   if (npos < n || status == :failed)
