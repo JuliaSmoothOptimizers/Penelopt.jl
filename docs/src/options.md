@@ -213,6 +213,9 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
  * `r2n_watchdog_η0::T = √eps(T)` (*advanced*): watchdog deactivation threshold.
     > The watchdog is deactivated when a sufficient decrease condition in either the dual infeasibility or the objective is attained. See the implementation paper for more details. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
+ * `r2n_diverging_tol::T = 1/eps(T)`: Absolute maximal value of primal iterates threshold.
+    > If any component of the primal iterate exceeds this value, the inner loop stops. When `T == Float64`, the default value is $\approx 10^{16}$.
+
  * `r2n_tiny_step_tol::T = eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
     > When a step $s$ is such that $|s_i| < \text{r2n\_tiny\_step\_tol} \cdot (1 + |x_i|)$ for all $1 \leq i \leq n$, where $x$ is the current iterate (i.e., the iterate obtained after the step has been accepted or rejected), for more than `r2n_nmax_tiny_step` consecutive iterations (see `r2n_nmax_tiny_step`), the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-16}$.
 
