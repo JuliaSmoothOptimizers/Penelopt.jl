@@ -15,6 +15,7 @@ jobs:
     runs-on: windows-latest
 
     env:
+      CERTIFY_INFEASIBILITY: true
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
@@ -57,6 +58,7 @@ jobs:
     runs-on: windows-latest
 
     env:
+      CERTIFY_INFEASIBILITY: true
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
@@ -88,47 +90,4 @@ jobs:
         with:
           name: cutest-ipopt-benchmark-stats-exact-hessian-${{ matrix.split }}
           path: benchmark/result
-          if-no-files-found: error
-
-  Certify-Ipopt:
-    needs: [Benchmark-IPOPT-LBFGS, Benchmark-Exact-Hessian]
-
-    runs-on: windows-latest
-
-    # PRs load what this produced instead of re-solving IPOPT's
-    # flagged problems every run.
-    if: >
-      needs.Benchmark-IPOPT-LBFGS.result == 'success' &&
-      needs.Benchmark-Exact-Hessian.result == 'success'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: julia-actions/setup-julia@latest
-        with:
-          version: '1'
-
-      - name: Use Julia cache
-        uses: julia-actions/cache@v2
-
-      - name: Download benchmark results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: cutest-ipopt-benchmark-stats-*
-          path: benchmark/result
-          merge-multiple: true
-
-      - name: Certify infeasibility
-        run: |
-          julia --project=benchmark -e '
-            using Pkg
-            Pkg.instantiate()
-            include("benchmark/certify-infeasibility.jl")
-          '
-
-      - name: Upload infeasibility certification
-        uses: actions/upload-artifact@v4
-        with:
-          name: infeasibility-certification-ipopt
-          path: benchmark/result/infeasibility_certification.jld2
           if-no-files-found: error

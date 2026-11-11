@@ -1,6 +1,6 @@
 using JLD2
 
-using CUTEst, NLPModelsIpopt, SolverBenchmark
+using CUTEst, NLPModelsIpopt, SolverBenchmark, SolverCore
 
 include(joinpath(@__DIR__, "utils", "infeasibility-checker.jl"))
 
@@ -56,10 +56,10 @@ solvers = Dict(
     )
 
     set_solver_specific!(stats, :certified_infeasible, false)
-    # Set success
     if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
       certify_local_infeasibility(nlp, stats.solution) && set_solver_specific!(stats, :certified_infeasible, true)
     end
+    return stats
   end
 )
 

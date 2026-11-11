@@ -5,7 +5,6 @@ using Printf
 using SolverBenchmark
 using Plots
 
-include(joinpath(@__DIR__, "utils", "benchmark-utils.jl"))
 include(joinpath(@__DIR__, "utils", "compare-utils.jl"))
 
 current_dir = joinpath("artifacts", "current")
