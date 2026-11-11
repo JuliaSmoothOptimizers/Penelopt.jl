@@ -234,8 +234,7 @@ function SolverCore.solve!(
     ckn = h.b
     mks = dot(∇fk, s) + ψ(s)
 
-    fhmax =
-      (m_monotone > 1) && !is_active(watchdog_checkpoint) ? maximum(m_fh_hist) : fk + hk
+    fhmax = (m_monotone > 1) ? maximum(m_fh_hist) : fk + hk
     Δobj = fhmax - (fkn + hkn) + max(1, abs(fhmax)) * 10 * eps(T)
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps(T)
 
@@ -243,10 +242,9 @@ function SolverCore.solve!(
 
     ## Check step assumption 3.4
     pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
-    if !pos_def_check
-      # Step Assumption 3.4 in implementation paper:
-      # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * sᵀ(H + σI)s
-      # This assumption is only necessary when (H + σI) is not p.d.
+    if !pos_def_check && !is_active(watchdog_checkpoint)
+      # Step Assumption 3.1 in implementation paper:
+      # Δmod ≥ 0.5 * ηC * dual_feas
       pos_def_check = Δmod >= 1/2 * stats.dual_feas * ms_ηC
     end
     ρk = pos_def_check ? ρk : -Inf
