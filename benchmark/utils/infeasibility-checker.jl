@@ -1,8 +1,6 @@
 using CUTEst,
   Penelopt, NLPModels, NLPModelsIpopt, NLPModelsModifiers, LinearAlgebra, DataFrames
 
-include(joinpath(@__DIR__, "trust-region-nls.jl"))
-
 """
     certify_local_infeasibility(nlp, xbar; Δ=10.0, tol=1e-9, feas_tol=1e-3)
 
@@ -23,8 +21,7 @@ function certify_local_infeasibility(
   tol = 1e-9,
   feas_tol = 1e-3,
 )
-  M = TrustRegionNLS(nlp, xbar, Δ)
-  model = FeasibilityFormNLS(M)
+  model = FeasibilityFormNLS(FeasibilityResidual(nlp))
 
   # r₀ = c(x̄), so the F(x) - r = 0 block is satisfied at x0
   x0 = vcat(xbar, cons(nlp, xbar))
@@ -48,7 +45,7 @@ function certify_local_infeasibility(
 
   n = nlp.meta.nvar
   xsol = stats.solution[1:n]
-  tr_residual = norm(M.Jxbar * (xsol - xbar))
+  tr_residual = norm(jprod(nlp, xbar, xsol - xbar)) # ||J(x̄)(x - x̄)||
   primal_feas = norm(cons(nlp, xsol))
 
   if tr_residual >= Δ - tol
