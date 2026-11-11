@@ -309,11 +309,11 @@ function SolverCore.solve!(
     end
 
     # Check whether the matrix still has the correct inertia. (We may have failed to detect earlier)
-    # npos, nzero, nneg = get_inertia(solver_workspace)
-    # if npos < n
-    #   println("Recursion...")
-    #   return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
-    # end
+    npos, nzero, nneg = get_inertia(solver_workspace)
+    if npos < n || status == :failed
+      set_status!(stats, :exception)
+      return
+    end
 
     # [ H + σI  Aᵀ ][x'] = -[0]
     # [   A    -αI ][y'] = -[x]
@@ -351,10 +351,6 @@ function SolverCore.solve!(
 
   is_descent = check_descent(reg_nlp, @view x1[1:n])
   !is_descent && set_status!(stats, :not_desc)
- # if !is_descent
- #   println("recursion...")
- #   return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
- # end
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
