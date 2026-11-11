@@ -57,7 +57,7 @@ solvers = Dict(
 
     set_solver_specific!(stats, :certified_infeasible, false)
     if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
-      certify_local_infeasibility(nlp, stats.solution) && set_solver_specific!(stats, :certified_infeasible, true)
+      set_solver_specific!(stats, :certified_infeasible, certify_local_infeasibility(nlp, stats.solution))
     end
     return stats
   end

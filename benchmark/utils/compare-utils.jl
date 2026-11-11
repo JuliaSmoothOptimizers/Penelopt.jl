@@ -68,7 +68,7 @@ function pairwise_plot(
   df_1 = stats[keys[1]]
   df_2 = stats[keys[2]]
 
-  solved(df) = (df.status .== :first_order .|| (df.solver_specific[:certified_infeasible] == true .&& df.status .== :infeasible))
+  solved(df) = (df.status .== :first_order .| (df.certified_infeasible .== true .& df.status .== :infeasible))
   costs = [
     df -> .!solved(df) * Inf + df.elapsed_time,
     df -> .!solved(df) * Inf + df.neval_obj,

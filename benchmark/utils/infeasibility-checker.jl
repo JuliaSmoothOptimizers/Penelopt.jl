@@ -11,8 +11,7 @@ Check whether `x̄ = xbar` is a locally infeasible point of `nlp` by solving
 with IPOPT, starting from `x̄`. Certified infeasible if the trust-region
 constraint is inactive at the solution and ||c(x)|| > feas_tol.
 
-Returns `true`/`false` when conclusive, `missing` if the inner solve didn't
-reach `:first_order` or stopped at the trust-region boundary.
+Returns `true`/`false` when conclusive.
 """
 function certify_local_infeasibility(
   nlp::AbstractNLPModel,
@@ -40,7 +39,7 @@ function certify_local_infeasibility(
 
   if stats.status != :first_order
     @warn "Local infeasibility check for $(nlp.meta.name) was inconclusive (inner IPOPT solve terminated with status $(stats.status))"
-    return missing
+    return false
   end
 
   n = nlp.meta.nvar
@@ -50,7 +49,7 @@ function certify_local_infeasibility(
 
   if tr_residual >= Δ
     @warn "Local infeasibility check for $(nlp.meta.name) was inconclusive (trust-region constraint active at the solution; Δ = $Δ may be too small)"
-    return missing
+    return false
   end
 
   certified = primal_feas > feas_tol
