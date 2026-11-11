@@ -242,10 +242,10 @@ function SolverCore.solve!(
 
     ## Check step assumption 3.4
     pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
-    if !pos_def_check && !is_active(watchdog_checkpoint)
+    if !pos_def_check
       # Step Assumption 3.1 in implementation paper:
-      # Δmod ≥ 0.5 * ηC * dual_feas
-      pos_def_check = Δmod >= 1/2 * stats.dual_feas * ms_ηC
+      # Δmod ≥ 0.5 * ηC * dual_feas^2
+      pos_def_check = Δmod >= 1/2 * min(1, stats.dual_feas^2) * ms_ηC || is_active(watchdog_checkpoint)
     end
     ρk = pos_def_check ? ρk : -Inf
 
