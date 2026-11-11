@@ -26,7 +26,7 @@ function certify_local_infeasibility(
 
   saved = deepcopy(nlp.counters)
   stats = try
-     ipopt(
+    ipopt(
       model,
       x0 = x0,
       print_level = 0,

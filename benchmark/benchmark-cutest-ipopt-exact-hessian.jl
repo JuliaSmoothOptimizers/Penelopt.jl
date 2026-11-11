@@ -36,27 +36,32 @@ problem_names = problem_names[first:last]
 problem_list = (CUTEstModel(name) for name in problem_names)
 
 solvers = Dict(
-  :ipopt_exact => nlp -> begin
-    # Solve the problem
-    stats = ipopt(
-      nlp,
-      print_level = 0,
-      tol = BENCHMARK_TOL,
-      dual_inf_tol = BENCHMARK_TOL,
-      constr_viol_tol = BENCHMARK_TOL,
-      compl_inf_tol = Inf,
-      acceptable_iter = 0,
-      s_max = floatmax(Float64),
-      max_cpu_time = BENCHMARK_MAX_TIME,
-      max_iter = typemax(Int32)
-    )
+  :ipopt_exact =>
+    nlp -> begin
+      # Solve the problem
+      stats = ipopt(
+        nlp,
+        print_level = 0,
+        tol = BENCHMARK_TOL,
+        dual_inf_tol = BENCHMARK_TOL,
+        constr_viol_tol = BENCHMARK_TOL,
+        compl_inf_tol = Inf,
+        acceptable_iter = 0,
+        s_max = floatmax(Float64),
+        max_cpu_time = BENCHMARK_MAX_TIME,
+        max_iter = typemax(Int32),
+      )
 
-    set_solver_specific!(stats, :certified_infeasible, false)
-    if stats.status == :infeasible
-      set_solver_specific!(stats, :certified_infeasible, certify_local_infeasibility(nlp, stats.solution))
-    end
-    return stats
-  end
+      set_solver_specific!(stats, :certified_infeasible, false)
+      if stats.status == :infeasible
+        set_solver_specific!(
+          stats,
+          :certified_infeasible,
+          certify_local_infeasibility(nlp, stats.solution),
+        )
+      end
+      return stats
+    end,
 )
 
 stats = bmark_solvers(solvers, problem_list)

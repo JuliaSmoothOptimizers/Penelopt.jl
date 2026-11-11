@@ -60,15 +60,13 @@ function load_stats(dir::AbstractString, stats, suffix = "")
   return stats
 end
 
-function pairwise_plot(
-  stats,
-  keys;
-  compare_n_fact = false,
-)
+function pairwise_plot(stats, keys; compare_n_fact = false)
   df_1 = stats[keys[1]]
   df_2 = stats[keys[2]]
 
-  solved(df) = (df.status .== :first_order) .| ((df.status .== :infeasible) .& (df.certified_infeasible .== true))
+  solved(df) =
+    (df.status .== :first_order) .|
+    ((df.status .== :infeasible) .& (df.certified_infeasible .== true))
   costs = [
     df -> .!solved(df) * Inf + df.elapsed_time,
     df -> .!solved(df) * Inf + df.neval_obj,
