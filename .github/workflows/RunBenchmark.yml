@@ -19,7 +19,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
 
     env:
-      MUMPS_SEQ: true
+      CERTIFY_INFEASIBILITY: ${{ contains(github.event.pull_request.labels.*.name, 'certify infeasibility') }}
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
@@ -67,7 +67,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
 
     env:
-      MUMPS_SEQ: true
+      CERTIFY_INFEASIBILITY: ${{ contains(github.event.pull_request.labels.*.name, 'certify infeasibility') }}
       CUTEST_SPLIT: ${{ matrix.split }}
 
     steps:
@@ -101,53 +101,6 @@ jobs:
           path: benchmark/result
           if-no-files-found: error
 
-  Certify-Reference:
-    needs: [Benchmark-LBFGS, Benchmark-Exact-Hessian]
-
-    runs-on: windows-latest
-
-    # Only on non-PR runs (SaveBenchmark on main). PRs load what this
-    # produced instead of re-certifying reference themselves.
-    if: >
-      needs.Benchmark-LBFGS.result == 'success' &&
-      needs.Benchmark-Exact-Hessian.result == 'success' &&
-      github.event_name != 'pull_request'
-
-    env:
-      MUMPS_SEQ: true
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: julia-actions/setup-julia@latest
-        with:
-          version: '1'
-
-      - name: Use Julia cache
-        uses: julia-actions/cache@v2
-
-      - name: Download benchmark results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: cutest-benchmark-stats-*
-          path: benchmark/result
-          merge-multiple: true
-
-      - name: Certify infeasibility
-        run: |
-          julia --project=benchmark -e '
-            using Pkg
-            Pkg.instantiate()
-            include("benchmark/certify-infeasibility.jl")
-          '
-
-      - name: Upload infeasibility certification
-        uses: actions/upload-artifact@v4
-        with:
-          name: infeasibility-certification-reference
-          path: benchmark/result/infeasibility_certification.jld2
-          if-no-files-found: error
-
   Compare:
     needs: [Benchmark-LBFGS, Benchmark-Exact-Hessian]
 
@@ -160,11 +113,6 @@ jobs:
       needs.Benchmark-Exact-Hessian.result == 'success' &&
       github.event_name == 'pull_request' &&
       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
-
-    # Certifying re-solves flagged problems - expensive.
-    # Off by default; opt in with the "certify infeasibility" label.
-    env:
-      CERTIFY_INFEASIBILITY: ${{ contains(github.event.pull_request.labels.*.name, 'certify infeasibility') }}
 
     steps:
       - uses: actions/checkout@v4
@@ -244,11 +192,3 @@ jobs:
         with:
           name: benchmark-plots
           path: benchmark/result/*.svg
-
-      - name: Upload infeasibility certification
-        if: env.CERTIFY_INFEASIBILITY == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: infeasibility-certification-current
-          path: benchmark/result/infeasibility_certification.jld2
-          if-no-files-found: error

@@ -2,7 +2,8 @@ using JLD2
 
 using CUTEst, NLPModelsIpopt, SolverBenchmark
 
-include(joinpath(@__DIR__, "utils", "benchmark-utils.jl"))
+const BENCHMARK_TOL = 1e-6
+const BENCHMARK_MAX_TIME = 300.0
 
 problem_names = CUTEst.select_sif_problems(
   min_con = 1,
@@ -51,9 +52,10 @@ solvers = Dict(
       max_iter = typemax(Int32)
     )
 
+    set_solver_specific!(stats, :certified_infeasible, false)
     # Set success
     if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
-      certify_local_infeasibility(nlp, stats.solution) && set_status!(stats, :certified_infeasible)
+      certify_local_infeasibility(nlp, stats.solution) && set_solver_specific!(stats, :certified_infeasible, true)
     end
   end
 )

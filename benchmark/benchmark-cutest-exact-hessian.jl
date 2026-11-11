@@ -5,8 +5,6 @@ using CUTEst, Penelopt, NLPModelsModifiers, SolverBenchmark
 const BENCHMARK_TOL = 1e-6
 const BENCHMARK_MAX_TIME = 300.0
 
-include(joinpath(@__DIR__, "utils", "infeasibility-checker.jl"))
-
 problem_names = CUTEst.select_sif_problems(
   min_con = 1,
   only_equ_con = true,
@@ -47,9 +45,10 @@ solvers = Dict(
       max_iter = typemax(Int),
       linear_solver = "mumps",)
 
+    set_solver_specific!(stats, :certified_infeasible, false)
     # Set success
     if CERTIFY_LOCAL_INFEASIBILITY && stats.status == :infeasible
-      certify_local_infeasibility(nlp, stats.solution) && set_status!(stats, :certified_infeasible)
+      certify_local_infeasibility(nlp, stats.solution) && set_solver_specific!(stats, :certified_infeasible, true)
     end
   end
 )
