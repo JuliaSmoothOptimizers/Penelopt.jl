@@ -39,9 +39,9 @@ function certify_local_infeasibility(
         max_cpu_time = BENCHMARK_MAX_TIME,
         max_wall_time = BENCHMARK_MAX_TIME,
       )
-    Libc.flush_cstdio()
+      Libc.flush_cstdio()
 
-    s
+      s
     end
   finally
     nlp.counters = saved
