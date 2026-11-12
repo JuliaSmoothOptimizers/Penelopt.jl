@@ -26,19 +26,26 @@ function certify_local_infeasibility(
 
   saved = deepcopy(nlp.counters)
   stats = try
-    ipopt(
-      model,
-      x0 = x0,
-      print_level = 0,
-      tol = tol,
-      dual_inf_tol = tol,
-      constr_viol_tol = tol,
-      compl_inf_tol = tol,
-      acceptable_iter = 0,
-      max_cpu_time = BENCHMARK_MAX_TIME,
-    )
+    redirect_stdout(devnull) do # avoid IPOPT printing to stdout
+      s = ipopt(
+        model,
+        x0 = x0,
+        print_level = 0,
+        tol = tol,
+        dual_inf_tol = tol,
+        constr_viol_tol = tol,
+        compl_inf_tol = tol,
+        acceptable_iter = 0,
+        max_cpu_time = BENCHMARK_MAX_TIME,
+        max_wall_time = BENCHMARK_MAX_TIME,
+      )
+    Libc.flush_cstdio()
+
+    s
+    end
   finally
     nlp.counters = saved
+    GC.gc() # avoid memory leak in IPOPT
   end
 
   if stats.status != :first_order
