@@ -181,6 +181,9 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
  * `τmin::T = 1.0` (*advanced*): penalty parameter minimimum increase.
     > The penalty parameter is increased by at least `τmin`, i.e. $\tau_{k+1} \geq \tau_k + \tau_{\text{min}}$. This is $\tau_{\text{min}}$ in the implementation paper.
 
+ * `τmax::T = eps(T)^(-3/2)` (*advanced*): maximum penalty parameter.
+     > When the penalty parameter becomes larger than `τmax`, the solver stops with a corresponding error message. When `T == Float64`, the default value is $\approx 10^{23}$.
+
 ## R2N Specific
 
  * `r2n_η1::T = √√eps(T)` (*advanced*): Armijo sufficient decrease threshold. 
