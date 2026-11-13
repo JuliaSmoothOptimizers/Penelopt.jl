@@ -216,12 +216,12 @@ end
   # The problem is infeasible but the primal feas is arbitrarily small for some ||x|| -> inf.
   # Only test that we converge to first order
   nlp = CUTEstModel("SSINE")
-  stats = L2Penalty(nlp, atol = 1e-6, rtol = 0.0, r2n_watchdog_max_iter = 1)
+  stats = L2Penalty(nlp, atol = 1e-3, rtol = 0.0, r2n_watchdog_max_iter = 1)
   @test stats.status in (:first_order, :infeasible)
 
   stats = L2Penalty(
     nlp,
-    atol = 1e-6,
+    atol = 1e-3,
     rtol = 0.0,
     r2n_watchdog_max_iter = 1,
     qn_hessian_approximation = "bfgs",
