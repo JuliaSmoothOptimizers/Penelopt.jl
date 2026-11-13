@@ -364,14 +364,16 @@ function SolverCore.solve!(
 
     done = stats.status != :unknown
 
-    if done && is_active(watchdog_checkpoint)
-      fallback!(mk, xk, y, watchdog_checkpoint)
-      φ.data.σ *= r2n_γ^r2n_watchdog_max_iter
-      σk = φ.data.σ
-      hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
-      m_fh_hist .= watchdog_checkpoint.m_fh_hist
-      deactivate!(watchdog_checkpoint)
-    end
+  if done && is_active(watchdog_checkpoint)
+    fallback!(mk, xk, y, watchdog_checkpoint)
+    hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
+    deactivate!(watchdog_checkpoint)
+    set_objective!(stats, fk + hk)
+    set_solver_specific!(stats, :smooth_obj, fk)
+    set_solver_specific!(stats, :nonsmooth_obj, hk)
+    set_primal_residual!(stats, watchdog_checkpoint.primal_feas)
+    set_dual_residual!(stats, watchdog_checkpoint.dual_feas)
+  end
   end
 
   if print_level > 0
