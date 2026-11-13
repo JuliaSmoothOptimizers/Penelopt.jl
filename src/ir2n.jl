@@ -186,6 +186,7 @@ function SolverCore.solve!(
 
     if stats.iter == 0
       atol += stats.dual_feas * rtol
+      atol = min(atol, one(T))
       set_solver_specific!(stats, :dual_ktol, atol)
     end
 
