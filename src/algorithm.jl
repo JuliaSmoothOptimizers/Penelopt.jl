@@ -206,6 +206,7 @@ function SolverCore.solve!(
 
   ## Outer Loop specific arguments
   τmin::T = T(1),
+  τmax::T = eps(T)^(-3/2),
   τ0::T = T(1),
 
   ## Subsolver arguments
@@ -262,7 +263,7 @@ function SolverCore.solve!(
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
   ## Initialize penalty parameter
-  τ = max(norm(solver.y, 1), τ0)
+  τ = min(max(norm(solver.y, 1), τ0), τmax)
   set_penalty!(solver, τ)
   σk = -one(T) # Use subsolver's default σk (max(σ0, σmin))
 
@@ -289,6 +290,7 @@ function SolverCore.solve!(
   not_desc = false
   primal_decrease = false
   first_increase = true
+  stalled = false
 
   set_status!(
     stats,
@@ -334,7 +336,8 @@ function SolverCore.solve!(
       σk = -one(T)
       shift!(solver, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
-      continue
+
+      τ > τmax ? (stalled = true) : continue
     end
 
     if solver.substats.status == :not_desc
@@ -367,6 +370,7 @@ function SolverCore.solve!(
       end
       τ = τ₊
       set_penalty!(solver, τ)
+      stalled = τ > τmax
 
       # Initialize regularization parameter
       σk = get_sigma(solver.substats)
@@ -434,6 +438,7 @@ function SolverCore.solve!(
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter - 1,
+        stalled = stalled,
       ),
     )
 
