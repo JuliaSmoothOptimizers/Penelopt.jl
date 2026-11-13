@@ -262,7 +262,7 @@ function SolverCore.solve!(
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
   ## Initialize penalty parameter
-  τ = max(norm(solver.y, 1), τ0)
+  τ = max(max(norm(solver.y, 1), norm(get_constraints(solver), 1)), τ0)
   set_penalty!(solver, τ)
   σk = -one(T) # Use subsolver's default σk (max(σ0, σmin))
 

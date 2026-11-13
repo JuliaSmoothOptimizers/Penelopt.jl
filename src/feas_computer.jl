@@ -68,12 +68,8 @@ function initialize_multipliers!(
   # Step 1: Compute
   # ( I     Jᵀ )( s ) = - ( ∇f )
   # ( J     0I )( y ) = - ( 0  )
-  # If ∇f != 0, otherwise, solve
-  # ( I     Jᵀ )( s ) = - ( 0 )
-  # ( J     0I )( y ) = - ( c )
   @. u1[1:n] = - solver.∇fk
   @. u1[(n+1):(n+m)] = 0
-  iszero(norm_∇f) && (@. u1[(n+1):(n+m)] = - ψ.b)
 
   α = eps(T)
   update_workspace!(ls_workspace, ψ.A, one(T), α)
