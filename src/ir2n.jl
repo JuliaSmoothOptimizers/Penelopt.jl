@@ -186,6 +186,7 @@ function SolverCore.solve!(
 
     if stats.iter == 0
       atol += stats.dual_feas * rtol
+      atol = min(atol, one(T))
       set_solver_specific!(stats, :dual_ktol, atol)
     end
 
@@ -246,9 +247,8 @@ function SolverCore.solve!(
     pos_def_check = Bool(solver.substats.solver_specific[:is_pos_def])
     if !pos_def_check
       # Step Assumption 3.4 in implementation paper:
-      # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * sᵀ(H + σI)s
-      # This assumption is only necessary when (H + σI) is not p.d.
-      pos_def_check = Δmod >= 1/2 * stats.dual_feas * ms_ηC
+      # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * dual_feas²
+      pos_def_check = Δmod >= 1/2 * min(stats.dual_feas, 1)^2 * ms_ηC
     end
     ρk = pos_def_check ? ρk : -Inf
 
@@ -364,6 +364,17 @@ function SolverCore.solve!(
     callback(reg_nlp, solver, stats)
 
     done = stats.status != :unknown
+
+    if done && is_active(watchdog_checkpoint)
+      fallback!(mk, xk, y, watchdog_checkpoint)
+      hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
+      deactivate!(watchdog_checkpoint)
+      set_objective!(stats, fk + hk)
+      set_solver_specific!(stats, :smooth_obj, fk)
+      set_solver_specific!(stats, :nonsmooth_obj, hk)
+      set_primal_residual!(stats, watchdog_checkpoint.primal_feas)
+      set_dual_residual!(stats, watchdog_checkpoint.dual_feas)
+    end
   end
 
   if print_level > 0
