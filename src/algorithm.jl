@@ -31,7 +31,7 @@ The solver can then be passed to [`solve!`](@ref) any number of times without fu
 allocation, as long as the problem dimensions do not change. See [Preallocation](@ref).
 
 Unlike [`L2Penalty`](@ref), no preprocessing is applied: if `nlp` has fixed variables or
-shifted constraints, see [`remove_fixed_variables`](@ref) and [`remove_constraint_shift`](@ref).
+shifted constraints, see [Fixed Variables](@ref) and [Shifted Constraints](@ref).
 
 # Keyword arguments
 These options determine the size of the workspace and can only be passed here, not to `solve!`:
@@ -132,7 +132,7 @@ function L2Penalty(
   end
 
   if !equality_constrained(nlp) || has_bounds
-    error("L2Penalty: This algorithm only works for equality contrained problems.")
+    error("L2Penalty: This algorithm only works for equality constrained problems.")
   end
 
   # Preprocessing
@@ -221,7 +221,7 @@ function SolverCore.solve!(
   end
 
   if !equality_constrained(nlp) || has_bounds(nlp)
-    error("L2Penalty: This algorithm only works for equality contrained problems.")
+    error("L2Penalty: This algorithm only works for equality constrained problems.")
   end
 
   # Retrieve workspace
@@ -392,7 +392,7 @@ function SolverCore.solve!(
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
 
-      # Subsolver: Desactivate the aggressive regularization parameter update if sigma is too small
+      # Subsolver: Deactivate the aggressive regularization parameter update if sigma is too small
       first_increase = false
     end
 
@@ -403,7 +403,7 @@ function SolverCore.solve!(
 
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
-    # Infeasiblity detection
+    # Infeasibility detection
     if stats.iter % infeasible_iter == 0
       θ = compute_θ!(solver)
 
