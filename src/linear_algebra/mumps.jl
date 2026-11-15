@@ -36,7 +36,7 @@ function construct_mumps_workspace(
 
   # ICNTL(11): error analysis
   # 2: Main statistics (recommended)
-  icntl[11] = 2
+  icntl[11] = 1
 
   # ICNTL(24) controls the detection of “null pivot rows”.
   # 1: Null pivot row detection.
@@ -167,7 +167,7 @@ function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
 end
 
 relative_error!(workspace::PenaltyMUMPSWorkspace) =
-  max(workspace.M.rinfog[6], workspace.M.rinfog[7], workspace.M.rinfog[8])
+  max(workspace.M.rinfog[6], workspace.M.rinfog[7], workspace.M.rinfog[8], workspace.M.rinfog[9])
 
 function increase_pivtol!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
