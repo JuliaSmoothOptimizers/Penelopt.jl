@@ -91,8 +91,15 @@ function initialize_multipliers!(
   end
 
   # Step 2: Check Jacobian full row rank and recompute if necessary
+  # Step 2.1: Compute a lower bound on the condition number of the KKT matrix
+
+  # κ∞(K) ≥ ‖K‖∞ ‖x‖∞ / ‖u‖∞
+  # Then, we use a cheap lower bound of ‖K‖∞ by taking the maximum of the absolute values of the entries of K.
+  # From the definition of K, the maximum value is the maximum between 
+  # I (upper left block), αI (lower right block) and J (upper right block).
+  κ_lb = max(one(T), α, maximum(abs, ψ.A.vals)) * norm(x1, Inf) / norm(u1, Inf)
   status = get_status(ls_workspace)
-  if status != :success
+  if status != :success || κ_lb > 1 / eps(T)
     α = eps(T)^(0.8)
     update_workspace!(ls_workspace, ψ.A, one(T), α)
     solve_linear_system!(ls_workspace, u1)
@@ -105,8 +112,9 @@ function initialize_multipliers!(
     end
   end
 
+  κ_lb = max(one(T), α, maximum(abs, ψ.A.vals)) * norm(x1, Inf) / norm(u1, Inf)
   status = get_status(ls_workspace)
-  if status != :success
+  if status != :success || κ_lb > 1 / eps(T)
     α = eps(T)^(0.6)
     update_workspace!(ls_workspace, ψ.A, one(T), α)
     solve_linear_system!(ls_workspace, u1)
