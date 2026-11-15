@@ -75,7 +75,7 @@ function initialize_multipliers!(
   @. u1[(n+1):(n+m)] = 0
   iszero(norm_∇f) && (@. u1[(n+1):(n+m)] = - ψ.b)
 
-  α = iszero(norm_∇f) ? one(T) : eps(T)
+  α = eps(T)
   update_workspace!(ls_workspace, ψ.A, one(T), α)
 
   solve_linear_system!(ls_workspace, u1)
