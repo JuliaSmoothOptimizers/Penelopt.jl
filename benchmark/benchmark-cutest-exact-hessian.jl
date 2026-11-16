@@ -47,6 +47,7 @@ solvers = Dict(
         max_time = BENCHMARK_MAX_TIME,
         max_iter = typemax(Int),
         linear_solver = "mumps",
+        r2n_m_monotone = 1,
       )
 
       set_solver_specific!(stats, :certified_infeasible, false)
