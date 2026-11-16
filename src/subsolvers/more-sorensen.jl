@@ -98,16 +98,14 @@ function SolverCore.solve!(
   ms_accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
   ms_ηC::T = eps(T), # Cauchy decrease acceptance constant, see up_lb_is_pos_def fallback below.
 ) where {T,V,M,H,P}
-  if !_restart
-    set_time!(stats, 0.0)
-    set_iter!(stats, 0)
-    if print_level > 0
-      @info separator(type = :ms_loop)
-      @info header_message(type = :ms_loop)
-      @info separator(type = :ms_loop)
-    end
+  set_time!(stats, 0.0)
+  set_iter!(stats, 0)
+  if print_level > 0
+    @info separator(type = :ms_loop)
+    @info header_message(type = :ms_loop)
+    @info separator(type = :ms_loop)
   end
-  start_time = time() - stats.elapsed_time
+  start_time = time()
 
   n = reg_nlp.model.meta.nvar
   m = length(reg_nlp.h.b)
@@ -263,6 +261,8 @@ function SolverCore.solve!(
     npos, nzero, nneg = get_inertia(solver_workspace)
     if npos < n
       set_status!(stats, :exception)
+      set_solver_specific!(stats, :alpha_min, αmin)
+      print_level > 0 && @info conclusion_message(solver, stats)
       return
     end
 
@@ -301,7 +301,11 @@ function SolverCore.solve!(
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
 
   is_descent = check_descent(reg_nlp, @view x1[1:n])
-  !is_descent && set_status!(stats, :exception)
+  if !is_descent
+    set_status!(stats, :exception)
+    set_solver_specific!(stats, :alpha_min, αmin)
+    print_level > 0 && @info conclusion_message(solver, stats)
+  end
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
