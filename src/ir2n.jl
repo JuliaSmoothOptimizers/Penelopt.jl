@@ -235,10 +235,7 @@ function SolverCore.solve!(
 
     while solver.substats.status == :exception
       solver.subpb.model.data.σ *= ms_μσ
-      if solver.subpb.model.data.σ >= ms_σmax 
-        set_status!(stats, :exception)
-        break
-      end
+      solver.subpb.model.data.σ >= ms_σmax && break
       solve!(
         solver.subsolver,
         solver.subpb,
