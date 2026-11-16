@@ -197,7 +197,7 @@ function SolverCore.solve!(
   max_time::Float64 = 30.0,
   max_iter::Int = 100,
   μ::T = T(1e-2),
-  infeasible_tol::T = T(1e-3),
+  infeasible_tol::T = T(1e-4),
   infeasible_iter::Int = 2,
 
   ## Logging arguments
