@@ -79,35 +79,6 @@ function factor_and_solve!(solver_workspace, u1, x1)
   return npos, nzero, nneg, status
 end
 
-"""
-    escalate_and_resolve!(solver, reg_nlp, stats, αmin, failure_status, opts)
-
-Multiply the primal regularization `reg_nlp.model.data.σ` by `opts.ms_μσ` and
-either report failure — setting `stats.status` to `failure_status` — if `σ`
-has reached `opts.ms_σmax`, or restart the Moré-Sorensen iteration with the new
-`σ`. `opts` is the `NamedTuple` of tuning parameters built once at the top
-of `solve!` (everything but `ms_α0`/`_restart`, which vary across restarts) and
-is forwarded as-is to the recursive `solve!` call, only initializing the
-dual regularization at `αmin` (the smallest value already known to work for
-the current system) instead of retrying it from `0`.
-"""
-function escalate_and_resolve!(
-  solver::MoreSorensenSolver{T,V},
-  reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-  stats::GenericExecutionStats,
-  αmin::T,
-  failure_status::Symbol,
-  opts::NamedTuple,
-) where {T,V,M,H,P}
-  reg_nlp.model.data.σ *= opts.ms_μσ
-  if reg_nlp.model.data.σ >= opts.ms_σmax
-    set_status!(stats, failure_status)
-    opts.print_level > 0 && @info conclusion_message(solver, stats)
-    return
-  end
-  return solve!(solver, reg_nlp, stats; opts..., ms_α0 = αmin, _restart = true)
-end
-
 function SolverCore.solve!(
   solver::MoreSorensenSolver{T,V},
   reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
@@ -126,7 +97,6 @@ function SolverCore.solve!(
   ms_σmax::T = 1 / eps(T)^(0.8),
   ms_accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
   ms_ηC::T = eps(T), # Cauchy decrease acceptance constant, see up_lb_is_pos_def fallback below.
-  _restart::Bool = false, # Internal flag only: true when this call is a recursive continuation.
 ) where {T,V,M,H,P}
   if !_restart
     set_time!(stats, 0.0)
@@ -138,24 +108,6 @@ function SolverCore.solve!(
     end
   end
   start_time = time() - stats.elapsed_time
-
-  # Bundled once so the escalation call sites below stay short: everything
-  # solve! was called with, except ms_α0/_restart which change across restarts.
-  opts = (;
-    x,
-    print_level,
-    ms_verbose,
-    ms_tol,
-    max_time,
-    ms_max_iter,
-    ms_μα,
-    ms_μσ,
-    ms_αmin1,
-    ms_αmin2,
-    ms_σmax,
-    ms_accept_descent,
-    ms_ηC,
-  )
 
   n = reg_nlp.model.meta.nvar
   m = length(reg_nlp.h.b)
@@ -310,7 +262,8 @@ function SolverCore.solve!(
     # Check whether the matrix still has the correct inertia. (We may have failed to detect earlier)
     npos, nzero, nneg = get_inertia(solver_workspace)
     if npos < n
-      return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :exception, opts)
+      set_status!(stats, :exception)
+      return
     end
 
     # [ H + σI  Aᵀ ][x'] = -[0]
@@ -348,10 +301,7 @@ function SolverCore.solve!(
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
 
   is_descent = check_descent(reg_nlp, @view x1[1:n])
-  !is_descent && set_status!(stats, :not_desc)
-  if !is_descent
-    return escalate_and_resolve!(solver, reg_nlp, stats, αmin, :not_desc, opts)
-  end
+  !is_descent && set_status!(stats, :exception)
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
