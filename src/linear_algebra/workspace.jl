@@ -37,7 +37,6 @@ function update_workspace!(workspace::PenaltyDirectWorkspace, A::M, σ::T, α::T
   initialize_primal_regularization!(K, σ)
   set_dual_regularization!(K, α)
   invalidate_factorization!(workspace)
-  invalidate_analysis!(workspace)
 end
 
 function update_workspace!(
@@ -75,8 +74,6 @@ end
 function invalidate_factorization!(workspace::PenaltyDirectWorkspace)
   workspace.factorized = false
 end
-
-invalidate_analysis!(::PenaltyDirectWorkspace) = nothing
 
 factorized(workspace::PenaltyDirectWorkspace) = workspace.factorized
 

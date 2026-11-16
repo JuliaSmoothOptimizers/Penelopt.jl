@@ -50,6 +50,15 @@ function construct_mumps_workspace(
   # root node.
   icntl[13] = 1
 
+  # ICNTL(6) computes a permutation to permute the matrix to a zero-free diagonal and/or computes a
+  # matrix scaling.
+  # 0 : No column permutation is computed.
+  icntl[6] = 0
+
+  # ICNTL(12) defines an ordering strategy for symmetric matrices (SYM = 2).
+  # 1 : usual ordering (nothing done).
+  icntl[12] = 1
+
   S = Mumps{T}(mumps_symmetric, icntl, cntl, backend = MUMPS.Sequential())
 
   H = get_H(K)
@@ -75,8 +84,7 @@ end
 function factorize!(workspace::PenaltyMUMPSWorkspace)
   factorized(workspace) && return
   mumps = workspace.M
-  reused = workspace.analyzed
-  mumps.job = reused ? MUMPS.FACTOR : MUMPS.ANALYZE_FACTOR
+  mumps.job = workspace.analyzed ? MUMPS.FACTOR : MUMPS.ANALYZE_FACTOR
   MUMPS.invoke_mumps!(mumps)
   set_n_fact!(workspace, get_n_fact(workspace) + 1)
 
@@ -101,15 +109,10 @@ function factorize!(workspace::PenaltyMUMPSWorkspace)
     workspace.status = :failed
     return
   else
-    # INFOG(23) is the value of ICNTL(6) effectively used by the analysis. With 0, 
-    # the analysis depends only on the sparsity pattern and the scaling is
-    # computed at each factorization.
-    reused || (workspace.analyzed = mumps.infog[23] == 0)
+    workspace.analyzed = true
     workspace.factorized = true
   end
 end
-
-invalidate_analysis!(workspace::PenaltyMUMPSWorkspace) = (workspace.analyzed = false)
 
 function solve_system!(workspace::PenaltyMUMPSWorkspace, u::AbstractVector)
   set_status!(workspace, :success)
