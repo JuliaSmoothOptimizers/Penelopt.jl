@@ -32,11 +32,11 @@ solve!(solver, nlp_no_fixed, stats)
 
 # To retrieve the solution back you can do
 solution_full = Penelopt.recover_full_solution(nlp_no_fixed, stats.solution)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">8-element Vector{Float64}:
-  0.005652720546060129
+  0.0056527205460601285
  -0.006537743733686222
- -0.0006212466687437931
+ -0.000621246668743793
  -0.1233355537445725
- -0.00038742219303453834
+ -0.0003874221930345383
   0.1
   0.0
   0.0</code></pre><h2 id="Shifted-Constraints"><a class="docs-heading-anchor" href="#Shifted-Constraints">Shifted Constraints</a><a id="Shifted-Constraints-1"></a><a class="docs-heading-anchor-permalink" href="#Shifted-Constraints" title="Permalink"></a></h2><p>If some of your equality constraints are written as <span>$c_i(x) = v_i$</span> for some constant <span>$v_i \neq 0$</span>, Penelopt.jl automatically reformulates them as <span>$c_i(x) - v_i = 0$</span> internally.</p><pre><code class="language-julia hljs">using ADNLPModels, Penelopt
