@@ -186,7 +186,7 @@ function check_watchdog!(
     (
       checkpoint.fk + checkpoint.hk - stats.objective >
       1/2*η0*min(checkpoint.dual_feas, 1)^2
-    ) || (checkpoint.dual_feas < 1 && (stats.dual_feas < (1-η0)*checkpoint.dual_feas))
+    ) || (checkpoint.dual_feas < 100 && (stats.dual_feas < (1-η0)*checkpoint.dual_feas))
   max_iter = stats.iter - checkpoint.iter > watchdog_max_iter
 
   if !is_active(checkpoint)
