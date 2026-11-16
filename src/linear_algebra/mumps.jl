@@ -5,6 +5,7 @@ mutable struct PenaltyMUMPSWorkspace{WP<:Mumps,K2<:AbstractK2Matrix,V<:AbstractV
   x::V
   status::Symbol
   factorized::Bool
+  analyzed::Bool
   _n_fact::Int
   _n_precise::Int # Counter for how many times the relative error has been below threshold
 end
@@ -15,8 +16,8 @@ function construct_mumps_workspace(
   n,
   m,
 ) where {T,M1,M2,M3<:SparseSymmetricCOO{T}}
-  cntl = T == Float64 ? default_cntl64 : default_cntl32
-  icntl = default_icntl
+  cntl = copy(T == Float64 ? default_cntl64 : default_cntl32)
+  icntl = copy(default_icntl)
 
   ## Set Parameters
 
@@ -68,13 +69,14 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, 0, 0)
+  return PenaltyMUMPSWorkspace(S, K, x, :uninitialized, false, false, 0, 0)
 end
 
 function factorize!(workspace::PenaltyMUMPSWorkspace)
   factorized(workspace) && return
   mumps = workspace.M
-  mumps.job = MUMPS.ANALYZE_FACTOR
+  reused = workspace.analyzed
+  mumps.job = reused ? MUMPS.FACTOR : MUMPS.ANALYZE_FACTOR
   MUMPS.invoke_mumps!(mumps)
   set_n_fact!(workspace, get_n_fact(workspace) + 1)
 
@@ -95,12 +97,19 @@ function factorize!(workspace::PenaltyMUMPSWorkspace)
 
   # MUMPS infog(1): a negative value is an error in the factorization.
   if mumps.infog[1] < 0
+    workspace.analyzed = false # Redo the analysis after a failure
     workspace.status = :failed
     return
   else
+    # INFOG(23) is the value of ICNTL(6) effectively used by the analysis. With 0, 
+    # the analysis depends only on the sparsity pattern and the scaling is
+    # computed at each factorization.
+    reused || (workspace.analyzed = mumps.infog[23] == 0)
     workspace.factorized = true
   end
 end
+
+invalidate_analysis!(workspace::PenaltyMUMPSWorkspace) = (workspace.analyzed = false)
 
 function solve_system!(workspace::PenaltyMUMPSWorkspace, u::AbstractVector)
   set_status!(workspace, :success)
