@@ -281,4 +281,3 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > Whether we scale $B_0 = \gamma I$ with $\gamma = y^Ty / s^T y$, where $s$ is the step and $y$ is the difference of the two last gradients of the Lagrangian. If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
 
  * `qn_max_skip::Int = 2` (*advanced*): if a pair $(s, y)$ is skipped more than `max_skip` times in a row, we reset the approximation.
-    > If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
