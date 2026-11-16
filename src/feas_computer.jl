@@ -1,5 +1,5 @@
 function compute_θ!(solver::L2PenaltySolver{T,V,<:PenaltyR2NSolver}) where {T,V}
-  # Computes a model decrease for the feasbility problem minₓ ‖c(x)‖₂
+  # Computes a model decrease for the feasibility problem minₓ ‖c(x)‖₂
 
   ## Retrieve workspace
   r2n_solver, r2n_stats = solver.subsolver, solver.substats

@@ -3,7 +3,6 @@ Penelopt.jl: A Large-Scale Equality-Constrained Optimization Solver.
 
 * 📖 Documentation: [https://jso.dev/Penelopt.jl/stable](https://jso.dev/Penelopt.jl/stable)
 * 🗂️ Repository: [github.com/JuliaSmoothOptimizers/Penelopt.jl](https://github.com/JuliaSmoothOptimizers/Penelopt.jl)
-* 💬 Discussions: [github.com/JuliaSmoothOptimizers/Penelopt.jl/discussions](https://github.com/JuliaSmoothOptimizers/Penelopt.jl/discussions)
 * 🎯 Issues: [github.com/JuliaSmoothOptimizers/Penelopt.jl/issues](https://github.com/JuliaSmoothOptimizers/Penelopt.jl/issues)
 """
 module Penelopt

@@ -4,7 +4,7 @@
 Standalone preprocessing step that reformulates equality constraints
 written as `c_i(x) = v_i` (i.e. `lcon[i] == ucon[i] == v_i != 0`) into the
 standard form `c_i(x) - v_i = 0` expected by solvers such as
-ExactPenalty.jl (see https://github.com/JuliaSmoothOptimizers/Penelopt.jl/issues/186).
+Penelopt.jl (see https://github.com/JuliaSmoothOptimizers/Penelopt.jl/issues/186).
 
 Inequality constraints, and equality constraints whose target is already
 `0`, are left untouched.
@@ -21,8 +21,6 @@ apply in whatever order is convenient (shifting does not change the
 Jacobian/Hessian sparsity or values, only the constraint *values* and
 `lcon`/`ucon`).
 """
-
-export ShiftedConstraintModel, remove_constraint_shift, constraint_shift
 
 """
     ShiftedConstraintModel(nlp, shift) <: AbstractNLPModel{T,S}

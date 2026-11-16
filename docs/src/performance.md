@@ -54,7 +54,7 @@ julia> solve!(solver, nlp, stats; x = x2)
     Some [options](options.md) require allocations and are therefore passed to the solver structure construction call.
     The following options **need** to be passed to the solver constructor (passing them to `solve!` will cause failure).
     * `r2n_m_monotone::Int = 12`;
-    * `linear_solver::Sring = "mumps"`.
+    * `linear_solver::String = "mumps"`.
     For clarity, if you want to modify these options, while preallocating the workspace, you should do
     ```{julia}
     julia> solver = L2PenaltySolver(nlp, r2n_m_monotone = 6, linear_solver = "ldlt")
@@ -128,7 +128,7 @@ The example below shows how to construct a preallocated solver for a problem wit
 ```@example fixed
 
 # For the reformulation, it suffices to call the following function.
-nlp_no_fixed = remove_fixed_variables(nlp)
+nlp_no_fixed = Penelopt.remove_fixed_variables(nlp)
 
 # Now you can construct a preallocated solver for the reduced problem.
 solver = L2PenaltySolver(nlp_no_fixed)
@@ -139,7 +139,7 @@ solve!(solver, nlp_no_fixed, stats)
 finalize(nlp) # hide
 
 # To retrieve the solution back you can do
-solution_full = recover_full_solution(nlp_no_fixed, stats.solution)
+solution_full = Penelopt.recover_full_solution(nlp_no_fixed, stats.solution)
 ```
 
 ## Shifted Constraints
@@ -158,7 +158,7 @@ any(!iszero, nlp.meta.lcon) || any(!iszero, nlp.meta.ucon)
 The reformulation is done automatically when calling the solver. If you wish to use a [preallocated solver](performance.md#preallocation) you are responsible for constructing the reformulated problem yourself.
 
 ```@example shifted
-nlp_no_shift = remove_constraint_shift(nlp)
+nlp_no_shift = Penelopt.remove_constraint_shift(nlp)
 
 solver = L2PenaltySolver(nlp_no_shift)
 stats = PeneloptExecutionStats(nlp_no_shift)
@@ -168,12 +168,13 @@ solve!(solver, nlp_no_shift, stats)
 
 If your problem has both fixed variables and shifted constraints, compose the two functions; the order does not matter.
 ```julia
-nlp_preprocessed = nlp |> remove_fixed_variables |> remove_constraint_shift
+nlp_preprocessed = nlp |> Penelopt.remove_fixed_variables |> Penelopt.remove_constraint_shift
+```
 ```
 
 ## Quasi-Newton Approximations
 
-If the Hessian of the Lagrangian of your nonlinear programming problem is dense, ill-conditionned, expensive to compute, or inaccessible, you may be interested in replacing it with a quasi-Newton approximation.
+If the Hessian of the Lagrangian of your nonlinear programming problem is dense, ill-conditioned, expensive to compute, or inaccessible, you may be interested in replacing it with a quasi-Newton approximation.
 
 `Penelopt.jl` offers you the possibility to run the optimization process with a [Limited-memory BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS) approximation.
 You can simply pass a keyword argument when calling the solver (see the [options](options.md) page):

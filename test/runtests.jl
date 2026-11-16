@@ -14,6 +14,23 @@ using LinearAlgebra, Random, SparseArrays, Test
 import Penelopt:
   solve!, ShiftedCompositeNormL2, ShiftedL2PenalizedProblem, MoreSorensenSolver
 
+import Penelopt:
+  FixedVariableEliminationModel,
+  remove_fixed_variables,
+  recover_full_solution,
+  ShiftedConstraintModel,
+  remove_constraint_shift,
+  constraint_shift,
+  ScaledModel,
+  scale_model,
+  update_scaling!,
+  unscale_objective,
+  unscale_constraints,
+  unscale_multipliers,
+  unscale_multipliers!,
+  scale_multipliers,
+  find_model
+
 Random.seed!(0)
 
 include("allocations-macro.jl")
