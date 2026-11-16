@@ -38,6 +38,8 @@ function PenaltyR2NSolver(
   subpb = shifted(penalty_nlp, xk, ∇f = ∇fk)
   substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
   set_solver_specific!(substats, :alpha, 0)
+  set_solver_specific!(substats, :alpha_min, 0)
+  set_solver_specific!(substats, :is_pos_def, false)
   subsolver = MoreSorensenSolver(subpb; solver = Symbol(linear_solver))
 
   checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
@@ -96,6 +98,8 @@ function SolverCore.solve!(
 
   ## Subsolver arguments
   ms_ηC::T = eps(T),
+  ms_μσ::T = T(10),
+  ms_σmax::T = 1 / eps(T)^(0.8),
   kwargs...,
 ) where {T,V}
   reset!(stats)
@@ -224,8 +228,27 @@ function SolverCore.solve!(
       solver.substats;
       print_level = print_level - 1,
       ms_ηC = ms_ηC,
+      ms_μσ = ms_μσ,
+      ms_σmax = ms_σmax,
       kwargs...,
     )
+
+    while solver.substats.status == :exception
+      solver.subpb.model.data.σ *= ms_μσ
+      solver.subpb.model.data.σ >= ms_σmax && break
+      solve!(
+        solver.subsolver,
+        solver.subpb,
+        solver.substats;
+        print_level = print_level - 1,
+        ms_ηC = ms_ηC,
+        ms_μσ = ms_μσ,
+        ms_σmax = ms_σmax,
+        kwargs...,
+        ms_α0 = solver.substats.solver_specific[:alpha_min],
+      )
+    end
+
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
 
