@@ -248,9 +248,9 @@ function SolverCore.solve!(
     if !pos_def_check
       # Step Assumption 3.4 in implementation paper:
       # Δmod = f + τ‖c‖ - (f + ∇fᵀs + τ‖c + Js‖) ≥ 0.5 * ηC * dual_feas²
-      pos_def_check = Δmod >= 1/2 * min(stats.dual_feas, 1)^2 * ms_ηC
+      pos_def_check = Δmod >= 1/2 * min(stats.dual_feas, 1)^2 * ms_ηC || is_active(watchdog_checkpoint)
     end
-    ρk = pos_def_check ? ρk : -Inf
+    ρk = pos_def_check ? ρk : zero(T)
 
     if r2n_η1 ≤ ρk < Inf
       xk .= xkn
