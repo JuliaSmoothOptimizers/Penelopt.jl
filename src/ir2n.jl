@@ -226,6 +226,11 @@ function SolverCore.solve!(
       ms_ηC = ms_ηC,
       kwargs...,
     )
+
+    if solver.substats.status == :exception
+      # TODO
+    end
+
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
 
