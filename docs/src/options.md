@@ -125,7 +125,7 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 * `μ::T = 0.01` (*advanced*): Decrease factor for penalized problem accuracy.
   > If $\epsilon_D^k$ is the accuracy level for the current penalized problem, then when the algorithm increases the accuracy for the subproblem, it performs the update $\epsilon_D^{k+1} = \max(μ\epsilon_D^{k},\epsilon_D)$. Smaller values mean that subproblems are solved to higher accuracy more aggressively. This is $\mu_{\epsilon}$ in the implementation paper.
 
-* `infeasible_tol::T = 1e-4` (*advanced*): local infeasibility tolerance.
+* `infeasible_tol::T = 0.001` (*advanced*): local infeasibility tolerance.
   > When an optimality measure of $\min_x \|c(x)\|_2$ arround the current iterate is detected to be smaller (relative to this tolerance) than the current primal residual, the problem is declared infeasible. Larger values can cause false positives while smaller values cause false negatives. This is $\epsilon_I$ in the implementation paper.
 
 * `infeasible_iter::Int = 2` (*advanced*): local infeasibility detection frequency.
@@ -284,3 +284,4 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > Whether we scale $B_0 = \gamma I$ with $\gamma = y^Ty / s^T y$, where $s$ is the step and $y$ is the difference of the two last gradients of the Lagrangian. If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
 
  * `qn_max_skip::Int = 2` (*advanced*): if a pair $(s, y)$ is skipped more than `max_skip` times in a row, we reset the approximation.
+    > If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
