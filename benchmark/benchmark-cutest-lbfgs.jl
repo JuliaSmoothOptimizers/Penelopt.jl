@@ -48,8 +48,8 @@ solvers = Dict(
         rtol = 0.0,
         max_time = BENCHMARK_MAX_TIME,
         max_iter = typemax(Int),
-        qn_hessian_approximation = "bfgs",
-        linear_solver = "mumps",
+        qn_hessian_approximation = :bfgs,
+        linear_solver = :mumps,
       )
 
       set_solver_specific!(stats, :certified_infeasible, false)

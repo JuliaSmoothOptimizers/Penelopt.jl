@@ -70,7 +70,7 @@ Therefore, it calls a *linear solver*, such as MUMPS.
 Schematically, the structure looks like this.
 ```
 ┌──────────────────┐
-│ Penelopt     │
+│ Penelopt         │
 └──────────────────┘
           │
           ▼
@@ -153,7 +153,7 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 ## Logging
 We refer to the [outputs](outputs.md#console-output) section for an explanation of the logger output.
 
-* `verbose_level::Int = 0`: Output verbosity level.
+* `print_level::Int = 0`: Output verbosity level.
     >   The larger this value the more detailed is the output. The valid range is `0 ≤ print_level ≤ 4`. **Warning**: large values can potentially print a lot of information, we recommend to start with a value of `1`. The value of `print_level` corresponds to the depth of the loop that will be printed. That is 
     >   - `print_level = 1`: Prints the information relative to the *penalty loop*,
     >   - `print_level = 2`: Prints the information relative to the *r2n loop*,
@@ -205,7 +205,7 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     > When computing the ratio of the actual decrease and the first-order decrease (see `r2n_η1`), the decrease is computed with respect to the maximum of the last `r2n_m_monotone` values of the objective.
 
  * `r2n_watchdog::Bool = true` (*advanced*): whether to use the watchdog technique.
-    > When set to `false`, the watchdog is never activated and a step is only accepted when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η1`. When `qn_hessian_approximation = "null"`, the default value becomes `r2n_watchdog = false`. See the implementation paper for more details.
+    > When set to `false`, the watchdog is never activated and a step is only accepted when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η1`. When `qn_hessian_approximation = :null`, the default value becomes `r2n_watchdog = false`. See the implementation paper for more details.
 
  * `r2n_η3::T = 0.9` (*advanced*): watchdog activation threshold.
     > When a step is rejected (see `r2n_η1`), the watchdog is activated if the ratio of the actual decrease and the first-order decrease of either the smooth part $f$ or the penalty part $\tau\lVert c \rVert_2$ of the objective, taken separately, is larger than `r2n_η3`. Only used when `r2n_watchdog = true`.
@@ -255,32 +255,36 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
 
 ## Linear Solver
 
- * `linear_solver::String = "mumps"`: Linear solver library used for step computations.
+ * `linear_solver::Symbol = :mumps`: Linear solver library used for step computations.
     > Determines which linear algebra package is to be used for the solution of the linear systems.
     >
     > Possible values:
-    > * mumps: use the [MUMPS](https://mumps-solver.org/index.php?page=doc) package (default).
-    > * ldlt: use the [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) package.
-    > * ma57: use the HSL routine MA57.
+    > * `:mumps`: use the [MUMPS](https://mumps-solver.org/index.php?page=doc) package (default).
+    > * `:ldlt`: use the [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) package.
+    > * `:ma57`: use the HSL routine MA57.
     >
     > **NOTE**: Except for the default, you need to **load** corresponding packages to use each option.
-    > * ldlt: Load [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
-    > * ma57: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
+    > * `:ldlt`: Load [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
+    > * `:ma57`: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
+    >
+    > An unknown value, or a value whose package is not loaded, triggers a warning and the solver switches to `:mumps`.
 
 ## quasi-Newton Approximations
 
- * `qn_hessian_approximation::String = "exact"`: Quasi-Newton approximation for the Hessian of the Lagrangian.
+ * `qn_hessian_approximation::Symbol = :exact`: Quasi-Newton approximation for the Hessian of the Lagrangian.
     > Determines which quasi-Newton approximation is to be used for the Hessian of the Lagrangian.
     >
     > Possible values:
-    > * exact: use the exact Hessian of the Lagrangian (default).
-    > * bfgs: use a limited-memory BFGS approximation.
-    > * null: use a zero approximation (does not work well).
+    > * `:exact`: use the exact Hessian of the Lagrangian (default).
+    > * `:bfgs`: use a limited-memory BFGS approximation.
+    > * `:null`: use a zero approximation (does not work well).
+    >
+    > An unknown value triggers a warning and the solver switches to `:exact`.
 
  * `qn_mem::Int = 6`: memory parameter for the limited-memory approximation.
-    > When using a limited-memory BFGS approximation, this parameter determines how many pairs of $(s, y)$ are stored to build the approximation. If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
+    > When using a limited-memory BFGS approximation, this parameter determines how many pairs of $(s, y)$ are stored to build the approximation. If `qn_hessian_approximation != :bfgs`, this parameter is ignored.
 
  * `qn_scaling::Bool = true`: scaling parameter for the limited-memory approximation.
-    > Whether we scale $B_0 = \gamma I$ with $\gamma = y^Ty / s^T y$, where $s$ is the step and $y$ is the difference of the two last gradients of the Lagrangian. If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
+    > Whether we scale $B_0 = \gamma I$ with $\gamma = y^Ty / s^T y$, where $s$ is the step and $y$ is the difference of the two last gradients of the Lagrangian. If `qn_hessian_approximation != :bfgs`, this parameter is ignored.
 
- * `qn_max_skip::Int = 2` (*advanced*): if a pair $(s, y)$ is skipped more than `max_skip` times in a row, we reset the approximation. If `qn_hessian_approximation::String != "bfgs"`, this parameter is ignored.
+ * `qn_max_skip::Int = 2` (*advanced*): if a pair $(s, y)$ is skipped more than `max_skip` times in a row, we reset the approximation. If `qn_hessian_approximation != :bfgs`, this parameter is ignored.

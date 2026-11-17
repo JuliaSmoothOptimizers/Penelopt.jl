@@ -29,7 +29,7 @@ using LDLFactorizations
 ```@example ldlt
 using Penelopt
 
-stats = L2Penalty(nlp; linear_solver = "ldlt", print_level = 1)
+stats = L2Penalty(nlp; linear_solver = :ldlt, print_level = 1)
 
 nothing # hide
 ```

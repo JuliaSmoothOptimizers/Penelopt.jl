@@ -16,7 +16,7 @@ end
 
 function MoreSorensenSolver(
   reg_nlp::AbstractShiftedPenalizedProblem{T,V};
-  solver = :mumps,
+  solver::Symbol = :mumps,
 ) where {T,V}
   x0 = reg_nlp.model.meta.x0
   n = reg_nlp.model.meta.nvar
@@ -27,6 +27,10 @@ function MoreSorensenSolver(
   x2 = zeros(eltype(x0), n+m)
 
   # Check linear solver
+  if solver ∉ (:mumps, :ldlt, :ma57)
+    @warn "Penelopt.jl: unknown linear solver `$(repr(solver))`. Supported values are :mumps, :ldlt and :ma57. Switching to MUMPS..."
+    solver = :mumps
+  end
 
   # Check for LDLFactorizations
   ldlt_loaded = !isnothing(Base.get_extension(@__MODULE__, :PeneloptLDLFactorizationsExt))
