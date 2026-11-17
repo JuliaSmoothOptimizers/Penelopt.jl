@@ -24,7 +24,7 @@ mutable struct L2PenaltySolver{
 end
 
 """
-    solver = L2PenaltySolver(nlp; r2n_m_monotone = 12, linear_solver = "mumps")
+    solver = L2PenaltySolver(nlp; r2n_m_monotone = 12, linear_solver = :mumps)
 
 Preallocate all the memory needed to solve `nlp` with the exact ℓ₂-penalty method.
 The solver can then be passed to [`solve!`](@ref) any number of times without further
@@ -36,14 +36,14 @@ shifted constraints, see [Fixed Variables](@ref) and [Shifted Constraints](@ref)
 # Keyword arguments
 These options determine the size of the workspace and can only be passed here, not to `solve!`:
 - `r2n_m_monotone::Int = 12`: non-monotone memory of the inner (R2N) solver;
-- `linear_solver::String = "mumps"`: linear solver used for step computations.
+- `linear_solver::Symbol = :mumps`: linear solver used for step computations.
 
 See [Options Reference](@ref) for details.
 """
 function L2PenaltySolver(
   nlp::AbstractNLPModel{T,V};
   r2n_m_monotone::Int = 12,
-  linear_solver::String = "mumps",
+  linear_solver::Symbol = :mumps,
 ) where {T,V}
   x0 = nlp.meta.x0
   x, xn, s, s0 = similar(x0), similar(x0), similar(x0), zero(x0)
@@ -99,8 +99,8 @@ described by the `AbstractNLPModel` `nlp` (see
 is solved approximately by a regularized Newton method (R2N), and the penalty parameter τₖ is
 updated. Variables may not have bounds, except fixed variables (`lvar[i] == uvar[i]`).
 
-Fixed variables and constraint right-hand sides are handled internally, and the problem is
-scaled according to the scaling options; the returned solution is expressed in terms of the original `nlp`.
+Fixed variables and constraint right-hand sides are handled internally; the returned
+solution is expressed in terms of the original `nlp`.
 
 # Example
 
@@ -116,36 +116,43 @@ To reuse memory across several solves, see [`L2PenaltySolver`](@ref) and [`solve
 function L2Penalty(
   nlp::AbstractNLPModel{T,V};
   r2n_m_monotone::Int = 12,
-  linear_solver::String = "mumps",
-  qn_hessian_approximation::String = "exact",
+  linear_solver::Symbol = :mumps,
+  qn_hessian_approximation::Symbol = :exact,
   qn_mem::Int = 6,
   qn_scaling::Bool = true,
   qn_max_skip::Int = 2,
   kwargs...,
 ) where {T<:Real,V}
 
-  # Check problem formulation
+  # Check problem formulation: only fixed variables (lvar[i] == uvar[i]) are allowed,
+  # any other finite bound (one-sided or two-sided) is rejected.
   has_bounds = any(eachindex(nlp.meta.lvar)) do i
     l = nlp.meta.lvar[i]
     u = nlp.meta.uvar[i]
-    l != -Inf && u != Inf && l != u
+    (l != -Inf || u != Inf) && l != u
   end
 
   if !equality_constrained(nlp) || has_bounds
     error("L2Penalty: This algorithm only works for equality constrained problems.")
   end
 
+  # Check options
+  if qn_hessian_approximation ∉ (:exact, :bfgs, :null)
+    @warn "Penelopt.jl: unknown Hessian approximation `$(repr(qn_hessian_approximation))`. Supported values are :exact, :bfgs and :null. Switching to :exact..."
+    qn_hessian_approximation = :exact
+  end
+
   # Preprocessing
   preprocessed_nlp = nlp |> remove_fixed_variables |> remove_constraint_shift
 
-  if qn_hessian_approximation == "bfgs"
+  if qn_hessian_approximation == :bfgs
     preprocessed_nlp = CompactBFGSModel(
       preprocessed_nlp;
       mem = qn_mem,
       scaling = qn_scaling,
       max_skip = qn_max_skip,
     )
-  elseif qn_hessian_approximation == "null"
+  elseif qn_hessian_approximation == :null
     preprocessed_nlp = NullHessianModel(preprocessed_nlp)
   end
 

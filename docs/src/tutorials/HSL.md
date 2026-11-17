@@ -37,7 +37,7 @@ Any `AbstractNLPModel` works; here we use a [CUTEst](CUTEst.md) problem.
 using CUTEst, Penelopt
 
 nlp = CUTEstModel("MSS1")
-stats = L2Penalty(nlp; linear_solver = "ma57", print_level = 1)
+stats = L2Penalty(nlp; linear_solver = :ma57, print_level = 1)
 
 println("status    : ", stats.status)
 println("objective : ", stats.objective)

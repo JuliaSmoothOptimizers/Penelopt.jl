@@ -22,7 +22,7 @@ end
 function PenaltyR2NSolver(
   penalty_nlp::AbstractPenalizedProblem{T,V};
   m_monotone::Int = 12,
-  linear_solver::String = "mumps",
+  linear_solver::Symbol = :mumps,
 ) where {T,V}
   x0 = penalty_nlp.model.meta.x0
 
@@ -40,7 +40,7 @@ function PenaltyR2NSolver(
   set_solver_specific!(substats, :alpha, 0)
   set_solver_specific!(substats, :alpha_min, 0)
   set_solver_specific!(substats, :is_pos_def, false)
-  subsolver = MoreSorensenSolver(subpb; solver = Symbol(linear_solver))
+  subsolver = MoreSorensenSolver(subpb; solver = linear_solver)
 
   checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
 

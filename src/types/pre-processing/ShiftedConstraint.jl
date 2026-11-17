@@ -16,7 +16,7 @@ Inequality constraints, and equality constraints whose target is already
     # to recover the value of the *original* constraint function at a point:
     julia> c_orig = cons(nlp_shifted, stats.solution) .+ constraint_shift(nlp_shifted)
 
-Composes cleanly with `remove_fixed_variables.jl` and `scale_model.jl`;
+Composes cleanly with `remove_fixed_variables.jl`;
 apply in whatever order is convenient (shifting does not change the
 Jacobian/Hessian sparsity or values, only the constraint *values* and
 `lcon`/`ucon`).

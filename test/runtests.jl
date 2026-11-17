@@ -20,16 +20,7 @@ import Penelopt:
   recover_full_solution,
   ShiftedConstraintModel,
   remove_constraint_shift,
-  constraint_shift,
-  ScaledModel,
-  scale_model,
-  update_scaling!,
-  unscale_objective,
-  unscale_constraints,
-  unscale_multipliers,
-  unscale_multipliers!,
-  scale_multipliers,
-  find_model
+  constraint_shift
 
 Random.seed!(0)
 

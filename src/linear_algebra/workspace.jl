@@ -10,7 +10,7 @@ function construct_workspace(H::M, u1::V, n::Int, m::Int; solver = :mumps) where
     return construct_mumps_workspace(H, u1, n, m)
   else
     error(
-      "Penelopt.jl: unknown linear solver `$(solver)`. Supported values are \"mumps\", \"ldlt\" and \"ma57\".",
+      "Penelopt.jl: unknown linear solver `$(solver)`. Supported values are :mumps, :ldlt and :ma57.",
     )
   end
 end

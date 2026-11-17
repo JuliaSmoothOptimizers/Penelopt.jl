@@ -15,7 +15,7 @@ if !LIBHSL_isfunctional()
   @testset "Fallback to MUMPS" begin
     nlp = CUTEstModel("BT1")
     @test_warn "Penelopt.jl: HSL extension is not functional." begin
-      L2Penalty(nlp, linear_solver = "ma57")
+      L2Penalty(nlp, linear_solver = :ma57)
     end
     finalize(nlp)
   end
@@ -23,11 +23,11 @@ else
   # `test_problem` is defined in test-cutest.jl.
   @testset "CUTEst (MA57)" begin
     @testset "BT1" begin
-      test_problem("BT1", [1, 0], [-99.5], :first_order; linear_solver = "ma57")
+      test_problem("BT1", [1, 0], [-99.5], :first_order; linear_solver = :ma57)
     end
 
     @testset "MARATOS" begin
-      test_problem("MARATOS", [1, 0], [0.499999], :first_order; linear_solver = "ma57")
+      test_problem("MARATOS", [1, 0], [0.499999], :first_order; linear_solver = :ma57)
     end
 
     @testset "AIRCRFTA" begin
@@ -46,7 +46,7 @@ else
         primal_solution,
         zeros(5),
         :first_order;
-        linear_solver = "ma57",
+        linear_solver = :ma57,
       )
     end
 
@@ -65,7 +65,7 @@ else
         primal_solution,
         [0.0, 0.0, 0.0, 1.44],
         :first_order;
-        linear_solver = "ma57",
+        linear_solver = :ma57,
         ignore_null_hessian = true,
       )
     end

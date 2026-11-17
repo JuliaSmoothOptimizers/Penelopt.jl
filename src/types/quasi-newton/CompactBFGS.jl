@@ -95,7 +95,7 @@ Wrap `nlp` so that its Hessian of the Lagrangian is replaced by a limited-memory
 approximation stored in compact form. The approximation is updated by the solver
 during the iterations. All other evaluations are forwarded to `nlp`.
 
-This is what `L2Penalty` uses with `qn_hessian_approximation = "bfgs"`.
+This is what `L2Penalty` uses with `qn_hessian_approximation = :bfgs`.
 Construct it yourself only when using a preallocated [`L2PenaltySolver`](@ref),
 see [Preallocation](@ref).
 
