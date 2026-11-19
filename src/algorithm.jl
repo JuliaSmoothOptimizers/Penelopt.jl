@@ -6,7 +6,7 @@ mutable struct L2PenaltySolver{
   T<:Real,
   V<:AbstractVector{T},
   S<:AbstractOptimizationSolver,
-  PB<:L2PenalizedProblem,
+  PB<:AbstractNLPModel{T,V},
   ST<:AbstractExecutionStats,
 } <: AbstractL2PenaltySolver{T,V}
   x::V
