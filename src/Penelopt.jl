@@ -30,6 +30,8 @@ include("types/norm/NormL2.jl")
 include("types/norm/CompositeNormL2.jl")
 include("types/norm/ShiftedCompositeNormL2.jl")
 
+include("types/SmoothReLU.jl")
+
 include("types/pre-processing/FixedVariable.jl")
 include("types/pre-processing/ShiftedConstraint.jl")
 
@@ -38,6 +40,7 @@ include("linear_algebra/workspace.jl")
 include("linear_algebra/mumps.jl")
 include("linear_algebra/lapack.jl")
 
+include("types/IRPenalizedProblem.jl")
 include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
 include("types/Watchdog.jl")
