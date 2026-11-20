@@ -53,7 +53,7 @@ function L2PenaltySolver(
   y = similar(x0, nlp.meta.ncon)
   ∇fk = similar(x0)
 
-  penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
+  penalty_subproblem = nlp |> IRPenalizedProblem |> L2PenalizedProblem # f(x) + τ‖c(x)‖₂
   substats = PenaltyR2NExecutionStats(penalty_subproblem)
   solver = PenaltyR2NSolver(
     penalty_subproblem;
