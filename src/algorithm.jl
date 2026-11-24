@@ -124,18 +124,6 @@ function L2Penalty(
   kwargs...,
 ) where {T<:Real,V}
 
-  # Check problem formulation: only fixed variables (lvar[i] == uvar[i]) are allowed,
-  # any other finite bound (one-sided or two-sided) is rejected.
-  has_bounds = any(eachindex(nlp.meta.lvar)) do i
-    l = nlp.meta.lvar[i]
-    u = nlp.meta.uvar[i]
-    (l != -Inf || u != Inf) && l != u
-  end
-
-  if !equality_constrained(nlp) || has_bounds
-    error("L2Penalty: This algorithm only works for equality constrained problems.")
-  end
-
   # Check options
   if qn_hessian_approximation ∉ (:exact, :bfgs, :null)
     @warn "Penelopt.jl: unknown Hessian approximation `$(repr(qn_hessian_approximation))`. Supported values are :exact, :bfgs and :null. Switching to :exact..."
@@ -226,10 +214,6 @@ function SolverCore.solve!(
     error(
       "L2Penalty: The problem has fixed variables. Refer to the documentation for information on how to preprocess the problem.",
     )
-  end
-
-  if !equality_constrained(nlp) || has_bounds(nlp)
-    error("L2Penalty: This algorithm only works for equality constrained problems.")
   end
 
   # Retrieve workspace
