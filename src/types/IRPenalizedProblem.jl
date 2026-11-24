@@ -63,8 +63,7 @@ function get_bound_multipliers!(nlp::IRPenalizedProblem, x; β = nothing)
   add_l_grad!(nlp.h, x, z_l; β = β)
   add_u_grad!(nlp.h, x, z_u; β = β)
 
-  z_l .*= - nlp.h.lambda
-  z_u .*= - nlp.h.lambda
+  z_l .*= -1
   return z_l, z_u
 end
 
