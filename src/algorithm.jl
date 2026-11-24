@@ -188,6 +188,8 @@ function SolverCore.solve!(
   dual_inf_rtol::T = zero(T),
   primal_inf_atol::T = zero(T),
   primal_inf_rtol::T = zero(T),
+  compl_inf_atol::T = zero(T),
+  compl_inf_rtol::T = zero(T),
   max_eval::Int = -1,
   max_time::Float64 = 30.0,
   max_iter::Int = 100,
@@ -235,6 +237,7 @@ function SolverCore.solve!(
 
   primal_feas = kkt_primal_feas!(solver)
   bound_feas = kkt_bound_feas!(solver)
+  compl_feas = kkt_compl_feas!(solver)
 
   set_solver_specific!(solver.substats, :smooth_obj, fx)
   grad!(nlp, x, get_gradient(solver))
@@ -244,9 +247,10 @@ function SolverCore.solve!(
 
   primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
   bound_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * bound_feas
+  compl_tol = max(compl_inf_atol, atol) + max(compl_inf_rtol, rtol) * compl_feas
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
 
-  primal_ktol, bound_ktol = one(primal_tol), one(bound_tol)
+  primal_ktol, bound_ktol, compl_ktol = one(primal_tol), one(bound_tol), one(compl_tol)
   dual_ktol = min(one(dual_tol), max(μ * dual_feas, dual_tol))
   dual_krtol = T(0)
 
@@ -351,6 +355,7 @@ function SolverCore.solve!(
     ## Compute feasibility 
     primal_feas = kkt_primal_feas!(solver)
     bound_feas = kkt_bound_feas!(solver)
+    compl_feas = kkt_compl_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
 
     penalty_increase = false
@@ -426,12 +431,16 @@ function SolverCore.solve!(
       first_increase = false
     end
 
+    # Complementarity feasibility
+    compl_ktol = penalty_increase ? max(μ, compl_tol) : max(μ*compl_feas, compl_tol)
+    set_scaled_smoothing!(solver, compl_ktol)
+
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev < hx
       τmin *= 10
     end
 
-    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
+    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && compl_feas ≤ compl_tol
 
     # Infeasibility detection
     if stats.iter % infeasible_iter == 0
@@ -540,6 +549,12 @@ function set_bound_penalty!(solver::L2PenaltySolver, τ::T) where {T}
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
   set_penalty!(ir_nlp, τ)
+end
+
+function set_scaled_smoothing!(solver::L2PenaltySolver, β::T) where {T}
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  set_scaled_smoothing!(ir_nlp, β)
 end
 
 """

@@ -45,6 +45,14 @@ NLPModelsModifiers.get_model(nlp::IRPenalizedProblem) = nlp.model
 
 set_penalty!(nlp::IRPenalizedProblem, λ) = set_penalty!(nlp.h, λ)
 set_smoothing!(nlp::IRPenalizedProblem, β) = set_smoothing!(nlp.h, β)
+set_scaled_smoothing!(nlp::IRPenalizedProblem, β) = set_smoothing!(nlp, β)
+
+# For the SquarePlus, the complementarity feasibility is scaled by tau / phi^(2.5) where phi is the golden ratio.
+function set_scaled_smoothing!(nlp::IRPenalizedProblem{T, S, M, P}, β) where{T, S, M <: AbstractNLPModel{T,S}, P <: SquarePlus{T, S}}
+  gr = Base.MathConstants.golden
+  set_smoothing!(nlp.h, min(sqrt(gr^5) / nlp.h.lambda * β, 1))
+  return nlp
+end
 
 function get_bound_multipliers!(nlp::IRPenalizedProblem, x; β = nothing)
   z_l, z_u = nlp.h.z_l, nlp.h.z_u

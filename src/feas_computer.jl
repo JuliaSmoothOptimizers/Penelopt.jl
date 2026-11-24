@@ -143,8 +143,25 @@ function kkt_bound_feas!(solver::L2PenaltySolver)
 
   feas = zero(eltype(x))
   for i in eachindex(x)
-    feas = max(feas, max(x[i] - ineq_relax_nlp.meta.uvar[i], zero(eltype(x))))
-    feas = max(feas, max(ineq_relax_nlp.meta.lvar[i] - x[i], zero(eltype(x))))
+    l, u = ineq_relax_nlp.model.meta.lvar[i], ineq_relax_nlp.model.meta.uvar[i]
+    feas = max(feas, max(x[i] - u, zero(eltype(x))))
+    feas = max(feas, max(l - x[i], zero(eltype(x))))
+  end
+
+  return feas
+end
+
+function kkt_compl_feas!(solver::L2PenaltySolver)
+  x, nlp = solver.x, solver.subpb
+  z_l, z_u = get_bound_multipliers!(solver, x)
+  ineq_relax_nlp = find_model(IRPenalizedProblem, nlp)
+  @assert !isnothing(ineq_relax_nlp) "InequalityRelaxationModel not found in model hierarchy."
+
+  feas = zero(eltype(x))
+  for i in eachindex(x)
+    l, u = ineq_relax_nlp.model.meta.lvar[i], ineq_relax_nlp.model.meta.uvar[i]
+    isfinite(l) && (feas = max(feas, abs(z_l[i] * (x[i] - l))))
+    isfinite(u) && (feas = max(feas, abs(z_u[i] * (x[i] - u))))
   end
 
   return feas
