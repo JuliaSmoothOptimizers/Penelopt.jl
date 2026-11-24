@@ -25,9 +25,13 @@ mutable struct watchdog_checkpoint{T,V,HV}
 end
 
 function watchdog_checkpoint(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
+  nlp::ShiftedL2PenalizedProblem{T,V};
   m_monotone = 5,
-) where {T,V,M,H,P}
+) where {T,V}
+  # Quasi-Newton constructors behave differently.
+  isa_qn = !isnothing(find_model(QuasiNewtonModel{T, V}, nlp.parent))
+  isa_qn && return qn_watchdog_checkpoint(nlp, m_monotone = m_monotone)
+
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
@@ -51,16 +55,18 @@ function watchdog_checkpoint(
   )
 end
 
-function watchdog_checkpoint(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
+function qn_watchdog_checkpoint(
+  nlp::ShiftedL2PenalizedProblem{T,V};
   m_monotone = 5,
-) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
+) where {T,V}
+
+  qn_nlp = find_model(QuasiNewtonModel{T, V}, nlp.parent)
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
   ck, yk = similar(b_model), similar(b_model)
   Hk =
-    (isa(φ.data.H, AbstractLinearOperator) || O <: NullHessianModel) ? nothing :
+    (isa(φ.data.H, AbstractLinearOperator) || typeof(qn_nlp) <: NullHessianModel) ? nothing :
     similar(φ.data.H)
   return watchdog_checkpoint(
     xk,
@@ -83,11 +89,16 @@ end
 
 function save!(
   checkpoint::watchdog_checkpoint,
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-  x,
-  y,
+  nlp::ShiftedL2PenalizedProblem{T,V},
+  x::V,
+  y::V,
   stats,
-) where {T,V,M,H,P}
+) where {T,V}
+
+  # Quasi-Newton saves behave differently.
+  isa_qn = !isnothing(find_model(QuasiNewtonModel{T, V}, nlp.parent))
+  isa_qn && return qn_save!(checkpoint, nlp, x, y, stats)
+
   φ, ψ = nlp.model, nlp.h
 
   checkpoint.xk .= x
@@ -102,13 +113,13 @@ function save!(
   checkpoint.hk = stats.solver_specific[:nonsmooth_obj]
 end
 
-function save!(
+function qn_save!(
   checkpoint::watchdog_checkpoint,
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-  x,
-  y,
+  nlp::ShiftedL2PenalizedProblem{T,V},
+  x::V,
+  y::V,
   stats,
-) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
+) where {T,V}
   φ, ψ = nlp.model, nlp.h
 
   checkpoint.xk .= x
@@ -125,11 +136,16 @@ function save!(
 end
 
 function fallback!(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-  x,
-  y,
+  nlp::ShiftedL2PenalizedProblem{T,V},
+  x::V,
+  y::V,
   checkpoint::watchdog_checkpoint,
-) where {T,V,M,H,P}
+) where {T,V}
+
+  # Quasi-Newton fallbacks behave differently.
+  isa_qn = !isnothing(find_model(QuasiNewtonModel{T, V}, nlp.parent))
+  isa_qn && return qn_fallback!(nlp, x, y, checkpoint)
+
   φ = nlp.model
 
   x .= checkpoint.xk
@@ -141,12 +157,12 @@ function fallback!(
   shift!(nlp, x, ∇f = checkpoint.∇fk, y = y, c = checkpoint.ck)
 end
 
-function fallback!(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-  x,
-  y,
+function qn_fallback!(
+  nlp::ShiftedL2PenalizedProblem{T,V},
+  x::V,
+  y::V,
   checkpoint::watchdog_checkpoint,
-) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
+) where {T,V}
   φ, ψ = nlp.model, nlp.h
 
   x .= checkpoint.xk

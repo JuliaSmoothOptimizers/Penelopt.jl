@@ -63,3 +63,6 @@ SolverCore.eval_fun(nlp::L2PenalizedProblem) = neval_obj(nlp)
 function set_penalty!(nlp::L2PenalizedProblem{T}, τ::T) where {T}
   nlp.h.h.lambda = τ
 end
+
+NLPModelsModifiers.get_model(nlp::L2PenalizedProblem) = nlp.model
+

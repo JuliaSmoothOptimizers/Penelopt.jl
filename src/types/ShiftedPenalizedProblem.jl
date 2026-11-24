@@ -34,16 +34,20 @@ mutable struct ShiftedL2PenalizedProblem{
   _is_first_shift::Bool
 end
 
-function ShiftedL2PenalizedProblem(
-  penalty_nlp::L2PenalizedProblem{T,V,M},
+function QNShiftedL2PenalizedProblem(
+  penalty_nlp::L2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
-) where {T,V,M<:QuasiNewtonModel{T,V},VN1<:Union{Nothing,V}}
+  y::VN2 = nothing,
+) where {T,V,VN1<:Union{Nothing,V}, VN2<:Union{Nothing,V}}
+
+  nlp_qn = find_model(QuasiNewtonModel{T, V}, penalty_nlp)
+  @assert !isnothing(nlp_qn) "Quasi-Newton model not found in the L2PenalizedProblem."
 
   nlp, h = penalty_nlp.model, penalty_nlp.h
 
   ∇f = isnothing(∇f) ? grad(nlp, x) : ∇f
-  B = get_op(nlp)
+  B = get_op(nlp_qn)
   φ = QuadraticModel(∇f, B, x0 = x, regularize = true)
 
   ψ = shifted(h, x)
@@ -60,11 +64,15 @@ function ShiftedL2PenalizedProblem(
 end
 
 function ShiftedL2PenalizedProblem(
-  penalty_nlp::L2PenalizedProblem{T,V,M},
+  penalty_nlp::L2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where {T,V,M,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
+) where {T,V,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
+
+  # Check for QN
+  isa_quasi_newton = !isnothing(find_model(QuasiNewtonModel{T, V}, penalty_nlp))
+  isa_quasi_newton && return QNShiftedL2PenalizedProblem(penalty_nlp, x; ∇f = ∇f, y = y)
 
   nlp, h = penalty_nlp.model, penalty_nlp.h
   n = length(x)
@@ -93,24 +101,16 @@ end
 
 # ShiftedProximalOperators API
 function shifted(
-  penalty_nlp::L2PenalizedProblem{T,V,M},
-  x::V;
-  ∇f::VN1 = nothing,
-) where {T,V,M<:QuasiNewtonModel{T,V},VN1<:Union{Nothing,V}}
-  return ShiftedL2PenalizedProblem(penalty_nlp, x; ∇f = ∇f)
-end
-
-function shifted(
-  penalty_nlp::L2PenalizedProblem{T,V,M},
+  penalty_nlp::L2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where {T,V,M,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
+) where {T,V,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
   return ShiftedL2PenalizedProblem(penalty_nlp, x; ∇f = ∇f, y = y)
 end
 
-function shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+function null_hessian_shift!(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
@@ -119,10 +119,6 @@ function shift!(
 ) where {
   T,
   V,
-  M,
-  H,
-  O<:NullHessianModel,
-  P<:L2PenalizedProblem{T,V,O},
   VN1<:Union{Nothing,V},
   VN2<:Union{Nothing,V},
   VN3<:Union{Nothing,V},
@@ -137,8 +133,8 @@ function shift!(
   shift!(ψ, x, J = J, c = c)
 end
 
-function shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+function qn_shift!(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
@@ -147,10 +143,6 @@ function shift!(
 ) where {
   T,
   V,
-  M,
-  H,
-  O<:QuasiNewtonModel,
-  P<:L2PenalizedProblem{T,V,O},
   VN1<:Union{Nothing,V},
   VN2<:Union{Nothing,V},
   VN3<:Union{Nothing,V},
@@ -192,7 +184,7 @@ function shift!(
 end
 
 function shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
@@ -201,14 +193,20 @@ function shift!(
 ) where {
   T,
   V,
-  M,
-  H,
-  P,
   VN1<:Union{Nothing,V},
   VN2<:Union{Nothing,V},
   VN3<:Union{Nothing,V},
   Ma<:Union{Nothing,AbstractMatrix{T}},
 }
+
+  # Null Hessian shifts behave differently.
+  isa_null_hessian = !isnothing(find_model(NullHessianModel{T, V}, shifted_penalty_nlp.parent))
+  isa_null_hessian && return null_hessian_shift!(shifted_penalty_nlp, x; ∇f = ∇f, y = y, J = J, c = c)
+
+  # QN shifts behave differently.
+  isa_qn = !isnothing(find_model(QuasiNewtonModel{T, V}, shifted_penalty_nlp.parent))
+  isa_qn && return qn_shift!(shifted_penalty_nlp, x; ∇f = ∇f, y = y, J = J, c = c)
+
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
 
@@ -241,11 +239,16 @@ function check_descent(
   return ψ0 - obj(φ, s) - ψ(s) >= 0
 end
 
-function reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}) where {T,V,M,H,P} end
+function reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem)
+  # Reset in case of null hessian.
+  isa_null_hessian = !isnothing(find_model(NullHessianModel, shifted_penalty_nlp.parent))
+  isa_null_hessian && return null_reset!(shifted_penalty_nlp)
+  # Reset in case of quasi-Newton.
+  isa_qn = !isnothing(find_model(QuasiNewtonModel, shifted_penalty_nlp.parent))
+  isa_qn && return qn_reset!(shifted_penalty_nlp)
+end
 
-function reset!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
+function qn_reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem)
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
   x_prev = shifted_penalty_nlp._qn_x_prev .= 0
@@ -254,6 +257,4 @@ function reset!(
   shifted_penalty_nlp._is_first_shift = true
 end
 
-function reset!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
-) where {T,V,M,H,O<:NullHessianModel,P<:L2PenalizedProblem{T,V,O}} end
+function null_reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem) end
