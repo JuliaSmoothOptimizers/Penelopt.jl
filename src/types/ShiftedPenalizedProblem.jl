@@ -241,16 +241,14 @@ end
 
 function reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem)
   # Reset in case of null hessian.
-  isa_null_hessian = !isnothing(find_model(NullHessianModel{T, V}, shifted_penalty_nlp.parent))
+  isa_null_hessian = !isnothing(find_model(NullHessianModel, shifted_penalty_nlp.parent))
   isa_null_hessian && return null_reset!(shifted_penalty_nlp)
   # Reset in case of quasi-Newton.
-  isa_qn = !isnothing(find_model(QuasiNewtonModel{T, V}, shifted_penalty_nlp.parent))
+  isa_qn = !isnothing(find_model(QuasiNewtonModel, shifted_penalty_nlp.parent))
   isa_qn && return qn_reset!(shifted_penalty_nlp)
 end
 
-function qn_reset!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem,
-)
+function qn_reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem)
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
   x_prev = shifted_penalty_nlp._qn_x_prev .= 0
@@ -259,4 +257,4 @@ function qn_reset!(
   shifted_penalty_nlp._is_first_shift = true
 end
 
-function null_reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem,) end
+function null_reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem) end
