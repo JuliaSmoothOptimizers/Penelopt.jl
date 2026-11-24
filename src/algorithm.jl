@@ -251,6 +251,8 @@ function SolverCore.solve!(
   dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
 
   primal_ktol, bound_ktol, compl_ktol = one(primal_tol), one(bound_tol), one(compl_tol)
+  compl_ktol = min(one(compl_tol), max(μ * compl_feas, compl_tol))
+  set_scaled_smoothing!(solver, compl_ktol)
   dual_ktol = min(one(dual_tol), max(μ * dual_feas, dual_tol))
   dual_krtol = T(0)
 
