@@ -133,7 +133,7 @@ function null_hessian_shift!(
   shift!(ψ, x, J = J, c = c)
 end
 
-function bfgs_shift!(
+function qn_shift!(
   shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V},
   x::V;
   ∇f::VN1 = nothing,
@@ -199,13 +199,13 @@ function shift!(
   Ma<:Union{Nothing,AbstractMatrix{T}},
 }
 
-  # BFGS shifts behave differently.
-  isa_bfgs = !isnothing(find_model(CompactBFGSModel{T, V}, shifted_penalty_nlp.parent))
-  isa_bfgs && return bfgs_shift!(shifted_penalty_nlp, x; ∇f = ∇f, y = y, J = J, c = c)
-
   # Null Hessian shifts behave differently.
   isa_null_hessian = !isnothing(find_model(NullHessianModel{T, V}, shifted_penalty_nlp.parent))
   isa_null_hessian && return null_hessian_shift!(shifted_penalty_nlp, x; ∇f = ∇f, y = y, J = J, c = c)
+
+  # QN shifts behave differently.
+  isa_qn = !isnothing(find_model(QuasiNewtonModel{T, V}, shifted_penalty_nlp.parent))
+  isa_qn && return qn_shift!(shifted_penalty_nlp, x; ∇f = ∇f, y = y, J = J, c = c)
 
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
