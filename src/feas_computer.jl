@@ -135,6 +135,21 @@ function initialize_multipliers!(
   set_solver_specific!(r2n_stats, :n_fact, get_n_fact(ls_workspace))
 end
 
+function kkt_bound_feas!(solver::L2PenaltySolver)
+  x, nlp = solver.x, solver.subpb
+
+  ineq_relax_nlp = find_model(IRPenalizedProblem, nlp)
+  @assert !isnothing(ineq_relax_nlp) "InequalityRelaxationModel not found in model hierarchy."
+
+  feas = zero(eltype(x))
+  for i in eachindex(x)
+    feas = max(feas, max(x[i] - ineq_relax_nlp.meta.uvar[i], zero(eltype(x))))
+    feas = max(feas, max(ineq_relax_nlp.meta.lvar[i] - x[i], zero(eltype(x))))
+  end
+
+  return feas
+end
+
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   return solver.substats.dual_feas
 end

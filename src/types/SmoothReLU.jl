@@ -8,6 +8,8 @@ set_smoothing!(h::AbstractSmoothReLU, β) = (h.β = β)
 mutable struct SquarePlus{T, S} <: AbstractSmoothReLU{T, S}
   l::S
   u::S
+  z_l::S
+  z_u::S
   β::T
   lambda::T
 end
@@ -19,6 +21,28 @@ function NLPModels.obj(φ::SquarePlus, x; β = nothing)
     isfinite(φ.u[i]) && (v += squareplus(φ.u[i] - x[i], vβ))
   end
   return v * φ.lambda
+end
+
+function add_grad!(φ::SquarePlus, x, g; β = nothing)
+  vβ = isnothing(β) ? φ.β : β
+  for i in eachindex(x)
+    isfinite(φ.l[i]) && (g[i] += φ.lambda * dsquareplus(x[i] - φ.l[i], vβ))
+    isfinite(φ.u[i]) && (g[i] -= φ.lambda * dsquareplus(φ.u[i] - x[i], vβ))
+  end
+end
+
+function add_l_grad!(φ::SquarePlus, x, g; β = nothing)
+  vβ = isnothing(β) ? φ.β : β
+  for i in eachindex(x)
+    isfinite(φ.l[i]) && (g[i] += φ.lambda * dsquareplus(x[i] - φ.l[i], vβ))
+  end
+end
+
+function add_u_grad!(φ::SquarePlus, x, g; β = nothing)
+  vβ = isnothing(β) ? φ.β : β
+  for i in eachindex(x)
+    isfinite(φ.u[i]) && (g[i] -= φ.lambda * dsquareplus(φ.u[i] - x[i], vβ))
+  end
 end
 
 function add_grad!(φ::SquarePlus, x, g; β = nothing)
