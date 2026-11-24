@@ -170,7 +170,6 @@ If your problem has both fixed variables and shifted constraints, compose the tw
 ```julia
 nlp_preprocessed = nlp |> Penelopt.remove_fixed_variables |> Penelopt.remove_constraint_shift
 ```
-```
 
 ## Quasi-Newton Approximations
 
