@@ -274,7 +274,9 @@ function SolverCore.solve!(
 
   ## Initialize penalty parameter
   τ = min(max(norm(solver.y, 1), τ0), τmax)
+  τ_b = min(max(norm(z_l, 1), norm(z_u, 1), τ0), τmax)
   set_penalty!(solver, τ)
+  set_bound_penalty!(solver, τ_b)
   σk = -one(T) # Use subsolver's default σk (max(σ0, σmin))
 
   ## Logging
@@ -360,6 +362,7 @@ function SolverCore.solve!(
     hx_prev = copy(hx)
     hx = get_nonsmooth_obj(solver.substats)/τ
     set_gradient!(solver, get_gradient(solver.subsolver))
+    z_l, z_u = get_bound_multipliers!(solver, x)
 
     ## Compute feasibility 
     primal_feas = kkt_primal_feas!(solver)
@@ -404,10 +407,10 @@ function SolverCore.solve!(
       penalty_increase = true
 
       # Update penalty parameter
-      τ₊ = max(τ + τmin, norm(z, 1))
+      τ_b₊ = max(τ_b + τmin, max(norm(z_l, 1), norm(z_u, 1)))
       primal_decrease = true # TODO: add extrapolation
-      set_penalty!(solver, τ)
-      stalled = τ > τmax
+      set_bound_penalty!(solver, τ_b₊)
+      stalled = τ_b > τmax
 
       # Initialize regularization parameter
       σk = get_sigma(solver.substats)
@@ -547,6 +550,12 @@ function get_bound_multipliers!(solver::L2PenaltySolver, x; β = nothing)
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
   get_bound_multipliers!(ir_nlp, x; β = β)
+end
+
+function set_bound_penalty!(solver::L2PenaltySolver, τ::T) where {T}
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  set_penalty!(ir_nlp, τ)
 end
 
 """
