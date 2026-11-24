@@ -332,10 +332,14 @@ function SolverCore.solve!(
 
     if solver.substats.status == :unbounded
       τ *= 10
+      τ_b *= 10
       set_penalty!(solver, τ)
+      set_bound_penalty!(solver, τ_b)
       σk = -one(T)
       shift!(solver, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
+      compl_ktol = max(μ, compl_tol)
+      set_scaled_smoothing!(solver, compl_ktol)
 
       τ > τmax ? (stalled = true) : continue
     end
@@ -397,7 +401,8 @@ function SolverCore.solve!(
 
       # Update penalty parameter
       τ_b₊ = max(τ_b + τmin, max(norm(z_l, 1), norm(z_u, 1)))
-      primal_decrease = true # TODO: add extrapolation
+      shift!(solver, x, y = y, c = solver.cn) # TODO: add extrapolation etc.
+      primal_decrease = true
       set_bound_penalty!(solver, τ_b₊)
       stalled = τ_b > τmax
 
@@ -434,6 +439,7 @@ function SolverCore.solve!(
     # Complementarity feasibility
     compl_ktol = penalty_increase ? max(μ, compl_tol) : max(μ*compl_feas, compl_tol)
     set_scaled_smoothing!(solver, compl_ktol)
+    shift!(solver, x, y = y, c = solver.cn) # TODO: add extrapolation etc.
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev < hx
