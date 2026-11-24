@@ -23,6 +23,7 @@ abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
 include("stats.jl")
 
+include("types/utils.jl")
 include("types/quasi-newton/NullHessian.jl")
 include("types/quasi-newton/CompactBFGS.jl")
 
