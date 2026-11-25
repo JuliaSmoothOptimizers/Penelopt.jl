@@ -1,8 +1,8 @@
 # Penelopt.jl: A Large-Scale Equality-Constrained Optimization Solver 
 
-| **License** | **Documentation** | **CI** | **Coverage** | **Contributors** |
-|:-----------:|:-----------------:|:------:|:------------:|:----------------:|
-| [![license-img]][license-url] | [![docs-stable-img]][docs-stable-url] [![docs-dev-img]][docs-dev-url] | [![ci-test-img]][ci-test-url] |  [![coverage-img]][coverage-url] | [![contributors-img]][contributors-url] |
+| **License** | **Documentation** | **CI** | **Coverage** | **Tech. Report** | **Contributors** |
+|:-----------:|:-----------------:|:------:|:------------:|:-----------------:|:----------------:|
+| [![license-img]][license-url] | [![docs-stable-img]][docs-stable-url] [![docs-dev-img]][docs-dev-url] | [![ci-test-img]][ci-test-url] |  [![coverage-img]][coverage-url] | [![preprint-img]][preprint-url] | [![contributors-img]][contributors-url] |
 
 
 [license-img]:     https://img.shields.io/badge/License-MPL--2.0-blue
@@ -15,6 +15,8 @@
 [ci-test-url]:      https://github.com/JuliaSmoothOptimizers/Penelopt.jl/actions/workflows/Test.yml?query=branch%3Amain
 [coverage-img]:     https://codecov.io/gh/JuliaSmoothOptimizers/Penelopt.jl/branch/main/graph/badge.svg
 [coverage-url]:     https://codecov.io/gh/JuliaSmoothOptimizers/Penelopt.jl
+[preprint-img]:     https://img.shields.io/badge/number-G--2026--53-darkblue.svg
+[preprint-url]:     https://www.gerad.ca/fr/papers/G-2026-53 
 [contributors-img]: https://img.shields.io/github/all-contributors/JuliaSmoothOptimizers/Penelopt.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square
 [contributors-url]: #contributors
 
@@ -35,8 +37,23 @@ The solver is based on the exact [penalty algorithm](https://en.wikipedia.org/wi
 
 If you use Penelopt.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/JuliaSmoothOptimizers/Penelopt.jl/blob/main/CITATION.cff).
 
+### BibTeX
+
+```
+@TechReport{      gollier-diouane-orban-2026,
+  Author        = {Gollier, M. and Diouane, Y. and Orban, D.},
+  Title         = {An exact penalty method for large-scale equality-constrained nonlinear optimization},
+  Institution   = {GERAD},
+  Year          = 2026,
+  Type          = {Cahier},
+  Number        = {G-2026-53},
+  Address       = {Montr\'eal, QC, Canada},
+  doi           = {10.13140/RG.2.2.22156.88969},
+}
+```
+
 ## Contributing
 
-If you want to make contributions of any kind, please first take a look at our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://jso.dev/Penelopt.jl/dev/90-contributing/)
+If you want to make contributions of any kind, please first take a look at our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://jso.dev/Penelopt.jl/dev/90-contributing/).
 
 ---
