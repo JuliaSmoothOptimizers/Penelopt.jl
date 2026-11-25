@@ -1,14 +1,62 @@
-cff-version: 1.2.0
-title: Penelopt.jl
-message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
+cff-version: "1.2.0"
+title: "Penelopt.jl: A Large-Scale Equality-Constrained Optimization Solver"
+message: "If you use this software, please cite our technical report G-2026-53 (Les Cahiers du GERAD)."
 type: software
 authors:
   - given-names: Maxence
     family-names: Gollier
+    orcid: "https://orcid.org/0009-0008-3158-7912"
+    affiliation: "GERAD and Department of Mathematics and Industrial Engineering, Polytechnique Montréal, QC, Canada."
+  - given-names: Youssef
+    family-names: Diouane
+    affiliation: "GERAD and Department of Mathematics and Industrial Engineering, Polytechnique Montréal, QC, Canada."
+    orcid: "https://orcid.org/0000-0002-6609-7330"
+  - given-names: Dominique
+    family-names: Orban
+    orcid: "https://orcid.org/0000-0002-8017-7687"
+    affiliation: "GERAD and Department of Mathematics and Industrial Engineering, Polytechnique Montréal, QC, Canada."
+  - given-names: contributors
+contact:
+  - given-names: Maxence
+    family-names: Gollier
     email: maxence-2.gollier@polymtl.ca
-    affiliation: Polytechnique Montréal
-repository-code: 'https://github.com/JuliaSmoothOptimizers/Penelopt.jl'
-url: 'https://jso.dev/Penelopt.jl'
+identifiers:
+  - description: GERAD technical report
+    type: doi
+    value: 10.13140/RG.2.2.22156.88969
+  - description: GERAD technical report page
+    type: url
+    value: "https://www.gerad.ca/en/papers/G-2026-53"
+keywords:
+  - Julia
+  - nonlinear optimization
+  - nonlinear programming
+  - equality-constrained optimization
+  - exact penalty method
+  - large-scale optimization
 license: MPL-2.0
+repository-code: "https://github.com/JuliaSmoothOptimizers/Penelopt.jl"
+url: "https://jso.dev/Penelopt.jl"
+preferred-citation:
+  type: report
+  authors:
+    - given-names: Maxence
+      family-names: Gollier
+    - given-names: Youssef
+      family-names: Diouane
+    - given-names: Dominique
+      family-names: Orban
+      orcid: "https://orcid.org/0000-0002-8017-7687"
+  title: "An exact penalty method for large-scale equality-constrained nonlinear optimization"
+  collection-title: "Les Cahiers du GERAD"
+  number: "G-2026-53"
+  issn: "0771-2440"
+  institution:
+    name: GERAD
+    city: Montréal
+    region: QC
+    country: CA
+  date-published: "2026-09-01"
+  year: 2026
+  doi: 10.13140/RG.2.2.22156.88969
+  url: "https://www.gerad.ca/en/papers/G-2026-53"
