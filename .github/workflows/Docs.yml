@@ -5,8 +5,6 @@ on:
       - main
     tags: '*'
   pull_request:
-    branches:
-      - main
     paths:
       - "src/**"
       - "test/**"
