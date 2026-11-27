@@ -275,3 +275,18 @@ end
     ignore_null_hessian = true,
   )
 end
+
+# Test simple problem with bounds
+@testset "HS41" begin
+  primal_solution = [2/3, 1/3, 1/3, 2.0]
+  dual_solution = [1/9]
+  linear_solver =
+    !isnothing(Base.get_extension(Penelopt, :PeneloptLDLFactorizationsExt)) ? :ldlt : :mumps
+  test_problem(
+    "HS41",
+    primal_solution,
+    dual_solution,
+    :first_order;
+    linear_solver = linear_solver,
+  )
+end
