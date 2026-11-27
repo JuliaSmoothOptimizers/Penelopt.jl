@@ -249,6 +249,7 @@ function SolverCore.solve!(
   compl_ktol_init = min(one(T), max(μ_compl * one(T), max(compl_inf_atol, atol)))
   compl_ktol = compl_ktol_init
   set_scaled_smoothing!(solver, compl_ktol)
+  z_l, z_u = get_bound_multipliers!(solver, x)
 
   compl_feas = kkt_compl_feas!(solver)
   compl_tol = max(compl_inf_atol, atol) + max(compl_inf_rtol, rtol) * compl_feas
@@ -267,7 +268,7 @@ function SolverCore.solve!(
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
-  set_residuals!(stats, primal_feas, dual_feas)
+  set_residuals!(stats, max(primal_feas, bound_feas), dual_feas)
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && bound_feas ≤ bound_tol && compl_feas ≤ compl_tol
 
@@ -433,6 +434,7 @@ function SolverCore.solve!(
     shift!(solver, x, y = y) #FIXME
     px = get_ir_obj(solver, x)     # Φ(x;β)
     set_solver_specific!(solver.substats, :smooth_obj, fx + px)
+    z_l, z_u = get_bound_multipliers!(solver, x)
     # TODO: add extrapolation etc.
 
     ## Tighten tolerances
@@ -475,8 +477,9 @@ function SolverCore.solve!(
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
-    set_residuals!(stats, primal_feas, dual_feas)
+    set_residuals!(stats, max(primal_feas, bound_feas), dual_feas)
     set_constraint_multipliers!(stats, solver.y)
+    has_bounds(nlp) && set_bounds_multipliers!(stats, z_l, z_u)
     set_solver_specific!(stats, :n_fact, get_n_fact(solver.substats))
 
     set_status!(
