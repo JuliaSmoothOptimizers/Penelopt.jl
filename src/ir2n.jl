@@ -299,15 +299,18 @@ function SolverCore.solve!(
         # Check acceptance w.r.t f
         # Predicted decrease: f - (f + ∇fᵀs) = -∇fᵀs
         pk, pkn = get_ir_obj(solver, xk), get_ir_obj(solver, xkn)
+        pgk = get_ir_grad!(solver, xk)
+
         fk_obj, fkn_obj = fk - pk, fkn - pkn
-        get_obj_grad!(solver, xk, ∇fk)
+        ∇fk .-= pgk
+
         d∇fks = dot(∇fk, s)
         fρk =
           d∇fks <= 0 ?
           (fk_obj - fkn_obj + max(1, abs(fk)) * 10 * eps(T))/(
             -d∇fks + max(1, abs(fk)) * 10 * eps(T)
           ) : zero(T)
-        get_ir_grad!(solver, xk, ∇fk)
+        ∇fk .+= pgk
 
         # Check acceptance w.r.t. h
         # Predicted decrease: τ‖c‖ - τ‖c + Js‖ = hk - ψ(s)
@@ -319,8 +322,7 @@ function SolverCore.solve!(
           ) : zero(T)
 
         # Check acceptance w.r.t. the inequality relaxation model
-        g = zeros(T, length(xk)) # FIXME
-        d∇pks = dot(get_ir_grad!(solver, xk, g), s)
+        d∇pks = dot(pgk, s)
         pρk =
           d∇pks >= 0 ?
           (pk - pkn + max(1, abs(pk)) * 10 * eps(T))/(
@@ -488,16 +490,10 @@ function get_ir_obj(solver::PenaltyR2NSolver, x::AbstractVector)
   return obj(ir_nlp.h, x)
 end
 
-function get_ir_grad!(solver::PenaltyR2NSolver, x::AbstractVector, ∇f::AbstractVector)
+function get_ir_grad!(solver::PenaltyR2NSolver, x::AbstractVector)
+  v = solver.subpb.model.data.v .= zero(eltype(x)) # Use preallocated buffer
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb.parent)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
-  add_grad!(ir_nlp.h, x, ∇f)
-  return ∇f
-end
-
-function get_obj_grad!(solver::PenaltyR2NSolver, x::AbstractVector, ∇f::AbstractVector)
-  ir_nlp = find_model(IRPenalizedProblem, solver.subpb.parent)
-  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
-  add_grad!(ir_nlp.h, x, ∇f, α = -one(eltype(∇f)))
-  return ∇f
+  add_grad!(ir_nlp.h, x, v)
+  return v
 end
