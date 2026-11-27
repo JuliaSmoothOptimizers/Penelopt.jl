@@ -298,12 +298,16 @@ function SolverCore.solve!(
 
         # Check acceptance w.r.t f
         # Predicted decrease: f - (f + ∇fᵀs) = -∇fᵀs
+        pk, pkn = get_ir_obj(solver, xk), get_ir_obj(solver, xkn)
+        fk_obj, fkn_obj = fk - pk, fkn - pkn
+        get_obj_grad!(solver, xk, ∇fk)
         d∇fks = dot(∇fk, s)
         fρk =
           d∇fks <= 0 ?
-          (fk - fkn + max(1, abs(fk)) * 10 * eps(T))/(
+          (fk_obj - fkn_obj + max(1, abs(fk)) * 10 * eps(T))/(
             -d∇fks + max(1, abs(fk)) * 10 * eps(T)
           ) : zero(T)
+        get_ir_grad!(solver, xk, ∇fk)
 
         # Check acceptance w.r.t. h
         # Predicted decrease: τ‖c‖ - τ‖c + Js‖ = hk - ψ(s)
@@ -314,7 +318,16 @@ function SolverCore.solve!(
             dψks + max(1, abs(hk)) * 10 * eps(T)
           ) : zero(T)
 
-        if r2n_η3 ≤ fρk < Inf || r2n_η3 ≤ hρk < Inf # Activate watchdog
+        # Check acceptance w.r.t. the inequality relaxation model
+        g = zeros(T, length(xk)) # FIXME
+        d∇pks = dot(get_ir_grad!(solver, xk, g), s)
+        pρk =
+          d∇pks >= 0 ?
+          (pk - pkn + max(1, abs(pk)) * 10 * eps(T))/(
+            d∇pks + max(1, abs(pk)) * 10 * eps(T)
+          ) : zero(T)
+
+        if (r2n_η3 ≤ fρk < Inf || r2n_η3 ≤ hρk < Inf) && pρk > 0 # Activate watchdog
           activate!(watchdog_checkpoint)
           save!(watchdog_checkpoint, mk, xk, y, stats)
           watchdog_checkpoint.m_fh_hist .= m_fh_hist
@@ -468,3 +481,23 @@ Shift the subproblem of `solver` around `x`. The quantities that are passed are 
 """
 shift!(solver::PenaltyR2NSolver, x::AbstractVector; kwargs...) =
   shift!(solver.subpb, x; kwargs...)
+
+function get_ir_obj(solver::PenaltyR2NSolver, x::AbstractVector)
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb.parent)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  return obj(ir_nlp.h, x)
+end
+
+function get_ir_grad!(solver::PenaltyR2NSolver, x::AbstractVector, ∇f::AbstractVector)
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb.parent)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  add_grad!(ir_nlp.h, x, ∇f)
+  return ∇f
+end
+
+function get_obj_grad!(solver::PenaltyR2NSolver, x::AbstractVector, ∇f::AbstractVector)
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb.parent)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  add_grad!(ir_nlp.h, x, ∇f, α = -one(eltype(∇f)))
+  return ∇f
+end
