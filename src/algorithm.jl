@@ -221,11 +221,11 @@ function SolverCore.solve!(
   # Retrieve workspace
   x = solver.x .= x
   y = solver.y
-  z_l, z_u = get_bound_multipliers!(solver, x)
 
   initialize_constraints!(solver, x) # Compute c(x) and J(x)
   fx = obj(nlp, x)                   # f(x)
   hx = norm(get_constraints(solver)) # ‖c(x)‖₂
+  px = get_ir_obj(solver, x)         # Φ(x; β)
 
   set_iter!(stats, 0)
   rem_eval = max_eval
@@ -235,24 +235,33 @@ function SolverCore.solve!(
 
   ## Compute Feasibility
 
+  ### c(x) and bounds
   primal_feas = kkt_primal_feas!(solver)
   bound_feas = kkt_bound_feas!(solver)
-  compl_feas = kkt_compl_feas!(solver)
 
-  set_solver_specific!(solver.substats, :smooth_obj, fx)
-  grad!(nlp, x, get_gradient(solver))
+  primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
+  bound_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * bound_feas
+  primal_ktol, bound_ktol  = one(primal_tol), one(bound_tol)
+
+  # Complementarity
+  τ_b = initialize_bound_penalty!(solver)
+  μ_compl = 10 * μ # TODO: add as kwarg
+  compl_ktol_init = min(one(T), max(μ_compl * one(T), max(compl_inf_atol, atol)))
+  compl_ktol = compl_ktol_init
+  set_scaled_smoothing!(solver, compl_ktol)
+
+  compl_feas = kkt_compl_feas!(solver)
+  compl_tol = max(compl_inf_atol, atol) + max(compl_inf_rtol, rtol) * compl_feas
+
+  # Dual feasibility
+  set_solver_specific!(solver.substats, :smooth_obj, fx + px)
+  
+  compute_ir_gradient!(solver, x)
   initialize_multipliers!(solver)
   dual_feas = least_square_dual_feas!(solver)
   set_multipliers!(solver.subsolver, y)
 
-  primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
-  bound_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * bound_feas
-  compl_tol = max(compl_inf_atol, atol) + max(compl_inf_rtol, rtol) * compl_feas
-  dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
-
-  primal_ktol, bound_ktol, compl_ktol = one(primal_tol), one(bound_tol), one(compl_tol)
-  compl_ktol = min(one(compl_tol), max(μ * compl_feas, compl_tol))
-  set_scaled_smoothing!(solver, compl_ktol)
+  dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas  
   dual_ktol = min(one(dual_tol), max(μ * dual_feas, dual_tol))
   dual_krtol = T(0)
 
@@ -260,13 +269,11 @@ function SolverCore.solve!(
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
   set_residuals!(stats, primal_feas, dual_feas)
 
-  solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
+  solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && bound_feas ≤ bound_tol && compl_feas ≤ compl_tol
 
   ## Initialize penalty parameter
   τ = min(max(norm(solver.y, 1), τ0), τmax)
-  τ_b = min(max(norm(z_l, 1), norm(z_u, 1), τ0), τmax)
   set_penalty!(solver, τ)
-  set_bound_penalty!(solver, τ_b)
   σk = -one(T) # Use subsolver's default σk (max(σ0, σmin))
 
   ## Logging
@@ -338,13 +345,14 @@ function SolverCore.solve!(
       set_penalty!(solver, τ)
       set_bound_penalty!(solver, τ_b)
       σk = -one(T)
-      set_solver_specific!(solver.substats, :smooth_obj, fx)
-      compl_ktol = max(μ, compl_tol)
+      compl_ktol = compl_ktol_init
       set_scaled_smoothing!(solver, compl_ktol)
 
+      px = get_ir_obj(solver, x)     # Φ(x;β)
+      set_solver_specific!(solver.substats, :smooth_obj, fx + px)
       shift!(solver, x, y = y)
 
-      τ > τmax ? (stalled = true) : continue
+      (τ > τmax || τ_b > τmax) ? (stalled = true) : continue
     end
 
     if solver.substats.status == :not_desc
@@ -353,7 +361,8 @@ function SolverCore.solve!(
 
     x .= solver.substats.solution
     y .= solver.substats.multipliers
-    fx = get_smooth_obj(solver.substats)
+    px = get_ir_obj(solver, x)
+    fx = get_smooth_obj(solver.substats) - px # (fx + px) - px
     hx_prev = copy(hx)
     hx = get_nonsmooth_obj(solver.substats)/τ
     set_gradient!(solver, get_gradient(solver.subsolver))
@@ -365,6 +374,7 @@ function SolverCore.solve!(
     compl_feas = kkt_compl_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
 
+    ## Update c(x) penalty parameter
     penalty_increase = false
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
 
@@ -372,7 +382,7 @@ function SolverCore.solve!(
 
       # Update penalty parameter
       τ₊ = max(τ + τmin, norm(y, 1))
-      if extrapolate!(x, solver, τ₊, τ)
+      if false # extrapolate!(x, solver, τ₊, τ) # FIXME
         shift!(solver, x, y = y, c = solver.cn)
 
         # Subsolver: Do not impose primal decrease
@@ -386,9 +396,6 @@ function SolverCore.solve!(
       set_penalty!(solver, τ)
       stalled = τ > τmax
 
-      # Initialize regularization parameter
-      σk = get_sigma(solver.substats)
-
       # Subsolver: Activate the aggressive regularization parameter update if sigma is too small
       first_increase = true
 
@@ -398,20 +405,18 @@ function SolverCore.solve!(
       dual_krtol = μ
     end
 
+    ## Update bounds penalty parameter
     if bound_feas > bound_ktol || (dual_ktol ≤ dual_tol && bound_feas > bound_tol)
 
       penalty_increase = true
 
       # Update penalty parameter
-      τ_b₊ = max(τ_b + τmin, max(norm(z_l, 1), norm(z_u, 1)))
-      shift!(solver, x, y = y) # TODO: add extrapolation etc.
+      τ_b₊ = max(τ_b + τmin, max(norm(z_l, 2), norm(z_u, 2)))
+      # TODO: add extrapolation etc.
       τ_b = τ_b₊
       primal_decrease = true
       set_bound_penalty!(solver, τ_b)
       stalled = τ_b > τmax
-
-      # Initialize regularization parameter
-      σk = get_sigma(solver.substats)
 
       # Subsolver: Activate the aggressive regularization parameter update if sigma is too small
       first_increase = true
@@ -422,16 +427,22 @@ function SolverCore.solve!(
       dual_krtol = μ
     end
 
+    ## Update smoothing parameter
+    compl_ktol = penalty_increase ? compl_ktol_init : max(μ_compl*compl_feas, compl_tol)
+    set_scaled_smoothing!(solver, compl_ktol)
+    shift!(solver, x, y = y) #FIXME
+    px = get_ir_obj(solver, x)     # Φ(x;β)
+    set_solver_specific!(solver.substats, :smooth_obj, fx + px)
+    # TODO: add extrapolation etc.
+
+    ## Tighten tolerances
     if !penalty_increase
-      # Tighten tolerances
       primal_ktol = max(μ*primal_feas, primal_tol)
+      bound_ktol = max(μ*bound_feas, bound_tol)
       dual_ktol = max(μ*dual_feas, dual_tol)
       dual_krtol = T(0)
       set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
-
-      # Initialize regularization parameter
-      σk = get_sigma(solver.substats)
 
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
@@ -440,17 +451,15 @@ function SolverCore.solve!(
       first_increase = false
     end
 
-    # Complementarity feasibility
-    compl_ktol = penalty_increase ? max(μ, compl_tol) : max(μ*compl_feas, compl_tol)
-    set_scaled_smoothing!(solver, compl_ktol)
-    shift!(solver, x, y = y) # TODO: add extrapolation etc.
+    # Initialize regularization parameter
+    σk = get_sigma(solver.substats)
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev < hx
       τmin *= 10
     end
 
-    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && compl_feas ≤ compl_tol
+    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && bound_feas ≤ bound_tol && compl_feas ≤ compl_tol
 
     # Infeasibility detection
     if stats.iter % infeasible_iter == 0
@@ -561,10 +570,28 @@ function set_bound_penalty!(solver::L2PenaltySolver, τ::T) where {T}
   set_penalty!(ir_nlp, τ)
 end
 
+function initialize_bound_penalty!(solver::L2PenaltySolver)
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  return initialize_bound_penalty!(ir_nlp)
+end
+
 function set_scaled_smoothing!(solver::L2PenaltySolver, β::T) where {T}
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
   set_scaled_smoothing!(ir_nlp, β)
+end
+
+function get_ir_obj(solver::L2PenaltySolver, x::AbstractVector)
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  return obj(ir_nlp.h, x)
+end
+
+function compute_ir_gradient!(solver::L2PenaltySolver, x::AbstractVector)
+  ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
+  @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  grad!(ir_nlp, x, get_gradient(solver))
 end
 
 """

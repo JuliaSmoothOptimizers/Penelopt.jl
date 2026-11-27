@@ -67,6 +67,17 @@ function get_bound_multipliers!(nlp::IRPenalizedProblem, x; β = nothing)
   return z_l, z_u
 end
 
+# Initialize the bound penalty
+# Assuming that z_l = z_u = 1, we choose τ = ||z_l, z_u||_1.
+# Which gives τ = # of finite bounds
+function initialize_bound_penalty!(nlp::IRPenalizedProblem)
+  l, u = nlp.h.l, nlp.h.u
+  n_finite_bounds = count(isfinite, l) + count(isfinite, u)
+  τ = n_finite_bounds
+  set_penalty!(nlp, τ)
+  return τ
+end
+
 ## NLPModels API
 function NLPModels.obj(nlp::IRPenalizedProblem, x; β = nothing)
   return obj(nlp.model, x) + obj(nlp.h, x; β = β)

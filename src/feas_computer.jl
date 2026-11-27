@@ -160,8 +160,8 @@ function kkt_compl_feas!(solver::L2PenaltySolver)
   feas = zero(eltype(x))
   for i in eachindex(x)
     l, u = ineq_relax_nlp.model.meta.lvar[i], ineq_relax_nlp.model.meta.uvar[i]
-    isfinite(l) && (feas = max(feas, abs(z_l[i] * (x[i] - l))))
-    isfinite(u) && (feas = max(feas, abs(z_u[i] * (x[i] - u))))
+    isfinite(l) && x[i] >= l && (feas = max(feas, z_l[i] * (x[i] - l)))
+    isfinite(u) && x[i] <= u && (feas = max(feas, z_u[i] * (u - x[i])))
   end
 
   return feas
