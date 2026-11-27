@@ -30,7 +30,7 @@ end
 function PenaltyR2NExecutionStats(penalty_nlp::AbstractNLPModel{T,V}) where {T,V}
   stats = GenericExecutionStats(penalty_nlp, solver_specific = Dict{Symbol,T}())
   for key in
-      (:primal_ktol, :dual_ktol, :n_fact, :tau, :sigma, :rho, :smooth_obj, :nonsmooth_obj)
+      (:primal_ktol, :dual_ktol, :n_fact, :tau, :tau_b, :sigma, :rho, :smooth_obj, :nonsmooth_obj, :compl_feas, :compl_ktol)
     set_solver_specific!(stats, key, T(0))
   end
   return PenaltyR2NExecutionStats{T,V}(stats)

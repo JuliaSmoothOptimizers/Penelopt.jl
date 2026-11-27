@@ -269,6 +269,7 @@ function SolverCore.solve!(
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
   set_residuals!(stats, max(primal_feas, bound_feas), dual_feas)
+  set_solver_specific!(solver.substats, :compl_feas, compl_feas) # FIXME https://github.com/JuliaSmoothOptimizers/SolverCore.jl/issues/138
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol && bound_feas ≤ bound_tol && compl_feas ≤ compl_tol
 
@@ -478,6 +479,7 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
     set_residuals!(stats, max(primal_feas, bound_feas), dual_feas)
+    set_solver_specific!(solver.substats, :compl_feas, compl_feas) # FIXME https://github.com/JuliaSmoothOptimizers/SolverCore.jl/issues/138
     set_constraint_multipliers!(stats, solver.y)
     has_bounds(nlp) && set_bounds_multipliers!(stats, z_l, z_u)
     set_solver_specific!(stats, :n_fact, get_n_fact(solver.substats))
@@ -570,18 +572,22 @@ end
 function set_bound_penalty!(solver::L2PenaltySolver, τ::T) where {T}
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  set_solver_specific!(solver.substats, :tau_b, τ)
   set_penalty!(ir_nlp, τ)
 end
 
 function initialize_bound_penalty!(solver::L2PenaltySolver)
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
-  return initialize_bound_penalty!(ir_nlp)
+  τ = initialize_bound_penalty!(ir_nlp)
+  set_solver_specific!(solver.substats, :tau_b, τ)
+  return τ
 end
 
 function set_scaled_smoothing!(solver::L2PenaltySolver, β::T) where {T}
   ir_nlp = find_model(IRPenalizedProblem, solver.subpb)
   @assert !isnothing(ir_nlp) "InequalityRelaxationModel not found in model hierarchy."
+  set_solver_specific!(solver.substats, :compl_ktol, β)
   set_scaled_smoothing!(ir_nlp, β)
 end
 
