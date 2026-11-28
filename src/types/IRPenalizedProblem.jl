@@ -33,7 +33,7 @@ function IRPenalizedProblem(nlp::AbstractNLPModel{T,S}) where {T,S}
   meta = NLPModelMeta(m; lvar = lvar, uvar = uvar, nnzh = m.nnzh + m.nvar)
   return IRPenalizedProblem(
     nlp,
-    SquarePlus(nlp.meta.lvar, nlp.meta.uvar, one(T), one(T)),
+    SquarePlus(nlp.meta.lvar, nlp.meta.uvar, zero(nlp.meta.lvar), zero(nlp.meta.uvar), one(T), one(T)),
     meta
   )
 end
@@ -45,6 +45,38 @@ NLPModelsModifiers.get_model(nlp::IRPenalizedProblem) = nlp.model
 
 set_penalty!(nlp::IRPenalizedProblem, λ) = set_penalty!(nlp.h, λ)
 set_smoothing!(nlp::IRPenalizedProblem, β) = set_smoothing!(nlp.h, β)
+set_scaled_smoothing!(nlp::IRPenalizedProblem, β) = set_smoothing!(nlp, β)
+
+# For the SquarePlus, the complementarity feasibility is scaled by tau / phi^(2.5) where phi is the golden ratio.
+function set_scaled_smoothing!(nlp::IRPenalizedProblem{T, S, M, P}, β) where{T, S, M <: AbstractNLPModel{T,S}, P <: SquarePlus{T, S}}
+  gr = Base.MathConstants.golden
+  set_smoothing!(nlp.h, min(sqrt(gr^5) / nlp.h.lambda * β, 1))
+  return nlp
+end
+
+function get_bound_multipliers!(nlp::IRPenalizedProblem, x; β = nothing)
+  z_l, z_u = nlp.h.z_l, nlp.h.z_u
+
+  z_l .= 0
+  z_u .= 0
+
+  add_l_grad!(nlp.h, x, z_l; β = β)
+  add_u_grad!(nlp.h, x, z_u; β = β)
+
+  z_l .*= -1
+  return z_l, z_u
+end
+
+# Initialize the bound penalty
+# Assuming that z_l = z_u = 1, we choose τ = ||z_l, z_u||_1.
+# Which gives τ = # of finite bounds
+function initialize_bound_penalty!(nlp::IRPenalizedProblem)
+  l, u = nlp.h.l, nlp.h.u
+  n_finite_bounds = count(isfinite, l) + count(isfinite, u)
+  τ = n_finite_bounds
+  set_penalty!(nlp, τ)
+  return τ
+end
 
 ## NLPModels API
 function NLPModels.obj(nlp::IRPenalizedProblem, x; β = nothing)

@@ -69,7 +69,7 @@ end
 function header_message(; type = :outer_loop)
   if type == :outer_loop
     return @sprintf(
-      "%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
+      "%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
       W_ITER,
       "Iter",
       W_ITER,
@@ -81,11 +81,17 @@ function header_message(; type = :outer_loop)
       W_MED,
       "dfeas",
       W_MED,
+      "cfeas",
+      W_MED,
       "τ",
+      W_MED,
+      "τ_b",
       W_MED,
       "ptol",
       W_MED,
       "dtol",
+      W_MED,
+      "ctol",
       W_MED,
       "‖x‖",
     )
@@ -183,15 +189,18 @@ function log_iteration(
 )
   if type == :outer_loop
     return @sprintf(
-      "%-7d%-7d%-+16.7e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e",
+      "%-7d%-7d%-+16.7e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e",
       stats.iter,
       max(solver.substats.iter, 0),
       stats.objective,
       stats.primal_feas,
       stats.dual_feas,
+      solver.substats.solver_specific[:compl_feas],
       solver.substats.solver_specific[:tau],
+      solver.substats.solver_specific[:tau_b],
       solver.substats.solver_specific[:primal_ktol],
       solver.substats.solver_specific[:dual_ktol],
+      solver.substats.solver_specific[:compl_ktol],
       norm(solver.x),
     )
   elseif type == :inner_loop
@@ -229,6 +238,7 @@ function conclusion_message(solver, nlp, stats; type = :outer_loop)
     log *= @sprintf("Objective...........: %-+16.15e\n", stats.objective)
     log *= @sprintf("Primal Feasibility..:  %16.15e\n", stats.primal_feas)
     log *= @sprintf("Dual Feasibility....:  %16.15e\n", stats.dual_feas)
+    log *= @sprintf("Complementarity.....:  %16.15e\n", solver.substats.solver_specific[:compl_feas])
     log *= "\n\n"
     log *= "EXIT: $(stats.status).\n"
     return log
